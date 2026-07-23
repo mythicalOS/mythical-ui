@@ -1,0 +1,4 @@
+[test]
+# Playwright parity specs (run via `bun run test:select` in packages/ui-core) —
+# never under bun test; bun's default glob would sweep *.spec.js otherwise.
+pathIgnorePatterns = ["packages/ui-core/test/select/**"]
