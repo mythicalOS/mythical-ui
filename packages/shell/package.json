@@ -1,0 +1,46 @@
+{
+  "name": "@mythicalos/shell",
+  "version": "0.1.0",
+  "description": "mythicalOS Preact-only FAMILY SHELL — the modules that must be identical across the BROKKR/SKULD/SAGA/EDDA product UIs: ProductSwitcher (the logo IS the family menu), TopBar, NavTabs, WorkspaceSplit + Rail*, SettingsLayout/SettingsNav, the family product registry, and useTheme. Built on @mythicalos/preact-ui's atoms. A future React product (asgard) gets its own React shell later — this package is deliberately Preact-only; no React, no compat. Apache-2.0.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": ["*.css"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mythicalOS/mythical-ui.git",
+    "directory": "packages/shell"
+  },
+  "homepage": "https://github.com/mythicalOS/mythical-ui#packages",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./styles.css": "./styles.css"
+  },
+  "files": ["dist", "styles.css", "README.md", "NOTICE"],
+  "peerDependencies": {
+    "preact": "^10.22.0",
+    "@mythicalos/tokens": "^0.5.11"
+  },
+  "peerDependenciesMeta": {
+    "@mythicalos/tokens": { "optional": true }
+  },
+  "dependencies": {
+    "@mythicalos/preact-ui": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "prepublishOnly": "bun run build && bun test && bun run typecheck"
+  },
+  "devDependencies": {
+    "preact": "^10.22.0",
+    "preact-render-to-string": "^6.5.13",
+    "typescript": "^5"
+  }
+}

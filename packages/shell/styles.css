@@ -1,0 +1,468 @@
+/* @mythicalos/shell — component styles for the family shell.
+   Extracted from design-export's mythical-design/src/styles/{components,base}.css (Task 8): only
+   the SHELL class families (top bar, logo, product switcher, nav tabs, icon button, overflow
+   menu, workspace split/rail/rail-card, settings nav, app/page frame). The ATOM families
+   (button/input/toggle/checkbox/chip/card/avatar/status/search/banner/gauge/toast/dialog/…)
+   already ship from `@mythicalos/ui-core/styles.css` — none of that is duplicated here; see the
+   Task 8 report for the explicit overlap check against ui-core's own sheet (which itself
+   forbids every prefix owned by this file — test/css.test.ts (d) in ui-core, and this package's
+   own css.test.ts (d) checks the mirror direction).
+
+   Serve in order: @mythicalos/tokens/tokens.css → @mythicalos/ui-core/styles.css →
+   @mythicalos/shell/styles.css.
+
+   Fidelity note (same "stale-token discipline" as ui-core's own extraction): design-export's own
+   tokens.css is v0.4-era and predates two v0.5 canonical distinctions (rule #11 — control
+   boundaries use --my-control-border, --my-border is dividers/cards/non-interactive only — and
+   the --my-fs-micro token, v0.5.11). Two categories of rule were remapped against the CANONICAL
+   tokens.css (mythical-design/tokens.css) rather than copied as-is; every instance is called out
+   inline below and the full list (plus the borderline cases considered and left as literal) is
+   in the Task 8 report:
+     - Rule #11 (interactive control boundaries): `.my-iconbtn` and `.my-rail-card` are real
+       clickable controls (a <button>, per the source components) whose resting border was
+       `var(--my-border)` in the export; both are remapped to `var(--my-control-border)`, matching
+       every other interactive-control atom in this system (ui-core's btn--sec, input,
+       tog, cb, my-search__input classes).
+     - Text-on-filled-accent color: the export hard-coded `color: #fff` for the two spots where
+       text/glyph sits on a solid `var(--my-accent)` fill (the current product's switcher mark,
+       the accent icon button). Remapped to `var(--my-surface)` — the exact token ui-core's own
+       btn--acc/btn--pri classes already use for this identical situation, which is what makes it
+       flip correctly in dark/heritage theme (surface is near-white on light, near-black on dark —
+       both readable against the accent fill in their theme) instead of freezing to white.
+     - Font-size literals: this file is entirely new-authored (there is no frozen "BASE" section
+       to leave untouched, unlike ui-core's inherited sheet), so every font-size resolves through
+       a --my-fs-* token — snapped to the nearest scale step, mirroring the normalization
+       ui-core's own ADDITIONS section applied (e.g. its 12.5px→--my-fs-caption,
+       10px→--my-fs-micro). Two literals were evaluated and deliberately left un-mapped because
+       the nearest token is a large (>1.5px / ~20%+) jump that would visibly change the design:
+       `.my-logo__product` (8px — below the --my-fs-micro floor of 11px) and
+       `.my-switcher__here` (9px — nearest step is 11px, +22%). Both are marked below. */
+
+/* @section: shell */
+
+/* ═══ Top bar ══════════════════════════════════════════════════════════════ */
+.my-topbar {
+  display: flex;
+  align-items: center;
+  gap: var(--my-sp-4);
+  height: 56px;
+  flex: none;
+  padding: 0 22px;
+  background: var(--my-surface);
+  border-bottom: 1px solid var(--my-border);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+.my-topbar__spacer { margin-left: auto; }
+.my-topbar__right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--my-sp-4);
+}
+/* Plain-text status item (dot + label) for the top bar's right cluster — NOT the tone-driven
+   StatusLine atom (ui-core's my-status class); this is the export's un-toned plain status line,
+   earmarked for this task by ui-core's own extraction comment (test/css.test.ts / styles.css
+   ADDITIONS note: "NOT the topbar's plain `.my-statusline` … belongs to a later shell task"). No
+   component in this package renders it — like `.my-app`/`.my-page` below, it's a raw class for a
+   consuming product to apply directly if it wants an un-toned status readout. */
+.my-statusline {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--my-fs-caption);
+  color: var(--my-muted);
+}
+
+/* ═══ Logo + wordmark ══════════════════════════════════════════════════════ */
+.my-logo {
+  display: flex;
+  align-items: center;
+  gap: var(--my-sp-4);
+}
+.my-logo__mark { display: block; flex: none; }
+.my-logo__mark svg { display: block; }
+.my-logo__word {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.05;
+}
+.my-logo__family {
+  position: relative;
+  font-weight: var(--my-fw-bold);
+  font-size: var(--my-fs-body-lg); /* export: literal 16px — exact match, lossless */
+  letter-spacing: -.3px;
+  color: var(--my-ink);
+}
+.my-logo__family::after {           /* the petrol bullet after "mythical" */
+  content: "●";
+  color: var(--my-accent);
+  position: absolute;
+  left: 100%;
+}
+.my-logo__product {
+  /* export: literal 8px — left as literal (see fidelity note above): the nearest scale step,
+     --my-fs-micro at 11px, is a +37% jump that would visibly enlarge this deliberately tiny
+     vertical product-name line. */
+  font-size: 8px;
+  font-weight: var(--my-fw-bold);
+  letter-spacing: 2.4px;
+  color: var(--my-muted);
+  text-transform: uppercase;
+  text-align: right;
+  margin-right: -2.4px;
+  margin-top: 2px;
+}
+
+/* ═══ Product selector (the family switcher — the flagship central module) ═══ */
+.my-switcher { position: relative; }
+.my-switcher__trigger {
+  display: flex;
+  align-items: center;
+  gap: var(--my-sp-4);
+  border: 0;
+  background: transparent;
+  padding: 5px 9px 5px 7px;
+  margin: 0 -3px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--my-t-fast);
+}
+.my-switcher__trigger:hover,
+.my-switcher__trigger[aria-expanded="true"] { background: var(--my-surface-hover); }
+.my-switcher__chevron {
+  color: var(--my-muted);
+  font-size: var(--my-fs-micro); /* export: literal 11px — exact match, lossless */
+  margin-left: 1px;
+  transition: transform var(--my-t-fast);
+}
+.my-switcher__trigger[aria-expanded="true"] .my-switcher__chevron { transform: rotate(180deg); }
+
+.my-switcher__panel {
+  position: absolute;
+  left: -3px;
+  top: 52px;
+  width: 300px;
+  background: var(--my-surface);
+  border: 1px solid var(--my-border);
+  border-radius: 13px;
+  box-shadow: var(--my-shadow-modal);
+  padding: 7px;
+  z-index: 40;
+}
+.my-switcher__heading {
+  /* export: literal 10px — nearest step is --my-fs-micro (11px); this IS a section-ruler label
+     ("mythical family"), the exact case --my-fs-micro's own definition names. */
+  font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-bold);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--my-muted);
+  padding: 7px 10px 5px;
+}
+.my-switcher__item {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  align-items: center;
+  gap: 11px;
+  border: 0;
+  background: transparent;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--my-t-fast);
+}
+.my-switcher__item:hover { background: var(--my-surface-hover); }
+.my-switcher__item.is-current { background: var(--my-accent-soft); }
+.my-switcher__mark {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--my-surface-hover);
+  color: var(--my-ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: var(--my-fw-bold);
+  font-size: var(--my-fs-body); /* export: literal 14px — exact match, lossless */
+  font-family: var(--my-font-mono);
+}
+.my-switcher__item.is-current .my-switcher__mark { background: var(--my-accent); color: var(--my-surface); } /* remapped from export's literal #fff — see fidelity note above */
+.my-switcher__body { min-width: 0; flex: 1; }
+.my-switcher__name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  /* export: literal 13.5px — an exact tie between --my-fs-mono (13px) and --my-fs-body (14px);
+     --my-fs-body chosen (this is prose product-name text, not mono/code). */
+  font-size: var(--my-fs-body);
+  font-weight: var(--my-fw-bold);
+  color: var(--my-ink);
+  letter-spacing: .2px;
+}
+.my-switcher__role {
+  display: block;
+  /* export: literal 11.5px — a tie between --my-fs-micro (11px) and --my-fs-caption (12px);
+     --my-fs-caption chosen (secondary/descriptive caption text, not a section-ruler label). */
+  font-size: var(--my-fs-caption);
+  color: var(--my-muted);
+  margin-top: 1px;
+}
+.my-switcher__here {
+  /* export: literal 9px — left as literal (see fidelity note above): nearest step is
+     --my-fs-micro at 11px, a +22% jump judged too large to snap silently. */
+  font-size: 9px;
+  font-weight: var(--my-fw-bold);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--my-accent-strong);
+  background: var(--my-accent-soft);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+.my-switcher__dot { flex: none; width: 7px; height: 7px; border-radius: 50%; }
+.my-switcher__dot--here { background: var(--my-accent); }
+.my-switcher__dot--online { background: var(--my-ok); }
+.my-switcher__dot--soon { background: var(--my-border); }
+.my-switcher__divider { height: 1px; background: var(--my-border); margin: 6px 8px; }
+.my-switcher__note {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 10px 8px;
+  font-size: var(--my-fs-micro); /* export: literal 11px — exact match, lossless */
+  color: var(--my-muted);
+  line-height: 1.45;
+}
+.my-switcher__note-glyph {
+  flex: none;
+  font-size: var(--my-fs-mono); /* export: literal 13px — exact match, lossless (glyph, not code;
+    reusing the 13px scale step regardless of its "mono" name, same as ui-core's own precedent of
+    reusing --my-fs-caption for non-caption tiny text). */
+}
+
+/* ═══ Nav tabs ═════════════════════════════════════════════════════════════ */
+.my-nav { display: flex; gap: 2px; }
+.my-nav__tab {
+  padding: 6px 12px;
+  border-radius: var(--my-r-control);
+  font-size: var(--my-fs-mono); /* export: literal 13px — exact match, lossless */
+  color: var(--my-muted);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: background var(--my-t-fast), color var(--my-t-fast);
+}
+.my-nav__tab:hover { background: var(--my-surface-hover); color: var(--my-ink); }
+.my-nav__tab.is-active {
+  background: var(--my-accent-soft);
+  color: var(--my-accent-strong);
+  font-weight: var(--my-fw-medium);
+}
+
+/* ═══ Icon button (square, 30×30) — theme toggle, overflow ⋯, + ═══════════════ */
+.my-iconbtn {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--my-r-control);
+  /* remapped — rule #11: `.my-iconbtn` is an interactive control (a real <button>); the export's
+     var(--my-border) is for dividers/cards/non-interactive outlines only (see fidelity note). */
+  border: 1px solid var(--my-control-border);
+  background: var(--my-surface);
+  color: var(--my-ink);
+  font-size: var(--my-fs-body); /* export: literal 14px — exact match, lossless */
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--my-t-fast);
+}
+.my-iconbtn:hover { background: var(--my-surface-hover); }
+.my-iconbtn--accent {
+  border: 0;
+  background: var(--my-accent);
+  color: var(--my-surface); /* remapped from export's literal #fff — see fidelity note above */
+  font-size: var(--my-fs-body-lg); /* export: literal 17px — nearest step (16px, ~6% gap) */
+}
+.my-iconbtn--accent:hover { background: var(--my-accent-hover); }
+
+/* ═══ Overflow menu (⋯) ════════════════════════════════════════════════════ */
+.my-menu { position: relative; }
+.my-menu__panel {
+  position: absolute;
+  right: 0;
+  top: 36px;
+  width: 224px;
+  background: var(--my-surface);
+  border: 1px solid var(--my-border);
+  border-radius: var(--my-r-card); /* export: literal 10px — exact match, lossless */
+  box-shadow: var(--my-shadow-modal);
+  padding: 6px;
+  font-size: var(--my-fs-mono); /* export: literal 13px — exact match, lossless */
+  z-index: 40;
+}
+.my-menu__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: none;
+  color: var(--my-ink);
+  padding: 8px 10px;
+  border-radius: var(--my-r-control);
+  cursor: pointer;
+}
+.my-menu__item:hover { background: var(--my-surface-hover); }
+.my-menu__item--muted { color: var(--my-muted); }
+.my-menu__divider { height: 1px; background: var(--my-border); margin: 5px 4px; }
+
+/* ═══ Workspace split (left rail + detail) — the family list+detail pattern ══ */
+.my-split {
+  height: calc(100vh - 56px);
+  display: flex;
+  min-height: 0;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+.my-split__rail {
+  width: 320px;
+  flex: none;
+  border-right: 1px solid var(--my-border);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.my-split__detail { flex: 1; min-width: 0; overflow: auto; }
+
+.my-rail__head {
+  height: 76px;
+  box-sizing: border-box;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--my-border);
+}
+.my-rail__head-body { flex: 1; min-width: 0; }
+.my-rail__title {
+  font-size: var(--my-fs-body); /* export: literal 14px — exact match, lossless */
+  font-weight: var(--my-fw-bold);
+  letter-spacing: -.2px;
+}
+.my-rail__subtitle {
+  /* export: literal 11.5px — same tie as `.my-switcher__role`; --my-fs-caption chosen. */
+  font-size: var(--my-fs-caption);
+  color: var(--my-muted);
+}
+.my-rail__toolbar { padding: 12px 14px 0; }
+.my-rail__list {
+  flex: 1;
+  overflow: auto;
+  padding: 12px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.my-rail__group { display: flex; flex-direction: column; gap: 8px; }
+.my-rail__group-label {
+  /* export: literal 10.5px — nearest step is --my-fs-micro (11px, in-band); this is a list
+     section-ruler label ("TODAY", "YESTERDAY", …), the textbook --my-fs-micro case. */
+  font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-bold);
+  color: var(--my-muted);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.my-rail__empty {
+  text-align: center;
+  color: var(--my-muted);
+  font-size: var(--my-fs-caption); /* export: literal 12.5px — nearest step (matches ui-core's own
+    precedent of mapping the identical 12.5px value to --my-fs-caption, e.g. .my-search__icon) */
+  padding: 24px 8px;
+  text-wrap: pretty;
+}
+
+/* Selectable rail card (session, job, artifact…) */
+.my-rail-card {
+  text-align: left;
+  width: 100%;
+  background: var(--my-surface);
+  /* remapped — rule #11: RailCard renders as a real <button> (see src/Workspace.tsx); the
+     export's resting var(--my-border) is for dividers/cards/non-interactive outlines only. This
+     one is a judgment call (a "card" that is also a selectable control) — flagged in the report:
+     followed the same interactive-boundary precedent as `.my-iconbtn`/ui-core's `.btn--sec`. */
+  border: 1px solid var(--my-control-border);
+  border-radius: var(--my-r-card);
+  padding: 11px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  cursor: pointer;
+  transition: border-color var(--my-t-fast), background var(--my-t-fast);
+}
+.my-rail-card:hover { background: var(--my-surface-hover); }
+.my-rail-card.is-active {
+  background: var(--my-accent-soft);
+  border-color: var(--my-accent);
+  box-shadow: 0 0 0 3px var(--my-accent-soft);
+}
+.my-rail-card.is-warn { border-color: var(--my-warn); background: var(--my-warn-soft); }
+
+/* ═══ Settings rail + detail ═══════════════════════════════════════════════ */
+.my-settings__nav {
+  width: 260px;
+  flex: none;
+  border-right: 1px solid var(--my-border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: auto;
+}
+.my-settings__item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  padding: 8px 12px;
+  color: var(--my-muted);
+  font-weight: var(--my-fw-medium);
+  font-size: var(--my-fs-mono); /* export: literal 13px — exact match, lossless */
+  cursor: pointer;
+  transition: background var(--my-t-fast);
+}
+.my-settings__item:hover { background: var(--my-surface-hover); }
+.my-settings__item.is-active {
+  background: var(--my-accent-soft);
+  color: var(--my-accent-strong);
+  font-weight: var(--my-fw-bold);
+}
+.my-settings__detail { flex: 1; min-width: 0; overflow: auto; }
+
+/* ═══ App / page frame ═════════════════════════════════════════════════════ */
+.my-app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.my-app__main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+.my-page {
+  padding: 26px 32px 56px;
+  max-width: 860px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

@@ -50,6 +50,25 @@
         "@mythicalos/tokens",
       ],
     },
+    "packages/shell": {
+      "name": "@mythicalos/shell",
+      "version": "0.1.0",
+      "dependencies": {
+        "@mythicalos/preact-ui": "workspace:*",
+      },
+      "devDependencies": {
+        "preact": "^10.22.0",
+        "preact-render-to-string": "^6.5.13",
+        "typescript": "^5",
+      },
+      "peerDependencies": {
+        "@mythicalos/tokens": "^0.5.11",
+        "preact": "^10.22.0",
+      },
+      "optionalPeers": [
+        "@mythicalos/tokens",
+      ],
+    },
     "packages/ui-core": {
       "name": "@mythicalos/ui-core",
       "version": "0.1.0",
@@ -69,6 +88,8 @@
     "@mythicalos/preact-ui": ["@mythicalos/preact-ui@workspace:packages/preact-ui"],
 
     "@mythicalos/react-ui": ["@mythicalos/react-ui@workspace:packages/react-ui"],
+
+    "@mythicalos/shell": ["@mythicalos/shell@workspace:packages/shell"],
 
     "@mythicalos/ui-core": ["@mythicalos/ui-core@workspace:packages/ui-core"],
 
@@ -147,6 +168,8 @@
     "@mythicalos/preact-ui/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@mythicalos/react-ui/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "@mythicalos/shell/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@mythicalos/ui-core/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
   }
