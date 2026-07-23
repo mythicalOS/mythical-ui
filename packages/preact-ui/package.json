@@ -20,7 +20,7 @@
       "default": "./dist/index.js"
     }
   },
-  "files": ["dist", "README.md"],
+  "files": ["dist", "README.md", "NOTICE"],
   "peerDependencies": {
     "preact": "^10.22.0",
     "@mythicalos/tokens": "^0.5.11"
