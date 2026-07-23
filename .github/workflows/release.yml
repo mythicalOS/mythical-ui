@@ -61,14 +61,18 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Build FIRST: cross-package imports like `@mythicalos/ui-core/logic`
+      # resolve to built dist/, so typecheck of the dependent packages needs the
+      # dependency's dist present. `bun run --filter '*' build` builds in
+      # dependency order (ui-core before preact-ui/react-ui before shell).
+      - name: Build (all packages, dependency order)
+        run: bun run build
+
       - name: Typecheck (all packages)
         run: bun run typecheck
 
       - name: Unit tests (302)
         run: bun test
-
-      - name: Build (all packages)
-        run: bun run build
 
       # npm cannot resolve `workspace:` — rewrite to concrete versions first.
       - name: Resolve workspace deps to concrete versions
