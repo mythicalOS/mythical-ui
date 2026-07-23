@@ -1,0 +1,15 @@
+{
+  "name": "mythical-ui",
+  "version": "0.0.0",
+  "description": "mythicalOS component library — the framework-agnostic core, Preact + React bindings, and the Preact family shell. Built on @mythicalos/tokens.",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mythicalOS/mythical-ui.git"
+  },
+  "workspaces": [
+    "packages/*"
+  ]
+}
