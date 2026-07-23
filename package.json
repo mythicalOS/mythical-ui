@@ -5,11 +5,20 @@
   "type": "module",
   "private": true,
   "license": "Apache-2.0",
+  "scripts": {
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "build": "bun run --filter '*' build"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mythicalOS/mythical-ui.git"
   },
   "workspaces": [
     "packages/*"
-  ]
+  ],
+  "devDependencies": {
+    "bun-types": "^1.3.14",
+    "typescript": "^7.0.2"
+  }
 }
