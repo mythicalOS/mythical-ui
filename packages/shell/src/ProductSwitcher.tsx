@@ -30,7 +30,7 @@ export interface ProductSwitcherProps {
   current: string;
   /** registry list. Defaults to the shared PRODUCTS. */
   products?: Product[];
-  /** footer note. Defaults to the ASGER note. */
+  /** footer note. Defaults to the ASGARD note. */
   note?: string;
   /** (product) => void. Defaults to setting window.location to product.href. A product using a
    * client router passes its own navigate here. */

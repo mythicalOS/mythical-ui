@@ -113,9 +113,9 @@ describe("SwitcherPanel — the open panel's markup, exercised directly (see dep
 
   test("renders the footer note", () => {
     const html = renderToString(
-      <SwitcherPanel current="brokkr" products={PRODUCTS} note="ASGER note text" onPick={noop} />,
+      <SwitcherPanel current="brokkr" products={PRODUCTS} note="ASGARD note text" onPick={noop} />,
     );
-    expect(html).toContain("ASGER note text");
+    expect(html).toContain("ASGARD note text");
   });
 
   test("a custom products list is honored (adding a product is one registry entry)", () => {
