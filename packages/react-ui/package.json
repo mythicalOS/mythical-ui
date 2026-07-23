@@ -1,0 +1,48 @@
+{
+  "name": "@mythicalos/react-ui",
+  "version": "0.1.0",
+  "description": "mythicalOS thin React bindings over @mythicalos/ui-core — Button, Input/Toggle/Checkbox, MaskedSecretInput, EmptyState, ConfirmDialog/Scrim, Toast/ToastProvider, Chip, Card, Avatar, StatusLine, SearchInput, Banner, Gauge, and the usePoll/useInterval hooks. Render + framework wiring only — every class string, poll-scheduling math, glyph map, and text composition is derived by @mythicalos/ui-core so this binding and its Preact sibling can never drift. Apache-2.0.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mythicalOS/mythical-ui.git",
+    "directory": "packages/react-ui"
+  },
+  "homepage": "https://github.com/mythicalOS/mythical-ui#packages",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md", "NOTICE"],
+  "peerDependencies": {
+    "react": "^18.2.0 || ^19",
+    "react-dom": "^18.2.0 || ^19",
+    "@mythicalos/tokens": "^0.5.11"
+  },
+  "peerDependenciesMeta": {
+    "@mythicalos/tokens": { "optional": true }
+  },
+  "dependencies": {
+    "@mythicalos/ui-core": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "bun test",
+    "prepublishOnly": "bun run build && bun test && bun run typecheck"
+  },
+  "devDependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^5"
+  }
+}
