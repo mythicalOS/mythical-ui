@@ -28,4 +28,13 @@ export {
 
 export { gaugeTone, gaugeGeom, type GaugeGeom } from "./logic/gauge.ts";
 
-export { type Tone } from "./logic/tone.ts";
+export {
+  chipClass,
+  statusLineClass,
+  bannerClass,
+  BANNER_ICON,
+  type Tone,
+  type ChipTone,
+  type StatusTone,
+  type BannerTone,
+} from "./logic/tone.ts";

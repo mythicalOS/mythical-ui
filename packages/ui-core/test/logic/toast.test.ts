@@ -22,6 +22,5 @@ describe("composeToastText — the toast's visible title/body join", () => {
     const title = "Good-night";
     const body = "team stopped.";
     expect(composeToastText(title, body)).toBe("Good-night — team stopped.");
-    expect(body.toLowerCase()).not.toContain(title.toLowerCase());
   });
 });
