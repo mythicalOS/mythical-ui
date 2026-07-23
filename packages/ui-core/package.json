@@ -6,9 +6,20 @@
   "publishConfig": { "access": "public" },
   "exports": {
     "./logic": "./src/index.ts",
-    "./styles.css": "./styles.css"
+    "./styles.css": "./styles.css",
+    "./select": {
+      "types": "./src/select/mythical-select.d.ts",
+      "default": "./src/select/register.js"
+    }
   },
   "files": ["src", "styles.css", "README.md"],
-  "sideEffects": ["*.css"],
-  "scripts": { "typecheck": "tsc --noEmit" }
+  "sideEffects": ["*.css", "./src/select/register.js", "./src/select/mythical-select.js"],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test:select": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.61.1",
+    "typescript": "^5"
+  }
 }
