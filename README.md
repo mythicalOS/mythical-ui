@@ -1,10 +1,11 @@
 # mythical-ui
 
 The **mythicalOS component library** — the layer above `@mythicalos/tokens`.
-Built so a React `asgard` and the Preact family apps share the same components.
+Built so a React ASGARD and the Preact family apps share the same components.
 
-> **Status: private / work in progress.** Contents are being assembled per the
-> implementation plan before this repo is made public.
+> Four published packages, one layered system: a framework-agnostic core, thin
+> Preact and React bindings that provably render identical output, and the Preact
+> family shell.
 
 ## Packages
 

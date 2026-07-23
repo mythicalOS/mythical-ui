@@ -29,7 +29,7 @@
     "@mythicalos/tokens": { "optional": true }
   },
   "dependencies": {
-    "@mythicalos/ui-core": "workspace:*"
+    "@mythicalos/ui-core": "workspace:^"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

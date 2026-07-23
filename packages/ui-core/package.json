@@ -1,9 +1,12 @@
 {
   "name": "@mythicalos/ui-core",
   "version": "0.1.0",
+  "description": "mythicalOS framework-agnostic UI core — the pure logic (class derivation, poll scheduling, dialog/toast/gauge helpers), the token-driven component stylesheet, and the <mythical-select> form-associated web component. Zero framework runtime; the Preact and React bindings derive identical output from this package. Apache-2.0.",
   "type": "module",
   "license": "Apache-2.0",
-  "publishConfig": { "access": "public" },
+  "publishConfig": {
+    "access": "public"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/mythicalOS/mythical-ui.git",
@@ -25,13 +28,25 @@
       "default": "./src/select/register.js"
     }
   },
-  "files": ["dist", "styles.css", "src/select", "README.md", "NOTICE"],
-  "sideEffects": ["*.css", "./src/select/register.js", "./src/select/mythical-select.js"],
+  "files": [
+    "dist",
+    "styles.css",
+    "src/select",
+    "README.md",
+    "NOTICE"
+  ],
+  "sideEffects": [
+    "*.css",
+    "./src/select/register.js",
+    "./src/select/mythical-select.js"
+  ],
   "peerDependencies": {
     "@mythicalos/tokens": "^0.5.11"
   },
   "peerDependenciesMeta": {
-    "@mythicalos/tokens": { "optional": true }
+    "@mythicalos/tokens": {
+      "optional": true
+    }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

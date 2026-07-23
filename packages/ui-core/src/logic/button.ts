@@ -7,6 +7,7 @@ export type BtnVariant = "pri" | "acc" | "sec" | "gho" | "dan";
 export interface BtnState {
   loading?: boolean;
   disabled?: boolean;
+  /** Accepted for source-parity with the internal origin surface; currently a no-op — no `.btn--block` selector ships. */
   block?: boolean;
   small?: boolean;
 }

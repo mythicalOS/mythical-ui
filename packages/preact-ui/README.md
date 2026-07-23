@@ -59,7 +59,8 @@ atoms (`.my-chip`, `.my-status`, `.my-card`, `.my-avatar`, `.my-search`, `.my-ba
 
 ## Provenance
 
-Ports the internal `@mythicalos/preact-ui` v0.1.0 (the frozen production component surface,
+Version 0.2.0 marks the public release as the successor of the internal v0.1.0 surface
+(same components and props; derivation moved into `@mythicalos/ui-core`). Ports the internal `@mythicalos/preact-ui` v0.1.0 (the frozen production component surface,
 still consumed by skuld + brokkr) plus the 7 atoms design-export's workspace carried as "proposed
 additions" (Chip, Card, Avatar, StatusLine, SearchInput, Banner, Gauge). All class/behavior
 derivation that used to live inline in those source files now lives in `@mythicalos/ui-core`.

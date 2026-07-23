@@ -30,7 +30,7 @@
     "@mythicalos/tokens": { "optional": true }
   },
   "dependencies": {
-    "@mythicalos/preact-ui": "workspace:*"
+    "@mythicalos/preact-ui": "workspace:^"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

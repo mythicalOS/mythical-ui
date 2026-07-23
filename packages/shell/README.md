@@ -59,7 +59,7 @@ opens the family panel from the shared registry (`PRODUCTS`, in `src/products.ts
 />
 ```
 
-Adding a product to the whole family is **one entry** in `PRODUCTS`. ASGER is intentionally held
+Adding a product to the whole family is **one entry** in `PRODUCTS`. ASGARD is intentionally held
 out and shown as a footer note (`FAMILY_NOTE`) until it ships.
 
 ## useTheme — storageKey
@@ -116,3 +116,6 @@ choice.
 ## License
 
 Apache-2.0.
+
+The stylesheet also ships a small `.my-statusline` utility row (dot + text)
+with no dedicated component — pair it with the atoms' `statusLineClass` tones.

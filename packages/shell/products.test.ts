@@ -72,12 +72,12 @@ describe("PRODUCTS — exact registry content (ported verbatim from design-expor
   });
 });
 
-describe("FAMILY_NOTE — the ASGER footer note", () => {
+describe("FAMILY_NOTE — the ASGARD footer note", () => {
   test("matches the export's copy exactly", () => {
-    expect(FAMILY_NOTE).toBe("ASGER — the command center that spans the family — arrives later.");
+    expect(FAMILY_NOTE).toBe("ASGARD — the command center that spans the family — arrives later.");
   });
 
-  test("ASGER is intentionally absent from PRODUCTS itself", () => {
-    expect(PRODUCTS.some((p) => p.key === "asger" || p.name === "ASGER")).toBe(false);
+  test("ASGARD is intentionally absent from PRODUCTS itself", () => {
+    expect(PRODUCTS.some((p) => p.key === "asgard" || p.name === "ASGARD")).toBe(false);
   });
 });

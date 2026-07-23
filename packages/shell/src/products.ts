@@ -63,7 +63,7 @@ export const PRODUCTS: Product[] = [
   },
 ];
 
-// ASGER — the command center that spans the family — is intentionally NOT in
+// ASGARD — the command center that spans the family — is intentionally NOT in
 // PRODUCTS yet. It is surfaced as a footer note in the switcher until it ships.
 export const FAMILY_NOTE =
-  "ASGER — the command center that spans the family — arrives later.";
+  "ASGARD — the command center that spans the family — arrives later.";
