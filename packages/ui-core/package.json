@@ -1,0 +1,10 @@
+{
+  "name": "@mythicalos/ui-core",
+  "version": "0.1.0",
+  "type": "module",
+  "license": "Apache-2.0",
+  "publishConfig": { "access": "public" },
+  "exports": { "./logic": "./src/index.ts" },
+  "files": ["src", "README.md"],
+  "scripts": { "typecheck": "tsc --noEmit" }
+}
