@@ -1,6 +1,6 @@
 {
   "name": "@mythicalos/shell",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "mythicalOS Preact-only FAMILY SHELL — the modules that must be identical across the BROKKR/SKULD/SAGA/EDDA product UIs: ProductSwitcher (the logo IS the family menu), TopBar, NavTabs, WorkspaceSplit + Rail*, SettingsLayout/SettingsNav, the family product registry, and useTheme. Built on @mythicalos/preact-ui's atoms. A future React product (asgard) gets its own React shell later — this package is deliberately Preact-only; no React, no compat. Apache-2.0.",
   "license": "Apache-2.0",
   "type": "module",

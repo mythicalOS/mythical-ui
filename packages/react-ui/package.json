@@ -1,6 +1,6 @@
 {
   "name": "@mythicalos/react-ui",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "mythicalOS thin React bindings over @mythicalos/ui-core — Button, Input/Toggle/Checkbox, MaskedSecretInput, EmptyState, ConfirmDialog/Scrim, Toast/ToastProvider, Chip, Card, Avatar, StatusLine, SearchInput, Banner, Gauge, and the usePoll/useInterval hooks. Render + framework wiring only — every class string, poll-scheduling math, glyph map, and text composition is derived by @mythicalos/ui-core so this binding and its Preact sibling can never drift. Apache-2.0.",
   "license": "Apache-2.0",
   "type": "module",

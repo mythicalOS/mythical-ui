@@ -1,6 +1,6 @@
 {
   "name": "@mythicalos/ui-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "mythicalOS framework-agnostic UI core — the pure logic (class derivation, poll scheduling, dialog/toast/gauge helpers), the token-driven component stylesheet, and the <mythical-select> form-associated web component. Zero framework runtime; the Preact and React bindings derive identical output from this package. Apache-2.0.",
   "type": "module",
   "license": "Apache-2.0",
