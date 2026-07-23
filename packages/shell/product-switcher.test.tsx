@@ -25,13 +25,14 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToString } from "preact-render-to-string";
+import { PRODUCTS, ProductSwitcher, type Product } from "./src/index.ts";
 import {
-  PRODUCTS,
-  ProductSwitcher,
   resolveSwitcherPick,
   SwitcherPanel,
-  type Product,
-} from "./src/index.ts";
+  type ResolveSwitcherPickHandlers,
+  type SwitcherPickResult,
+  type SwitcherPanelProps,
+} from "./src/ProductSwitcher.tsx";
 
 const noop = () => {};
 

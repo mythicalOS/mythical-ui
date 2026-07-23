@@ -48,6 +48,7 @@ export function RailHead({ title, subtitle, action }: RailHeadProps) {
     <div class="my-rail__head">
       <div class="my-rail__head-body">
         <div class="my-rail__title">{title}</div>
+        {/* deliberate deviation from design-export's && form to avoid Preact's falsy-render-of-0 artifact; behavior identical for string/undefined */}
         {subtitle ? <div class="my-rail__subtitle">{subtitle}</div> : null}
       </div>
       {action}
@@ -72,6 +73,7 @@ export interface RailGroupProps {
 export function RailGroup({ label, children }: RailGroupProps) {
   return (
     <div class="my-rail__group">
+      {/* deliberate deviation from design-export's && form to avoid Preact's falsy-render-of-0 artifact; behavior identical for string/undefined */}
       {label ? <div class="my-rail__group-label">{label}</div> : null}
       {children}
     </div>

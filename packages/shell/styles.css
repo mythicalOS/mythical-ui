@@ -393,11 +393,9 @@
   text-align: left;
   width: 100%;
   background: var(--my-surface);
-  /* remapped — rule #11: RailCard renders as a real <button> (see src/Workspace.tsx); the
-     export's resting var(--my-border) is for dividers/cards/non-interactive outlines only. This
-     one is a judgment call (a "card" that is also a selectable control) — flagged in the report:
-     followed the same interactive-boundary precedent as `.my-iconbtn`/ui-core's `.btn--sec`. */
-  border: 1px solid var(--my-control-border);
+  /* resting border follows the design export (--my-border, rule #11 "cards"). A control-border
+     upgrade would be a design-book decision. */
+  border: 1px solid var(--my-border);
   border-radius: var(--my-r-card);
   padding: 11px 12px;
   display: flex;

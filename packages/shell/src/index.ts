@@ -13,15 +13,6 @@ export { Logo, LogoMark, type LogoProps, type LogoMarkProps } from "./Logo.js";
 export {
   ProductSwitcher,
   type ProductSwitcherProps,
-  // internal-but-exported helpers (not part of the export surface named in the design-export
-  // README's export table) kept importable for consumers who need the pure routing decision or
-  // want to render the panel outside the trigger — and for this package's own tests, which need
-  // both to exercise ProductSwitcher's behavior without a DOM (see product-switcher.test.tsx).
-  resolveSwitcherPick,
-  SwitcherPanel,
-  type ResolveSwitcherPickHandlers,
-  type SwitcherPickResult,
-  type SwitcherPanelProps,
 } from "./ProductSwitcher.js";
 export { TopBar, type TopBarProps } from "./TopBar.js";
 export { NavTabs, type NavTabsProps, type NavTabItem } from "./NavTabs.js";

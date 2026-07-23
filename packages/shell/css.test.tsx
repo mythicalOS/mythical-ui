@@ -32,11 +32,11 @@ import {
   RailList,
   SettingsLayout,
   SettingsNav,
-  SwitcherPanel,
   TopBar,
   WorkspaceSplit,
   PRODUCTS,
 } from "./src/index.ts";
+import { SwitcherPanel } from "./src/ProductSwitcher.tsx";
 
 const stylesPath = join(import.meta.dir, "styles.css");
 const tokensPath = join(import.meta.dir, "..", "..", "..", "mythical-design", "tokens.css");
@@ -103,10 +103,10 @@ describe("styles.css — (c) every referenced --my-* token exists in the canonic
     expect(rule?.[0]).toContain("var(--my-control-border)");
   });
 
-  test("regression guard: .my-rail-card's resting border uses --my-control-border, not --my-border", () => {
+  test("regression guard: .my-rail-card's resting border uses --my-border per design export", () => {
     const rule = css.match(/\.my-rail-card\s*\{[^}]*\}/);
     expect(rule).not.toBeNull();
-    expect(rule?.[0]).toContain("var(--my-control-border)");
+    expect(rule?.[0]).toContain("var(--my-border)");
   });
 });
 
