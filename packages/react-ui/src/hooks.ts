@@ -88,11 +88,23 @@ export function usePoll<T>(
     let timer: ReturnType<typeof setTimeout> | undefined;
     let stopped = false;
     let failures = 0; // consecutive failed reads — drives the ×2 backoff ladder (reset on success)
+    // true from the moment a tick fires its fetch until that fetch settles — the ONE in-flight
+    // read this call site is allowed to have. The visibility handler below must never start a
+    // second tick while this is true; it lets the in-flight tick's own onSettled → schedule()
+    // continue the single chain instead (a prior version fired an immediate tick on visibility
+    // return unconditionally, which could open a second concurrent chain).
+    let pending = false;
 
     const isHidden = () => typeof document !== "undefined" && document.hidden === true;
 
     const schedule = () => {
       if (!alive || stopped) return;
+      // Clear any already-armed timer before arming a new one — defense in depth so a stray
+      // double-settle can never leave an earlier timer orphaned (never cleared, still firing).
+      if (timer) {
+        clearTimeout(timer);
+        timer = undefined;
+      }
       // U7 pause: while the document is hidden no timer is armed — the
       // visibilitychange handler below refreshes immediately on return.
       if (isHidden()) return;
@@ -102,8 +114,9 @@ export function usePoll<T>(
     // diff r3-F1: every response routes through runPollTick — stamped with the epoch at fire
     // time, applied only while that epoch is still live. A stale settle leaves loading alone
     // (the reset already set it for the new epoch) but still rearms via schedule()'s own guards.
-    const tick = () =>
-      runPollTick({
+    const tick = () => {
+      pending = true;
+      return runPollTick({
         fetch: () => fnRef.current(),
         guard,
         isAlive: () => alive && !stopped,
@@ -121,7 +134,10 @@ export function usePoll<T>(
           if (applied) setLoading(false);
           schedule();
         },
+      }).finally(() => {
+        pending = false;
       });
+    };
 
     const onVisibility = () => {
       if (!alive || stopped) return;
@@ -129,7 +145,9 @@ export function usePoll<T>(
         clearTimeout(timer);
         timer = undefined;
       }
-      if (!isHidden()) void tick(); // immediate refresh on visibility return
+      // Immediate refresh on visibility return — but only when idle. A tick already in flight
+      // keeps its place as the single chain: its own onSettled → schedule() picks up from here.
+      if (!isHidden() && !pending) void tick();
     };
     if (typeof document !== "undefined") document.addEventListener("visibilitychange", onVisibility);
 
