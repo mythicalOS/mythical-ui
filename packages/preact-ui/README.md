@@ -46,7 +46,7 @@ import "@mythicalos/ui-core/styles.css"; // this package ships NO CSS of its own
   `StatusTone`, `BannerTone`, `Tone`, `DialogBullet`, `ToastStatus`/`ToastSpec`/`ToastBus`), and the
   hook contracts (`PollResult`, `PollEpochGuard`, `PollTickIO`, `GaugeGeom`).
 - Re-exported core support API — so a consumer can import everything it needs from this one
-  package, exactly as it could from mythical-skuld's original `@mythicalos/preact-ui`:
+  package, exactly as it could from the internal, original `@mythicalos/preact-ui`:
   `buttonClass`, `typedNameMatches`, `BULLET_ICON`, `composeToastText`, `TOAST_SEP`, `chipClass`,
   `statusLineClass`, `bannerClass`, `BANNER_ICON`, `gaugeTone`, `gaugeGeom`, `nextPollDelay`,
   `makePollEpochGuard`, `runPollTick`, `POLL_JITTER_RATIO`, `POLL_BACKOFF_CAP_MS`.
@@ -59,7 +59,7 @@ atoms (`.my-chip`, `.my-status`, `.my-card`, `.my-avatar`, `.my-search`, `.my-ba
 
 ## Provenance
 
-Ports mythical-skuld's `@mythicalos/preact-ui` v0.1.0 (the frozen production component surface,
+Ports the internal `@mythicalos/preact-ui` v0.1.0 (the frozen production component surface,
 still consumed by skuld + brokkr) plus the 7 atoms design-export's workspace carried as "proposed
 additions" (Chip, Card, Avatar, StatusLine, SearchInput, Banner, Gauge). All class/behavior
 derivation that used to live inline in those source files now lives in `@mythicalos/ui-core`.

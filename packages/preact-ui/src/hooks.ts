@@ -5,7 +5,7 @@
 // capped at 60 s (reset on success), and `document.hidden` pauses the loop with an immediate
 // refresh on visibility return.
 //
-// Ported from mythical-skuld's packages/preact-ui/src/hooks.ts. The pure, DOM-free scheduling math
+// Ported from the family's internal Preact atoms package (hooks.ts). The pure, DOM-free scheduling math
 // (`nextPollDelay`, `makePollEpochGuard`, `runPollTick`, `shouldResetEpoch` — the r3-F1 fire-time
 // epoch stamp) was defined locally there; it now lives in `@mythicalos/ui-core` (Task 2, ported
 // verbatim). Only the actual Preact hooks (`usePoll`/`useInterval`, which import `preact/hooks` and

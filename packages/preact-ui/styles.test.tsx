@@ -7,7 +7,7 @@
 // style-src 'self', U18).
 //
 // The token-only / hex-literal / declared-custom-property / toast-border scans that
-// mythical-skuld's own styles.test.tsx also ran are CSS-CONTENT checks against a file this package
+// the internal Preact atoms package's own styles.test.tsx also ran are CSS-CONTENT checks against a file this package
 // doesn't own or ship — that coverage lives in ui-core's own test/css.test.ts now and is not
 // duplicated here.
 

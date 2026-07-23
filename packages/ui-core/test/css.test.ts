@@ -10,7 +10,8 @@
 //       app/page/menu/logo) leak in here — this package owns atoms only,
 //   (e) every class the Task 2 logic actually emits has a real selector in this file.
 //
-// Scoping note on (b): styles.css has two sections — a BASE that is mythical-skuld's shipped,
+// Scoping note on (b): styles.css has two sections — a BASE that is the internal Preact atoms
+// package's shipped,
 // already-gated atom sheet taken verbatim (per the task, its class names and rules are not to be
 // touched), and an ADDITIONS section newly authored/extracted for this task. The base predates
 // the font-size-must-be-a-token discipline and is full of fine-tuned literal px sizes (11px,

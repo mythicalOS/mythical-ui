@@ -1,5 +1,5 @@
-// @mythicalos/preact-ui — barrel. Mirrors mythical-skuld's packages/preact-ui/src/index.ts export
-// surface (the frozen v0.1.0 contract mythical-brokkr's future port depends on) plus the 7 new
+// @mythicalos/preact-ui — barrel. Mirrors the family's internal Preact atoms package's src/index.ts
+// export surface (the frozen v0.1.0 contract BROKKR's future port depends on) plus the 7 new
 // atoms graduated from design-export's proposed additions (Chip, Card, Avatar, StatusLine,
 // SearchInput, Banner, Gauge — Task 6). Serve `@mythicalos/ui-core/styles.css` (after
 // `@mythicalos/tokens`) so these components' classes resolve — this package ships no CSS of its own.

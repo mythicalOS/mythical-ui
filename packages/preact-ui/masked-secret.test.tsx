@@ -4,7 +4,7 @@
 // autocomplete="new-password" — a replacement credential is never displayed as plaintext while
 // typed, and the browser never offers to save/fill it. The filled state stays a readonly mask.
 //
-// Ported verbatim from mythical-skuld's packages/preact-ui/masked-secret.test.tsx.
+// Ported verbatim from the family's internal Preact atoms package (masked-secret.test.tsx).
 
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "preact-render-to-string";

@@ -4,7 +4,7 @@
 // error tone. unconfigured ⇒ the live tip is the setup step; asleep ⇒ the hollow tip waits; neutral
 // ⇒ no spine art (a plain designed empty). unconfigured/asleep carry the spine motif.
 //
-// Ported verbatim from mythical-skuld's packages/preact-ui/src/EmptyState.tsx.
+// Ported verbatim from the family's internal Preact atoms package (EmptyState.tsx).
 
 import type { ComponentChildren } from "preact";
 

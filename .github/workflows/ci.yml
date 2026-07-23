@@ -118,13 +118,16 @@ jobs:
       # Denylist gate: internal demo/dev strings must never appear in this
       # PUBLIC repo. Keep this list in sync with the genericize pass done for
       # Task 9 — any hit here is a release blocker, not a style nit.
-      # Scan excludes .git (VCS internals) and .github (this workflow file
-      # necessarily contains the literal patterns below, to search for them —
-      # excluding it avoids the gate matching itself) and node_modules.
+      # Scan excludes .git (VCS internals), node_modules, and this workflow
+      # file itself. The exclusion is defense in depth, not the primary fix:
+      # every private-repo name below is split by a single-character bracket
+      # class so this file never spells one out contiguously in plaintext —
+      # a public workflow file listing private repo names verbatim would
+      # itself be exactly the leak this gate exists to catch.
       - name: Genericize grep gate (banned internal-demo terms)
         run: |
           set -euo pipefail
-          pattern='mythical-project|agent-web|mythical-server|agent-daemon|agent-local-mcp|/private/tmp|hameddk|esmiley|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
+          pattern='mythical-proj[e]ct|agent-web|mythical-serv[e]r|agent-daemo[n]|agent-local-mc[p]|mythical-sk[u]ld|mythical-sa[g]a|mythical-ed[d]a|mythical-brok[k]r|agent-playbook[s]|agent-skill[s]|agent-remote-mc[p]|/private/tmp|hamed[d]k|esmiley|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
           if grep -rliIE "$pattern" . \
               --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules
           then
@@ -132,6 +135,22 @@ jobs:
             exit 1
           fi
           echo "genericize gate: clean"
+
+      # Separate case-sensitive check for the internal decision-maker moniker
+      # (an all-caps role term). It can't join the pattern above: that gate
+      # greps case-insensitively (-i), so folding an all-caps word in would
+      # also flag the same word used lowercase in ordinary prose and fail the
+      # build on false positives. Self-safe for the same reason as above —
+      # the term is bracket-split so this file doesn't spell it out either.
+      - name: Genericize grep gate (internal role moniker, case-sensitive)
+        run: |
+          set -euo pipefail
+          if grep -rlI --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules -E '\bB[O]SS\b' .
+          then
+            echo "::error::internal role moniker found (case-sensitive) — see file(s) listed above"
+            exit 1
+          fi
+          echo "genericize gate (role moniker): clean"
 
       - name: Set up Python
         uses: actions/setup-python@v5

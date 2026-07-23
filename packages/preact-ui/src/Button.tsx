@@ -3,7 +3,7 @@
 // each × default/hover/active/focus/disabled/loading). Classes only. Loading keeps the label
 // (stable width), shows a currentColor spinner, and is inert + aria-busy (book §6).
 //
-// Ported from mythical-skuld's packages/preact-ui/src/Button.tsx. The class derivation
+// Ported from the family's internal Preact atoms package (Button.tsx). The class derivation
 // (`buttonClass`) that file computed locally in a sibling `derive.ts` now lives in
 // `@mythicalos/ui-core` (Task 2) — this binding only renders, it never builds the class string
 // itself.

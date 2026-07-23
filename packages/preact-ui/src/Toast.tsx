@@ -4,7 +4,7 @@
 // alone). Auto-dismiss every tone on one cadence; each stacked toast runs its own timer. Max 3
 // visible — older collapse into "+n more".
 //
-// Ported from mythical-skuld's packages/preact-ui/src/Toast.tsx. `composeToastText`/`TOAST_SEP`
+// Ported from the family's internal Preact atoms package (Toast.tsx). `composeToastText`/`TOAST_SEP`
 // were defined locally there — they now live in `@mythicalos/ui-core` (Task 2, ported verbatim);
 // the tone→icon/dismiss-cadence lookup tables stay local (literal presentational maps, not
 // branchy derivation — ui-core's tone.ts has no toast-icon module).

@@ -1,5 +1,5 @@
 // @mythicalos/ui-core — the pure toast types + text-composition helper (ds/components-toasts).
-// Ported from mythical-skuld's packages/preact-ui/src/toast-context.ts (the `ToastStatus`/`ToastSpec`/
+// Ported from the family's internal Preact atoms package (toast-context.ts) (the `ToastStatus`/`ToastSpec`/
 // `ToastBus` types) and src/Toast.tsx (`composeToastText`/`TOAST_SEP`). The `ToastContext`/`useToast`
 // bus wiring (createContext/useContext) and the `Toast`/`ToastProvider` renderers are Preact-bound
 // and stay in the Preact binding package — this package must never import `preact`.

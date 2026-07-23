@@ -1,5 +1,5 @@
 // @mythicalos/ui-core — the pure, DOM-free U7 polling policy math + fire-time epoch guard. Ported
-// verbatim (names + signatures identical) from mythical-skuld's packages/preact-ui/src/hooks.ts.
+// verbatim (names + signatures identical) from the family's internal Preact atoms package (hooks.ts).
 // The Preact `usePoll`/`useInterval` hook wrappers stay in the Preact binding package — they import
 // `preact/hooks`, which this package must never depend on. Everything here is the pure math those
 // hooks are built on: per-call interval, ±20% jitter on every delay, exponential ×2 backoff on

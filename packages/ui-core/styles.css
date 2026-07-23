@@ -6,7 +6,7 @@
    `--my-*` custom property that flips under [data-theme="dark"]. Apache-2.0. */
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════
-   BASE — ported verbatim from mythical-skuld's packages/preact-ui/styles.css (the shipped,
+   BASE — ported verbatim from the family's internal Preact atoms package (styles.css) (the shipped,
    codex-gated atom sheet: buttons, inputs/toggles/checkboxes, the secret-slot chip, toasts,
    dialogs, empty states). Class names are unchanged — these are exactly what buttonClass et al.
    emit and what the skuld/brokkr consumer tests assert.

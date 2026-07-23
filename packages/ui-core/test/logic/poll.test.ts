@@ -1,4 +1,4 @@
-// test/logic/poll.test.ts — ported from mythical-skuld's packages/preact-ui/hooks.test.ts, repointed
+// test/logic/poll.test.ts — ported from the family's internal Preact atoms package (hooks.test.ts), repointed
 // to import from the new ui-core logic module. The U7 polling policy math + fire-time epoch guard
 // are pure/DOM-free; the source file's final describe block ("usePoll routes every response through
 // the epoch guard" — a source scan of hooks.ts's `usePoll`) is NOT ported here since `usePoll` itself

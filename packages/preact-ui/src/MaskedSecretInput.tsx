@@ -5,7 +5,7 @@
 // chip ("unconfigured is a valid state"). Submitting a new value is the PARENT's concern (it PUTs
 // to the secrets route and never reads the value back); this component is presentation + entry only.
 //
-// Ported verbatim from mythical-skuld's packages/preact-ui/src/MaskedSecretInput.tsx.
+// Ported verbatim from the family's internal Preact atoms package (MaskedSecretInput.tsx).
 
 import { useState } from "preact/hooks";
 import { Button } from "./Button.js";

@@ -1,4 +1,4 @@
-// test/logic/button.test.ts — ported from mythical-skuld's packages/preact-ui/ (component-derive.test.ts's
+// test/logic/button.test.ts — ported from the family's internal Preact atoms package (component-derive.test.ts's
 // buttonClass block, asserted there against the package export after the skuld-s5 U19 swap), repointed
 // to import from the new ui-core logic module.
 

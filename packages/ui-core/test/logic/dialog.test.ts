@@ -1,4 +1,4 @@
-// test/logic/dialog.test.ts — ported from mythical-skuld's packages/preact-ui/confirm.test.tsx, the
+// test/logic/dialog.test.ts — ported from the family's internal Preact atoms package (confirm.test.tsx), the
 // `typedNameMatches` describe block only (the `ConfirmDialog`/`Scrim` render-contract tests in that
 // file exercise a Preact JSX renderer, which stays in the Preact binding package — out of scope here).
 

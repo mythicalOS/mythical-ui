@@ -6,7 +6,7 @@
 // commons; app-specific wrappers compose them in the app (design note §1b-D21: neutral prop
 // names only — no product domain vocabulary leaks from this package).
 //
-// Ported from mythical-skuld's packages/preact-ui/src/ConfirmDialog.tsx. `typedNameMatches` and
+// Ported from the family's internal Preact atoms package (ConfirmDialog.tsx). `typedNameMatches` and
 // `BULLET_ICON`/`DialogBullet` were defined locally there — they now live in `@mythicalos/ui-core`
 // (Task 2, ported verbatim) so this binding only renders; the typed-name gate decision is a single
 // core function call, never re-implemented here.

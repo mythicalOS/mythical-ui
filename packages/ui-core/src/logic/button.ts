@@ -1,5 +1,5 @@
 // @mythicalos/ui-core — PURE, DOM-free button-class derivation (design book ds/components-buttons).
-// Ported verbatim (name + signature identical) from mythical-skuld's packages/preact-ui/src/derive.ts
+// Ported verbatim (name + signature identical) from the family's internal Preact atoms package (derive.ts)
 // so the Preact and React bindings both derive the same class string from one source.
 
 export type BtnVariant = "pri" | "acc" | "sec" | "gho" | "dan";

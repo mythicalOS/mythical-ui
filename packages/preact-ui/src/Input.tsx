@@ -3,7 +3,7 @@
 // for validation failures; empty/unset renders neutral ("unconfigured is a valid state"); the error
 // message always pairs an icon + text under the field, never the border alone (book §6).
 //
-// Ported verbatim from mythical-skuld's packages/preact-ui/src/Input.tsx. `@mythicalos/ui-core`
+// Ported verbatim from the family's internal Preact atoms package (Input.tsx). `@mythicalos/ui-core`
 // has no equivalent `inputClass`/`toggleClass`/`checkboxClass` logic module (Task 2 only extracted
 // buttonClass/typedNameMatches/composeToastText/gaugeTone-gaugeGeom/chipClass/statusLineClass/
 // bannerClass) — the small boolean-flag class lists below are literal, structural (the same

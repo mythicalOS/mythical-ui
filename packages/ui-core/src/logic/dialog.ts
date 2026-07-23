@@ -1,5 +1,5 @@
 // @mythicalos/ui-core — the pure, DOM-free confirm-dialog helpers (ds/components-dialogs). Ported
-// verbatim (names + signatures identical) from mythical-skuld's packages/preact-ui/src/ConfirmDialog.tsx.
+// verbatim (names + signatures identical) from the family's internal Preact atoms package (ConfirmDialog.tsx).
 // The `ConfirmDialog`/`Scrim` renderers stay in the framework bindings; this module keeps only the
 // prop-shape types and the typed-name-match gate that drives them.
 

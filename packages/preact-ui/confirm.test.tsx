@@ -6,7 +6,7 @@
 // skuld secrets delete consumes exactly this). The match logic is the pure `typedNameMatches`,
 // now imported (not reimplemented) from `@mythicalos/ui-core`.
 //
-// Ported verbatim from mythical-skuld's packages/preact-ui/confirm.test.tsx.
+// Ported verbatim from the family's internal Preact atoms package (confirm.test.tsx).
 
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "preact-render-to-string";

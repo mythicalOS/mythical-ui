@@ -3,7 +3,7 @@
 // bus out so both family UIs share one implementation. The app provides <ToastProvider> at its root
 // and components push via useToast().
 //
-// Ported from mythical-skuld's packages/preact-ui/src/toast-context.ts. The `ToastStatus`/
+// Ported from the family's internal Preact atoms package (toast-context.ts). The `ToastStatus`/
 // `ToastSpec`/`ToastBus` types were declared locally there — they now live in `@mythicalos/ui-core`
 // (Task 2, ported verbatim); only the Preact `createContext`/`useContext` wiring stays here.
 

@@ -1,9 +1,9 @@
-// test/logic/toast.test.ts — ported from mythical-brokkr's ui/tests/modal-helpers.test.ts, the
-// `composeToastText` describe block (the pure text-join helper's home test — mythical-skuld's own
-// preact-ui package never had a dedicated composeToastText unit test, only this downstream consumer
-// did). The doubled-prefix regression case is adapted to inline literals here instead of the
-// product-specific `GOOD_NIGHT_TOAST_TITLE`/`GOOD_NIGHT_TOAST_BODY` constants, which belong to
-// mythical-brokkr, not this framework-agnostic core.
+// test/logic/toast.test.ts — ported from BROKKR's internal ui/tests/modal-helpers.test.ts, the
+// `composeToastText` describe block (the pure text-join helper's home test — the internal
+// Preact atoms package never had a dedicated composeToastText unit test, only this downstream
+// consumer did). The doubled-prefix regression case is adapted to inline literals here instead of
+// the product-specific `GOOD_NIGHT_TOAST_TITLE`/`GOOD_NIGHT_TOAST_BODY` constants, which belong to
+// BROKKR, not this framework-agnostic core.
 
 import { describe, expect, test } from "bun:test";
 import { composeToastText, TOAST_SEP } from "../../src/logic/toast.ts";
