@@ -127,7 +127,7 @@ jobs:
       - name: Genericize grep gate (banned internal-demo terms)
         run: |
           set -euo pipefail
-          pattern='mythical-proj[e]ct|agent-web|mythical-serv[e]r|agent-daemo[n]|agent-local-mc[p]|mythical-sk[u]ld|mythical-sa[g]a|mythical-ed[d]a|mythical-brok[k]r|agent-playbook[s]|agent-skill[s]|agent-remote-mc[p]|/private/tmp|hamed[d]k|esmiley|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
+          pattern='mythical-proj[e]ct|agent-we[b]|mythical-serv[e]r|agent-daemo[n]|agent-local-mc[p]|mythical-sk[u]ld|mythical-sa[g]a|mythical-ed[d]a|mythical-brok[k]r|agent-playbook[s]|agent-skill[s]|agent-remote-mc[p]|/private/tmp|hamed[d]k|esmile[y]|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
           if grep -rliIE "$pattern" . \
               --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules
           then
