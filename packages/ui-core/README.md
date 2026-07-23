@@ -14,6 +14,17 @@ This package MUST NOT import `preact` or `react` — see `test/agnostic.test.ts`
 import { buttonClass, nextPollDelay, typedNameMatches } from "@mythicalos/ui-core/logic";
 ```
 
+## Styles
+
+`./styles.css` is the component stylesheet — the atom classes the logic above derives (buttons,
+chips, status lines, banners, gauges, inputs/toggles/checkboxes, toasts, dialogs, empty states).
+Serve it AFTER `@mythicalos/tokens`' stylesheet; every value resolves through a `--my-*` custom
+property.
+
+```ts
+import "@mythicalos/ui-core/styles.css";
+```
+
 ## License
 
 Apache-2.0.

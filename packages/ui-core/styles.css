@@ -1,0 +1,302 @@
+/* @mythicalos/ui-core — component stylesheet (Task 3). The CSS classes the pure logic in
+   src/logic/ derives (buttonClass, chipClass, statusLineClass, bannerClass, gaugeTone/gaugeGeom)
+   and that BOTH the Preact and React bindings render for the same visual result from one shared
+   source. Classes + CSS custom properties only — no inline styles. Serve this AFTER
+   @mythicalos/tokens' styles.css; every color/spacing/radius/font-size below resolves through a
+   `--my-*` custom property that flips under [data-theme="dark"]. Apache-2.0. */
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   BASE — ported verbatim from mythical-skuld's packages/preact-ui/styles.css (the shipped,
+   codex-gated atom sheet: buttons, inputs/toggles/checkboxes, the secret-slot chip, toasts,
+   dialogs, empty states). Class names are unchanged — these are exactly what buttonClass et al.
+   emit and what the skuld/brokkr consumer tests assert.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── base helpers ─────────────────────────────────────────────────────── */
+.mono { font-family: var(--my-font-mono); font-size: var(--my-fs-mono); }
+.tnum { font-variant-numeric: tabular-nums; }
+.muted { color: var(--my-muted); }
+.hidden { display: none; }
+
+/* shared focus ring (design rule 6 — identical everywhere, both themes) */
+.btn:focus-visible, .input:focus-visible,
+.tog:focus-visible, .cb:focus-visible, .rep:focus-visible,
+a:focus-visible, .link:focus-visible, .is-focus {
+  outline: 2px solid var(--my-accent);
+  outline-offset: 2px;
+}
+
+/* ── buttons (ds/components-buttons: 5 variants × 6 states) ───────────── */
+.btn {
+  border-radius: var(--my-r-control); padding: 8px 16px;
+  font-weight: var(--my-fw-medium); font-size: var(--my-fs-body);
+  border: 1px solid transparent; font-family: inherit; cursor: pointer;
+  transition: background var(--my-t-fast), border-color var(--my-t-fast);
+  display: inline-flex; align-items: center; gap: var(--my-sp-2); justify-content: center;
+}
+.btn--pri { background: var(--my-ink); color: var(--my-surface); }
+.btn--pri:hover, .btn--pri.is-hover { background: var(--my-ink-hover); }
+/* §1a-5: pressed collapses onto the hover token step ("hover = one token step", design.md §5) —
+   the v0.4 literal #0A0C10 was light-theme-only thinking (dark ink-fill buttons are cream). */
+.btn--pri:active, .btn--pri.is-active { background: var(--my-ink-hover); }
+.btn--acc { background: var(--my-accent); color: var(--my-surface); }
+.btn--acc:hover, .btn--acc.is-hover { background: var(--my-accent-hover); }
+.btn--acc:active, .btn--acc.is-active { background: var(--my-accent-strong); }
+.btn--sec { background: var(--my-surface); border-color: var(--my-control-border); color: var(--my-ink); } /* §1a-12 (v0.5.4 rule 11) */
+.btn--sec:hover, .btn--sec.is-hover { background: var(--my-surface-hover); }
+.btn--gho { background: transparent; color: var(--my-accent-strong); }
+.btn--gho:hover, .btn--gho.is-hover { background: var(--my-surface-hover); }
+.btn--dan { background: var(--my-surface); border-color: var(--my-error); color: var(--my-error); }
+.btn--dan:hover, .btn--dan.is-hover { background: var(--my-error-soft); }
+.btn:disabled, .btn.is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+  border-color: transparent; cursor: not-allowed;
+}
+.btn--sm { padding: 6px 12px; font-size: 12.5px; }
+.spin {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: my-spin .8s linear infinite; opacity: .85; flex: none;
+}
+@keyframes my-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+/* ── inputs / toggles / checkboxes (ds/components-inputs) ─────────────── */
+.field { display: block; }
+.field-label { display: block; font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); margin-bottom: 4px; }
+.field-label .st { font-weight: var(--my-fw-regular); color: var(--my-muted); }
+.input {
+  width: 100%; border: 1px solid var(--my-control-border); border-radius: var(--my-r-control); /* §1a-12 (v0.5.4 rule 11) */
+  padding: 8px 12px; font: inherit; background: var(--my-surface); color: var(--my-ink);
+  transition: border-color var(--my-t-fast);
+}
+.input:hover:not(:disabled) { border-color: var(--my-muted); } /* §1a-4 (input row v2 reference) */
+.input.is-err { border-color: var(--my-error); }
+.input:disabled, .input.is-disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.input.is-dirty { border-color: var(--my-accent); }
+.help { font-size: 11px; color: var(--my-muted); margin-top: 4px; }
+.emsg { font-size: 11px; color: var(--my-error); margin-top: 4px; display: flex; gap: 4px; align-items: center; }
+.textarea { resize: vertical; min-height: 64px; }
+.readonly-input { background: var(--my-surface-hover); }
+.rep { font-size: 11px; font-weight: var(--my-fw-bold); color: var(--my-accent-strong); cursor: pointer; white-space: nowrap; background: none; border: 0; font-family: inherit; }
+
+.slot { display: flex; gap: var(--my-sp-2); align-items: center; }
+.slot .input { flex: 1; }
+.chip {
+  font-size: 11px; font-weight: var(--my-fw-bold); border-radius: 99px;
+  padding: 3px 11px; background: var(--my-accent-soft); color: var(--my-accent-strong);
+  white-space: nowrap;
+}
+.chip--empty { background: var(--my-disabled-bg); color: var(--my-muted); border: 1px dashed var(--my-control-border); } /* §1a-15 (design r7-F1): v3 resting boundary token — supersedes the color half of §1a-9 */
+
+.tog {
+  /* §1a-1: interactables are squared (v0.5.1 decision #20) — the pill radius is for
+     non-interactive tags only, so the toggle takes --my-r-control, never 99px. */
+  width: 38px; height: 22px; border-radius: var(--my-r-control); background: var(--my-accent);
+  position: relative; display: inline-block; cursor: pointer; padding: 0;
+  /* §1a-13 (design r7-F1): v3 resting control boundary — v0.5.4 rule 11. The <button> is
+     border-box (UA default), so the 38x22 track keeps its outer size. */
+  border: 1px solid var(--my-control-border);
+  transition: background var(--my-t-fast); flex: none;
+}
+/* §1a-13 (design r7-F1): on-state boundary joins the accent fill (reference .toggle.on) —
+   base .tog carries the ON look here (Toggle.tsx adds .is-off when off), so on = :not(.is-off). */
+.tog:not(.is-off) { border-color: var(--my-accent); }
+.tog i { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 4px; background: var(--my-surface); display: block; transition: left var(--my-t-fast), right var(--my-t-fast); } /* §1a-14 (design r7-F1): squared thumb (v3); §1a-17: 16px per the v3 reference — symmetric 2px insets inside the bordered 22px track */
+.tog.is-off { background: var(--my-track); } /* §1a-13 (design r7-F1): v3 off-state track fill */
+.tog.is-off i { right: auto; left: 2px; }
+.tog:hover:not(.is-disabled) { background: var(--my-accent-hover); }
+.tog.is-off:hover:not(.is-disabled) { background: var(--my-muted); } /* §1a-2: hover-darkened border tone (input-hover precedent) */
+.tog.is-disabled { background: var(--my-disabled-bg); border-color: transparent; cursor: not-allowed; } /* §1a-16: reference .toggle.d neutralizes the boundary when disabled */
+.tog.is-disabled i { background: var(--my-disabled-ink); } /* §1a-2: rules-of-use 8 (disabled = --my-disabled-*) */
+
+.cb {
+  width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--my-control-border); /* §1a-3 (checkbox reference) + §1a-12 (v0.5.4 rule 11) */
+  background: var(--my-surface); display: inline-flex; align-items: center; justify-content: center;
+  color: var(--my-surface); font-size: 11px; font-weight: var(--my-fw-bold); cursor: pointer; padding: 0; flex: none;
+}
+.cb.is-on { background: var(--my-accent); border-color: var(--my-accent); }
+.cb.is-disabled { background: var(--my-disabled-bg); border-color: var(--my-border); color: var(--my-disabled-ink); cursor: not-allowed; }
+.check-row { display: flex; gap: var(--my-sp-2); align-items: center; cursor: pointer; }
+
+/* ── toasts (ds/components-toasts) — bottom-CENTER stack (§1a-10, design.md interaction rules) ── */
+.toast-stack { position: fixed; left: 50%; transform: translateX(-50%); bottom: var(--my-sp-5); z-index: 50; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 420px; }
+.toast { display: flex; gap: 10px; align-items: baseline; border-radius: 8px; padding: 11px 14px; font-size: 13px; animation: my-toast-in 180ms ease-out; }
+@keyframes my-toast-in { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.toast .toast-icon { font-style: normal; font-size: 13px; font-weight: var(--my-fw-bold); flex: none; }
+.toast b { font-weight: var(--my-fw-bold); }
+.toast .toast-action { font-weight: var(--my-fw-bold); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; white-space: nowrap; background: none; border: 0; font-family: inherit; font-size: 13px; }
+.toast .toast-x { margin-left: auto; color: var(--my-muted); cursor: pointer; flex: none; font-size: 12px; background: none; border: 0; }
+.toast .toast-x:hover { color: var(--my-ink); }
+/* §1a-6 (as corrected by gate r4-adjIII): the canonical v0.5 toast is a border-LESS tone-colored
+   soft fill (design.md "tone-colored soft fill + icon + message") — the v0.4 status borders were
+   themselves a deviation and are REMOVED entirely, not tokenized. */
+.toast--ok { background: var(--my-ok-soft); }
+.toast--ok .toast-icon, .toast--ok .toast-action { color: var(--my-ok); }
+.toast--warn { background: var(--my-warn-soft); }
+.toast--warn .toast-icon, .toast--warn .toast-action { color: var(--my-warn); }
+.toast--error { background: var(--my-error-soft); }
+.toast--error .toast-icon, .toast--error .toast-action { color: var(--my-error); }
+.toast--info { background: var(--my-info-soft); }
+.toast--info .toast-icon, .toast--info .toast-action { color: var(--my-info); }
+.toast-more { font-size: 11px; color: var(--my-muted); text-align: center; }
+
+/* ── dialogs (ds/components-dialogs) ─────────────────────────────────── */
+.scrim { position: fixed; inset: 0; background: var(--my-scrim); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--my-sp-5); }
+.dlg { background: var(--my-surface); border-radius: var(--my-r-modal); box-shadow: var(--my-shadow-modal); padding: var(--my-sp-5); width: 400px; max-width: 100%; }
+.dlg h2 { font-size: var(--my-fs-h3); font-weight: var(--my-fw-bold); margin: 0 0 6px; }
+.dlg p { font-size: 13px; color: var(--my-muted); margin: 0 0 12px; }
+.dlg ul { list-style: none; font-size: 12.5px; margin: 0 0 4px; padding: 0; }
+.dlg li { padding: 5px 0; display: flex; gap: 9px; align-items: baseline; }
+.dlg li i { font-style: normal; flex: none; }
+.dlg .ic-ok { color: var(--my-ok); }
+.dlg .ic-warn { color: var(--my-warn); }
+.dlg .ic-error { color: var(--my-error); }
+.dlg-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: var(--my-sp-5); }
+.danf { background: var(--my-error); color: var(--my-surface); border: 1px solid transparent; } /* §1a-7 */
+/* §1a-7: no --my-error-hover token exists and the v0.5 confirm-dialog reference styles no
+   danger-fill hover restyle — the hover keeps the rest fill (token addendum candidate, §9.5). */
+.danf:hover:not(:disabled) { background: var(--my-error); }
+.danf:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.esc { font-size: 11px; color: var(--my-disabled-ink); margin-top: var(--my-sp-4); }
+
+/* ── empty states (ds/layouts-observability + book §7.10) ────────────── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--my-sp-8) var(--my-sp-5); text-align: center; }
+.empty h2 { font-size: var(--my-fs-h2); font-weight: var(--my-fw-bold); margin: var(--my-sp-4) 0 6px; }
+.empty p { font-size: 13px; color: var(--my-muted); max-width: 380px; margin: 0 0 var(--my-sp-4); }
+.ebtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+/* §1a-8: the spine art rides package-owned tokenized classes — the gauge-block `gfill--nominal`
+   and the literal #C9C3B6 strokes are replaced (empty-state row v1: segments = border, hollow /
+   waiting nodes = muted, the live "you are here" node = accent). */
+.spine-empty { width: 180px; height: 36px; }
+.spine-track { stroke: var(--my-border); }
+.spine-dash { stroke: var(--my-muted); }
+.spine-node { fill: none; stroke: var(--my-muted); }
+.spine-dot { fill: var(--my-muted); }
+.spine-here { fill: var(--my-accent); }
+
+/* @section: additions */
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   ADDITIONS — new atom families (Task 3), extracted from design-export's
+   mythical-design/src/styles/{components,base}.css: .my-chip, .my-status (statusLineClass's
+   target — NOT the topbar's plain `.my-statusline`, which has no per-tone modifiers and belongs
+   to a later shell task), .my-card, .my-avatar, .my-search, .my-banner, .my-gauge, .my-truncate.
+
+   Fidelity note: the export's own tokens.css is v0.4-era and predates two v0.5.4 canonical
+   token distinctions, so two rules were remapped against the CANONICAL tokens.css
+   (mythical-design/tokens.css) rather than copied as-is:
+     - .my-gauge__track's rail color: var(--my-border) → var(--my-track)
+       (canonical rule #4: "Gauges: ... rail = --my-track").
+     - .my-search__input's border: var(--my-border) → var(--my-control-border), and its radius
+       → var(--my-r-control) to match the base `.input` atom (canonical rule #11: control
+       boundaries use --my-control-border; --my-border is dividers/cards/non-interactive only).
+   Separately, several literal font-size px values in the export had no exact step on the
+   --my-fs-* scale; they're normalized to the nearest existing token (--my-fs-caption for tiny
+   badge/label/gauge text, --my-fs-body for body-scale text) so every declaration below resolves
+   through a token — see the Task 3 report for the full before/after list.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* chip (chipClass's 6 tones: neutral has no modifier, the other 5 add my-chip--{tone}) */
+.my-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); /* export: 10px, no exact token step */
+  border-radius: var(--my-r-pill); padding: 2px 9px; /* export: literal 99px — the pill token */
+  background: var(--my-surface-hover); color: var(--my-muted);
+  letter-spacing: .3px;
+}
+.my-chip--accent { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-chip--ok { background: var(--my-ok-soft); color: var(--my-ok); }
+.my-chip--warn { background: var(--my-warn-soft); color: var(--my-warn); }
+.my-chip--error { background: var(--my-error-soft); color: var(--my-error); }
+.my-chip--info { background: var(--my-info-soft); color: var(--my-info); }
+
+/* status dot + text (statusLineClass's 6 tones — always a modifier, never bare `.my-status`) */
+.my-status { display: inline-flex; align-items: center; gap: 7px; font-size: var(--my-fs-caption); }
+.my-status__dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.my-status--ok    { color: var(--my-muted);   } .my-status--ok    .my-status__dot { background: var(--my-ok); }
+.my-status--warn  { color: var(--my-warn);    } .my-status--warn  .my-status__dot { background: var(--my-warn); }
+.my-status--error { color: var(--my-error);   } .my-status--error .my-status__dot { background: var(--my-error); }
+.my-status--info  { color: var(--my-info);    } .my-status--info  .my-status__dot { background: var(--my-info); }
+.my-status--muted { color: var(--my-muted);   } .my-status--muted .my-status__dot { background: var(--my-border); }
+.my-status--accent{ color: var(--my-accent-strong); } .my-status--accent .my-status__dot { background: var(--my-accent); }
+
+/* card */
+.my-card {
+  background: var(--my-surface); border: 1px solid var(--my-border); /* cards are a valid --my-border use (canonical rule #11) */
+  border-radius: var(--my-r-card); padding: 15px 17px;
+}
+.my-card--flush { padding: 0; overflow: hidden; } /* for table/row lists */
+.my-card__title {
+  font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); color: var(--my-muted); /* export: 11px, no exact token step */
+  text-transform: uppercase; letter-spacing: .4px; margin: 0 0 11px;
+}
+
+/* avatar (with optional context ring) */
+.my-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; flex: none; }
+.my-avatar__ring {
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  flex: none; padding: 3px; background: var(--my-border); /* decorative ring, non-interactive */
+}
+.my-avatar__inner {
+  border-radius: 50%; background: var(--my-surface); display: inline-flex;
+  align-items: center; justify-content: center; padding: 2px;
+}
+.my-avatar__initials {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: var(--my-fw-bold); font-size: var(--my-fs-body); /* export: 14px — exact token match */
+}
+
+/* search / filter input */
+.my-search { position: relative; display: flex; align-items: center; }
+.my-search__icon { position: absolute; left: 11px; font-size: var(--my-fs-caption); color: var(--my-muted); pointer-events: none; } /* export: 12.5px, no exact step */
+.my-search__input {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid var(--my-control-border); /* remapped — see fidelity note above */
+  background: var(--my-surface); border-radius: var(--my-r-control); /* remapped to match the base .input atom */
+  padding: 8px 30px; font-size: var(--my-fs-caption); /* export: 12.5px, no exact step */
+  color: var(--my-ink); font-family: inherit;
+}
+.my-search__input:focus { outline: none; border-color: var(--my-accent); box-shadow: 0 0 0 3px var(--my-accent-soft); }
+.my-search__clear {
+  position: absolute; right: 8px; width: 18px; height: 18px; border: 0;
+  background: var(--my-surface-hover); color: var(--my-muted); border-radius: 50%;
+  font-size: var(--my-fs-caption); /* export: 11px, no exact step */
+  line-height: 1; cursor: pointer;
+}
+
+/* banners (status softs — always icon + label, token rule #7) */
+.my-banner {
+  display: flex; gap: 10px; align-items: baseline; border-radius: var(--my-r-card);
+  padding: 13px 16px; font-size: var(--my-fs-body); /* export: 13px, nearest body-scale token */
+  text-wrap: pretty;
+}
+.my-banner__glyph { font-style: normal; font-weight: var(--my-fw-bold); }
+.my-banner--warn  { background: var(--my-warn-soft);  border: 1px solid var(--my-warn);  }
+.my-banner--warn  .my-banner__glyph { color: var(--my-warn); }
+.my-banner--info  { background: var(--my-info-soft);  border: 1px solid var(--my-info);  }
+.my-banner--info  .my-banner__glyph { color: var(--my-info); }
+.my-banner--ok    { background: var(--my-ok-soft);    border: 1px solid var(--my-ok);    }
+.my-banner--ok    .my-banner__glyph { color: var(--my-ok); }
+.my-banner--error { background: var(--my-error-soft); border: 1px solid var(--my-error); }
+.my-banner--error .my-banner__glyph { color: var(--my-error); }
+
+/* gauge (context / usage) — fill thresholds per token rule #4 */
+.my-gauge { display: inline-flex; }
+.my-gauge svg { display: block; transform: rotate(-90deg); }
+.my-gauge__track { stroke: var(--my-track); fill: none; } /* remapped — see fidelity note above */
+.my-gauge__fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset var(--my-t-base); }
+.my-gauge__fill--ok    { stroke: var(--my-accent); } /* < 75% — rule #4: fill = accent, not the "ok" status color */
+.my-gauge__fill--warn  { stroke: var(--my-warn); }   /* 75–89% */
+.my-gauge__fill--error { stroke: var(--my-error); }  /* ≥ 90% */
+.my-gauge__label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: var(--my-fs-caption); /* export: 11px, no exact step */
+  font-weight: var(--my-fw-bold); font-variant-numeric: tabular-nums; color: var(--my-ink);
+}
+.my-gauge__wrap { position: relative; display: inline-flex; }
+
+/* truncation helper (design-export base.css) */
+.my-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
