@@ -200,7 +200,7 @@ a:focus-visible, .link:focus-visible, .is-focus {
 /* chip (chipClass's 6 tones: neutral has no modifier, the other 5 add my-chip--{tone}) */
 .my-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); /* export: 10px, no exact token step */
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); /* export: 10px, no exact token step */
   border-radius: var(--my-r-pill); padding: 2px 9px; /* export: literal 99px — the pill token */
   background: var(--my-surface-hover); color: var(--my-muted);
   letter-spacing: .3px;
@@ -228,7 +228,7 @@ a:focus-visible, .link:focus-visible, .is-focus {
 }
 .my-card--flush { padding: 0; overflow: hidden; } /* for table/row lists */
 .my-card__title {
-  font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); color: var(--my-muted); /* export: 11px, no exact token step */
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); color: var(--my-muted); /* export: 11px, no exact token step */
   text-transform: uppercase; letter-spacing: .4px; margin: 0 0 11px;
 }
 
@@ -263,7 +263,7 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-search__clear {
   position: absolute; right: 8px; width: 18px; height: 18px; border: 0;
   background: var(--my-surface-hover); color: var(--my-muted); border-radius: 50%;
-  font-size: var(--my-fs-caption); /* export: 11px, no exact step */
+  font-size: var(--my-fs-micro); /* export: 11px, no exact step */
   line-height: 1; cursor: pointer;
 }
 
@@ -293,7 +293,7 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-gauge__fill--error { stroke: var(--my-error); }  /* ≥ 90% */
 .my-gauge__label {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-  font-size: var(--my-fs-caption); /* export: 11px, no exact step */
+  font-size: var(--my-fs-micro); /* export: 11px, no exact step */
   font-weight: var(--my-fw-bold); font-variant-numeric: tabular-nums; color: var(--my-ink);
 }
 .my-gauge__wrap { position: relative; display: inline-flex; }

@@ -113,6 +113,12 @@ describe("styles.css — (c) every referenced --my-* token exists in the canonic
     const missing = Array.from(referenced).filter((name) => !definedTokens.has(name)).sort();
     expect(missing).toEqual([]);
   });
+
+  test("regression guard: .my-chip uses var(--my-fs-micro) for font-size", () => {
+    const chipRuleMatch = css.match(/\.my-chip\s*\{[^}]*font-size:\s*([^;]+)/);
+    expect(chipRuleMatch).not.toBeNull();
+    expect(chipRuleMatch?.[1]?.trim()).toBe("var(--my-fs-micro)");
+  });
 });
 
 describe("styles.css — (d) no later-task shell classes leak into this atom sheet", () => {
