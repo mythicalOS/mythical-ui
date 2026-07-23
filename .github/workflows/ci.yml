@@ -16,7 +16,7 @@ jobs:
   # Typecheck, unit tests (302) and package builds for all 4 workspace packages.
   # packages/ui-core/test/css.test.ts and packages/shell/css.test.tsx read the
   # canonical tokens.css from a SIBLING mythical-design checkout (the same
-  # resolution the tests use locally: mythical-project/{mythical-ui,mythical-design}
+  # resolution the tests use locally: {mythical-ui,mythical-design}
   # side by side) — there's no persistent sibling checkout on a runner, so both
   # repos are checked out here as sibling directories under $GITHUB_WORKSPACE
   # (mythicalOS/mythical-design is a public repo; a plain checkout works).
@@ -124,7 +124,7 @@ jobs:
       - name: Genericize grep gate (banned internal-demo terms)
         run: |
           set -euo pipefail
-          pattern='agent-daemon|agent-local-mcp|/private/tmp|hameddk|esmiley|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
+          pattern='mythical-project|agent-web|mythical-server|agent-daemon|agent-local-mcp|/private/tmp|hameddk|esmiley|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
           if grep -rliIE "$pattern" . \
               --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules
           then

@@ -36,7 +36,7 @@ import base64, datetime, pathlib, re, subprocess
 d = pathlib.Path('.')
 # sibling checkout (Task 9 repoint): tokens.css + the fonts it references no
 # longer live alongside this template — they're the canonical mythical-design
-# repo, checked out next to this one (mythical-project/{mythical-ui,mythical-design}).
+# repo, checked out next to this one ({mythical-ui,mythical-design}).
 DESIGN_ROOT = d / '..' / '..' / 'mythical-design'
 src = (d / 'preview.src.html').read_text()
 css = (DESIGN_ROOT / 'tokens.css').read_text()
