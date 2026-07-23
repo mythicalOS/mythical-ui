@@ -1,0 +1,745 @@
+<!doctype html>
+<!-- ============================================================================
+     SOURCE TEMPLATE — edit THIS file, then run ./scripts/generate-preview.sh.
+     previews/preview.html is GENERATED from this template: the script inlines
+     tokens.css (+ the woff2 fonts it references) — read from the sibling
+     mythical-design checkout — so the output renders as one self-contained
+     file anywhere (iPad Files/QuickLook, mail attachments), stamps this repo's
+     git hash + date as a comment, and archives the previous output as
+     preview.<YYYYMMDD>-<shortsha>[-N].html (-N only on a name collision with
+     different content). Never edit preview.html by hand.
+     ============================================================================ -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mythical / brokkr — component preview v0.5</title>
+<link rel="stylesheet" href="../../mythical-design/tokens.css">
+<style>
+/* Preview chrome only — every component below styles itself from the token vars. */
+*{box-sizing:border-box;margin:0}
+html{background:var(--my-bg)}
+body{background:var(--my-bg);color:var(--my-ink);font:var(--my-fs-body)/1.55 var(--my-font-ui);
+  padding:36px 36px 72px;max-width:1080px;margin:0 auto;transition:background var(--my-t-base),color var(--my-t-base)}
+h1{font-size:var(--my-fs-h1);font-weight:var(--my-fw-bold);letter-spacing:-.5px}
+h2{font-size:var(--my-fs-h3);font-weight:var(--my-fw-bold);letter-spacing:-.3px;margin:40px 0 4px}
+.sub{color:var(--my-muted);margin:6px 0 8px}
+.note{font-size:12.5px;color:var(--my-muted);margin-bottom:12px}
+.gate{background:var(--my-accent-soft);border-radius:var(--my-r-card);padding:12px 16px;
+  font-size:13px;color:var(--my-accent-strong);margin:18px 0 6px}
+code{font-family:var(--my-font-mono);font-size:12px;background:var(--my-disabled-bg);border-radius:4px;padding:1px 5px}
+.panel{background:var(--my-surface);border:1px solid var(--my-border);border-radius:var(--my-r-card);padding:20px;margin-bottom:8px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.col{display:flex;flex-direction:column;gap:12px}
+.micro{font-size:10.5px;font-weight:var(--my-fw-bold);text-transform:uppercase;letter-spacing:.4px;color:var(--my-muted)}
+.statecap{font-size:11px;color:var(--my-muted);text-align:center;margin-top:6px;font-family:var(--my-font-mono)}
+.cell{display:flex;flex-direction:column;align-items:center}
+.foot{margin-top:44px;font-size:12px;color:var(--my-muted);border-top:1px solid var(--my-border);padding-top:14px}
+a{color:var(--my-accent-strong)}
+
+/* ---------- preview controls ---------- */
+.controls{position:sticky;top:0;z-index:40;background:var(--my-bg);padding:10px 0;display:flex;gap:16px;
+  align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--my-border);margin-bottom:8px}
+.swatch{width:22px;height:22px;border-radius:50%;border:2px solid var(--my-surface);outline:1px solid var(--my-border);cursor:pointer}
+.swatch.on{outline:2px solid var(--my-accent);outline-offset:2px}
+
+/* ---------- app shell (56px top bar) ---------- */
+.shellbar{height:56px;background:var(--my-surface);border:1px solid var(--my-border);border-radius:var(--my-r-card);
+  display:flex;align-items:center;gap:24px;padding:0 16px}
+.brand{display:flex;align-items:center;gap:10px}
+.brand svg{width:28px;height:28px;display:block}
+.wordblock{line-height:1.1}
+.word{font-weight:var(--my-fw-bold);font-size:16px;letter-spacing:-.3px}
+.word .bdot{color:var(--my-accent)}
+.prod{font-size:9.5px;font-weight:var(--my-fw-bold);letter-spacing:.4px;color:var(--my-muted);text-align:right}
+.shellnav{display:flex;gap:4px;flex:1}
+.shellnav a{padding:6px 12px;border-radius:var(--my-r-control);color:var(--my-muted);text-decoration:none;font-weight:var(--my-fw-medium)}
+.shellnav a:hover{background:var(--my-surface-hover)}
+.shellnav a.on{color:var(--my-accent-strong);background:var(--my-accent-soft)}
+.statuschip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-family:var(--my-font-mono);
+  border:1px solid var(--my-border);border-radius:var(--my-r-pill);padding:4px 10px;color:var(--my-muted)}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block}
+.dot.ok{background:var(--my-ok)} .dot.warn{background:var(--my-warn)} .dot.err{background:var(--my-error)} .dot.mut{background:var(--my-muted)}
+.iconbtn{width:32px;height:32px;border-radius:var(--my-r-control);border:1px solid var(--my-control-border);
+  background:var(--my-surface);color:var(--my-ink);cursor:pointer;font-size:14px}
+.iconbtn:hover{background:var(--my-surface-hover)}
+
+/* ---------- foundations ---------- */
+.tokgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:10px}
+.tok{border:1px solid var(--my-border);border-radius:8px;overflow:hidden;background:var(--my-surface)}
+.tok .chipc{height:44px}
+.tok .lab{padding:6px 8px;font-family:var(--my-font-mono);font-size:10px;line-height:1.5}
+.tok .hex{color:var(--my-muted)}
+.typerow{display:flex;align-items:baseline;gap:16px;border-bottom:1px solid var(--my-border);padding:8px 0}
+.typerow:last-child{border-bottom:none}
+.typerow .m{font-family:var(--my-font-mono);font-size:11px;color:var(--my-muted);width:190px;flex:none}
+.radchip{border:1px solid var(--my-border);background:var(--my-surface);padding:10px 16px;font-family:var(--my-font-mono);font-size:12px}
+
+/* ---------- buttons ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:34px;padding:0 14px;
+  border-radius:var(--my-r-control);font:inherit;font-weight:var(--my-fw-medium);cursor:pointer;white-space:nowrap;
+  border:1px solid transparent;transition:background var(--my-t-fast),border-color var(--my-t-fast)}
+.btn:focus-visible,.f{outline:2px solid var(--my-accent);outline-offset:2px}
+.b-primary{background:var(--my-ink);color:var(--my-bg)}
+.b-primary:hover,.b-primary.h{background:var(--my-ink-hover)}
+.b-secondary{background:var(--my-surface);border-color:var(--my-control-border);color:var(--my-ink)}
+.b-secondary:hover,.b-secondary.h{background:var(--my-surface-hover)}
+.b-accent{background:var(--my-accent);color:#fff}
+.b-accent:hover,.b-accent.h{background:var(--my-accent-hover)}
+.b-ghost{background:transparent;color:var(--my-accent-strong)}
+.b-ghost:hover,.b-ghost.h{background:var(--my-accent-soft)}
+.b-danger{background:transparent;border-color:var(--my-error);color:var(--my-error)}
+.b-danger:hover,.b-danger.h{background:var(--my-error-soft)}
+.b-dangerfill{background:var(--my-error);color:#fff}
+.btn:disabled,.btn.d{background:var(--my-disabled-bg);color:var(--my-disabled-ink);border-color:transparent;cursor:not-allowed}
+.spin{width:13px;height:13px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;
+  animation:sp .7s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.btnmatrix{display:grid;grid-template-columns:110px repeat(6,auto);gap:10px 12px;align-items:center;
+  justify-content:start;overflow-x:auto}
+.btnmatrix .micro{align-self:center}
+
+/* ---------- inputs ---------- */
+.field{display:flex;flex-direction:column;gap:5px;min-width:200px}
+.field label{font-size:12px;font-weight:var(--my-fw-medium);color:var(--my-muted)}
+.input{height:34px;padding:0 10px;border-radius:var(--my-r-control);border:1px solid var(--my-control-border);
+  background:var(--my-surface);color:var(--my-ink);font:inherit;transition:border-color var(--my-t-fast)}
+.input:hover{border-color:var(--my-muted)}
+.input:focus,.input.f{outline:2px solid var(--my-accent);outline-offset:2px;border-color:var(--my-accent)}
+.input.err{border-color:var(--my-error)}
+.input:disabled{background:var(--my-disabled-bg);color:var(--my-disabled-ink);cursor:not-allowed}
+.errmsg{font-size:12px;color:var(--my-error);display:flex;gap:5px;align-items:center}
+.slot{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--my-control-border);border-radius:var(--my-r-control);
+  padding:6px 10px;font-family:var(--my-font-mono);font-size:12px;background:var(--my-surface)}
+.slot .k{color:var(--my-muted)}
+.slot .unset{color:var(--my-muted);font-style:italic}
+.toggle{width:38px;height:22px;border-radius:var(--my-r-control);background:var(--my-track);position:relative;
+  cursor:pointer;border:1px solid var(--my-control-border);transition:background var(--my-t-fast)}
+/* border-box: the 38x22 track keeps its outer size; ::after offsets are relative
+   to the padding box, so 1px border + 2px offset = the same 3px visual inset */
+.toggle::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:4px;
+  background:var(--my-surface);transition:left var(--my-t-fast);box-shadow:0 1px 2px rgba(0,0,0,.2)}
+.toggle.on{background:var(--my-accent);border-color:var(--my-accent)} .toggle.on::after{left:18px}
+.toggle.d{background:var(--my-disabled-bg);cursor:not-allowed;border-color:transparent}
+.toggle:focus-visible{outline:2px solid var(--my-accent);outline-offset:2px}
+.check{width:17px;height:17px;border-radius:4px;border:1.5px solid var(--my-control-border);background:var(--my-surface);
+  display:inline-flex;align-items:center;justify-content:center;color:#fff;font-size:11px;cursor:pointer}
+.check.on{background:var(--my-accent);border-color:var(--my-accent)}
+.chipdd{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--my-control-border);border-radius:var(--my-r-control);
+  padding:5px 12px;font-size:12.5px;background:var(--my-surface);cursor:pointer}
+.chipdd:hover{background:var(--my-surface-hover)}
+.chipdd b{font-weight:var(--my-fw-medium)} .chipdd .car{color:var(--my-muted);font-size:10px}
+.chipdd.ro{cursor:default;color:var(--my-muted);border-radius:var(--my-r-pill);border-color:var(--my-border);background:var(--my-surface)} /* read-only = tag look (§5 shape rule + #21: tags keep --my-border); no hover invite */
+
+/* ---------- gauges ---------- */
+.arc{width:96px}
+.arc svg{display:block;width:96px;height:96px}
+.arc .num{font-family:var(--my-font-mono);font-weight:var(--my-fw-bold);font-size:20px;fill:var(--my-ink)}
+.arc .cap{font-size:9px;letter-spacing:.4px;text-transform:uppercase;fill:var(--my-muted);font-weight:650}
+.arc .pulse{opacity:.5;animation:pulse 1.4s ease-in-out infinite}
+.bargauge{width:190px}
+.bar{height:6px;border-radius:var(--my-r-pill);background:var(--my-track);position:relative;overflow:visible}
+.bar .fill{height:100%;border-radius:var(--my-r-pill)}
+.bar .tick{position:absolute;top:-2px;width:1.5px;height:10px;background:var(--my-border)}
+.g-ok .fill{background:var(--my-accent)} .g-warn .fill{background:var(--my-warn)} .g-err .fill{background:var(--my-error)}
+.g-conn .fill{background:var(--my-muted);opacity:.5;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.2}}
+
+/* ---------- session cards ---------- */
+.scard{width:250px;background:var(--my-surface);border:1px solid var(--my-border);border-radius:var(--my-r-card);
+  padding:12px;display:flex;gap:10px;cursor:pointer}
+.scard:hover{background:var(--my-surface-hover)}
+.scard.sel{outline:2px solid var(--my-accent);outline-offset:2px;border-color:var(--my-accent)}
+.scard.disc{border-style:dashed}
+.scard.disc .dot{animation:pulse 1.2s ease-in-out infinite}
+.avatar{width:34px;height:34px;border-radius:50%;background:var(--my-term-bg);color:var(--my-term-assistant);
+  display:flex;align-items:center;justify-content:center;font-family:var(--my-font-mono);font-weight:700;flex:none}
+.smain{flex:1;min-width:0}
+.srow{display:flex;align-items:center;gap:6px}
+.srow b{font-weight:var(--my-fw-bold)}
+.slabel{font-size:11.5px;color:var(--my-muted)}
+.ssub{font-size:11.5px;color:var(--my-muted);font-family:var(--my-font-mono);margin:3px 0 7px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- terminal & queue ---------- */
+.term{background:var(--my-term-bg);border-radius:var(--my-r-card);overflow:hidden;border:1px solid var(--my-border)}
+.termhead{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #262B36;color:var(--my-term-dim);font-size:12px}
+.termhead .name{color:var(--my-term-ink);font-family:var(--my-font-mono)}
+.stopbtn{margin-left:auto;border:1px solid var(--my-error);color:#F08589;background:transparent;border-radius:var(--my-r-control);
+  font:12px var(--my-font-mono);padding:3px 10px;cursor:pointer}
+.noise{font-size:10.5px;letter-spacing:.4px;text-transform:uppercase;font-weight:650;color:var(--my-term-dim)}
+.termbody{padding:12px 14px;font:13px/1.65 var(--my-font-mono);color:var(--my-term-ink);min-height:150px}
+.t-a{color:var(--my-term-assistant)} .t-u{color:var(--my-term-user)} .t-d{color:var(--my-term-dim)}
+.caret{display:inline-block;width:7px;height:14px;background:var(--my-term-assistant);vertical-align:-2px;animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+.termbanner{background:#33250E;color:#EFA443;font-size:12px;padding:6px 14px;display:flex;gap:8px;align-items:center}
+.qrow{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px solid var(--my-border);border-radius:7px;
+  background:var(--my-surface);font-size:12.5px}
+.qrow:hover{background:var(--my-surface-hover)}
+.badge{font:10px var(--my-font-mono);font-weight:700;letter-spacing:.4px;border-radius:4px;padding:2px 6px}
+.badge.asap{background:var(--my-accent-soft);color:var(--my-accent-strong)}
+.badge.ondone{background:var(--my-info-soft);color:var(--my-info)}
+.qstate{margin-left:auto;font-family:var(--my-font-mono);font-size:11px;color:var(--my-muted)}
+.qcancel{border:none;background:none;color:var(--my-muted);cursor:pointer;font-size:13px}
+.qcancel.confirm{color:var(--my-error);font-size:11.5px;font-weight:var(--my-fw-medium)}
+.sendbar{display:flex;gap:10px;align-items:center;border:1px solid var(--my-control-border);border-radius:var(--my-r-card);
+  background:var(--my-surface);padding:8px 10px} /* decision #21: the send bar is an interactive control — resting boundary uses --my-control-border (the inner input is borderless; the bar carries the visible boundary) */
+.seg{display:flex;border:1px solid var(--my-control-border);border-radius:var(--my-r-control);overflow:hidden;flex:none}
+.seg button{border:none;background:var(--my-surface);padding:5px 10px;font:11px var(--my-font-mono);color:var(--my-muted);cursor:pointer}
+.seg button.on{background:var(--my-accent-soft);color:var(--my-accent-strong);font-weight:700}
+.sendbar input{flex:1;border:none;background:none;font:inherit;color:var(--my-ink);outline:none}
+.hint{font-size:11px;color:var(--my-muted);margin-top:5px;padding-left:2px}
+
+/* ---------- wizard ---------- */
+.wsteps{display:flex;gap:8px;flex-wrap:wrap}
+.wstep{display:inline-flex;align-items:center;gap:7px;border-radius:var(--my-r-pill);padding:6px 13px;font-size:12.5px;
+  border:1px solid var(--my-border);background:var(--my-surface);color:var(--my-muted)}
+.wstep .n{width:17px;height:17px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font:10px var(--my-font-mono);font-weight:700;background:var(--my-track);color:var(--my-muted)}
+.wstep.done{color:var(--my-ink)} .wstep.done .n{background:var(--my-accent);color:#fff}
+.wstep.cur{border-color:var(--my-accent);color:var(--my-accent-strong);outline:1px solid var(--my-accent)}
+.wstep.cur .n{background:var(--my-accent);color:#fff}
+.wstep.err{border-color:var(--my-error);color:var(--my-error)} .wstep.err .n{background:var(--my-error);color:#fff}
+.wstep.lock{background:var(--my-disabled-bg);color:var(--my-disabled-ink)}
+.wfoot{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--my-border);
+  padding-top:14px;margin-top:14px}
+
+/* ---------- dialogs ---------- */
+.dlgwrap{background:var(--my-scrim);border-radius:var(--my-r-card);padding:28px;display:flex;gap:24px;flex-wrap:wrap;justify-content:center}
+.dlg{width:340px;background:var(--my-surface);border-radius:var(--my-r-modal);box-shadow:var(--my-shadow-modal);padding:22px}
+.dlg h3{font-size:16px;font-weight:var(--my-fw-bold);margin-bottom:8px}
+.dlg p{font-size:13px;color:var(--my-muted);margin-bottom:14px}
+.dlg .acts{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+
+/* ---------- toasts ---------- */
+.toast{display:flex;align-items:center;gap:10px;border-radius:var(--my-r-card);padding:10px 16px;font-size:13px;max-width:420px}
+.toast b{font-weight:var(--my-fw-bold)}
+.t-ok{background:var(--my-ok-soft);color:var(--my-ok)} .t-warn{background:var(--my-warn-soft);color:var(--my-warn)}
+.t-err{background:var(--my-error-soft);color:var(--my-error)} .t-info{background:var(--my-info-soft);color:var(--my-info)}
+
+/* ---------- empty states ---------- */
+.empty{display:flex;flex-direction:column;align-items:center;gap:14px;padding:40px 20px;text-align:center}
+.empty h3{font-size:18px;font-weight:var(--my-fw-bold)}
+.empty p{font-size:13px;color:var(--my-muted);max-width:380px}
+.spine{display:flex;align-items:center}
+.spine .seg{width:34px;height:2px;background:var(--my-border);border:none;border-radius:0}
+.spine .node{width:12px;height:12px;border-radius:50%;border:2px solid var(--my-muted);background:transparent}
+.spine .node.here{background:var(--my-accent);border-color:var(--my-accent)}
+
+/* ---------- component version chips (registry: COMPONENTS.md) ---------- */
+.ver{font:10px var(--my-font-mono);font-weight:700;letter-spacing:.4px;color:var(--my-muted);
+  border:1px solid var(--my-border);border-radius:var(--my-r-pill);padding:2px 8px;vertical-align:3px;margin-left:8px}
+.ver.new{color:var(--my-accent-strong);border-color:var(--my-accent)}
+
+/* ---------- stat tiles ---------- */
+.tiles{display:flex;gap:10px;flex-wrap:wrap}
+.tile{min-width:112px;background:var(--my-surface);border:1px solid var(--my-border);border-radius:var(--my-r-card);padding:10px 12px}
+.tile .k{font-size:10px;font-weight:var(--my-fw-bold);text-transform:uppercase;letter-spacing:.4px;color:var(--my-muted)}
+.tile .v{font-family:var(--my-font-mono);font-size:17px;font-weight:var(--my-fw-bold);font-variant-numeric:tabular-nums;margin-top:2px}
+.tile .d{font-size:10.5px;color:var(--my-muted);font-family:var(--my-font-mono)}
+.tile.save .v{color:var(--my-accent-strong)}
+
+/* ---------- git status chip ---------- */
+.gitchip{display:inline-flex;gap:10px;align-items:center;font-family:var(--my-font-mono);font-size:12px;
+  border:1px solid var(--my-border);border-radius:var(--my-r-control);padding:6px 10px;background:var(--my-surface)}
+.gitflag{font-size:10px;font-weight:700;letter-spacing:.3px;border-radius:4px;padding:2px 6px}
+.gitflag.w{background:var(--my-warn-soft);color:var(--my-warn)} .gitflag.e{background:var(--my-error-soft);color:var(--my-error)}
+.gitflag.o{background:var(--my-ok-soft);color:var(--my-ok)}
+
+/* ---------- memory components ---------- */
+.distbar{display:flex;height:8px;border-radius:var(--my-r-pill);overflow:hidden;background:var(--my-track)}
+.distbar i{display:block;height:100%}
+.distlegend{display:flex;gap:16px;font-family:var(--my-font-mono);font-size:11px;color:var(--my-muted);margin-top:6px}
+.sq{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.mcard{width:320px;background:var(--my-surface);border:1px solid var(--my-border);border-radius:var(--my-r-card);padding:12px}
+.mhead{display:flex;gap:7px;align-items:center}
+.kind{font:10px var(--my-font-mono);font-weight:700;letter-spacing:.4px;border-radius:4px;padding:2px 7px;
+  background:var(--my-accent-soft);color:var(--my-accent-strong)}
+.tierg{color:var(--my-muted);font-size:12px}
+.prio{margin-left:auto;letter-spacing:2px;font-size:9px;color:var(--my-accent)}
+.prio .off{color:var(--my-track)}
+.mbody{font-size:12.5px;line-height:1.5;margin:8px 0}
+.mprov{font-family:var(--my-font-mono);font-size:10.5px;color:var(--my-muted)}
+.strength{height:4px;border-radius:var(--my-r-pill);background:var(--my-track);margin-top:8px}
+.strength i{display:block;height:100%;border-radius:var(--my-r-pill);background:var(--my-accent)}
+.withheld{margin-top:8px;font-size:11px;border-radius:6px;padding:5px 8px;background:var(--my-warn-soft);color:var(--my-warn)}
+
+/* ---------- project hero ---------- */
+.hero{border-radius:var(--my-r-modal);border:1px solid var(--my-border);padding:18px 20px;
+  background:linear-gradient(135deg,var(--my-accent-soft),var(--my-surface) 70%)}
+.herotop{display:flex;align-items:center;gap:14px}
+.heroav{width:46px;height:46px;border-radius:12px;background:var(--my-accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-weight:var(--my-fw-bold);font-size:18px}
+.herotitle{font-size:20px;font-weight:var(--my-fw-bold);letter-spacing:-.3px}
+.heropen{color:var(--my-muted);cursor:pointer;font-size:13px;margin-left:6px}
+.pill{font-size:10px;font-weight:700;letter-spacing:.4px;border-radius:var(--my-r-pill);padding:3px 9px}
+.pill.act{background:var(--my-ok-soft);color:var(--my-ok)}
+.herochips{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.herostats{display:flex;gap:18px;font-family:var(--my-font-mono);font-size:11.5px;color:var(--my-muted);margin-top:12px}
+
+/* ---------- popover ---------- */
+.popwrap{position:relative;display:inline-block}
+.pop{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:210px;padding:6px;
+  background:var(--my-surface);border:1px solid var(--my-border);border-radius:var(--my-r-card);box-shadow:var(--my-shadow-modal)}
+.pop .it{display:flex;justify-content:space-between;gap:14px;padding:7px 10px;border-radius:6px;font-size:12.5px;cursor:pointer}
+.pop .it:hover{background:var(--my-surface-hover)}
+.pop .it.on{color:var(--my-accent-strong);font-weight:var(--my-fw-medium)}
+
+/* ---------- mythical-select no-JS fallback (sandboxed previews) ---------- */
+mythical-select:not(:defined){display:inline-block;border:1px dashed var(--my-border);
+  border-radius:var(--my-r-control);padding:6px 10px;font-size:12.5px;color:var(--my-muted)}
+mythical-select:not(:defined) mythical-optgroup{display:block}
+mythical-select:not(:defined) mythical-optgroup::before{content:attr(label) ": ";font-weight:650}
+mythical-select:not(:defined) mythical-option{display:inline}
+mythical-select:not(:defined) mythical-option+mythical-option::before{content:" · "}
+
+/* ---------- org card & family tiles ---------- */
+.orgcard{display:flex;gap:12px;align-items:center;border:1px dashed var(--my-border);border-radius:var(--my-r-card);
+  padding:12px 14px;background:var(--my-surface);font-size:12.5px}
+.orgcard .up{margin-left:auto;white-space:nowrap}
+.famtile{width:255px;border:1px solid var(--my-border);border-radius:var(--my-r-card);padding:14px;background:var(--my-surface)}
+.famtile h4{font-size:14px;font-weight:var(--my-fw-bold);display:flex;align-items:center;gap:7px}
+.famtile p{font-size:12px;color:var(--my-muted);margin:6px 0 10px}
+.famtile code{font-size:10.5px}
+</style>
+</head>
+<body>
+
+<h1>mythical<span style="color:var(--my-accent)">●</span> <span style="color:var(--my-muted);font-weight:400">/ brokkr</span> — component preview</h1>
+<div class="sub">v0.5 · every component from <code>design.md</code>, rendered from the canonical tokens · provenance: the comment at the top of this file · sources: m14 WS1 v0.4 + Claude Design control-room export 2026-07-14</div>
+
+<div class="controls">
+  <span class="micro">Theme</span>
+  <button class="btn b-secondary" id="themeBtn" onclick="flipTheme()">◐&nbsp; heritage dark</button>
+  <span class="micro" style="margin-left:12px">Accent — curated swatches (color-mix derivation)</span>
+  <span class="row" id="swatches" style="gap:8px">
+    <button class="swatch on" title="petrol" style="background:#0F6B66"></button>
+    <button class="swatch" title="blue" style="background:#2B5FAA"></button>
+    <button class="swatch" title="violet" style="background:#7A5AF8"></button>
+    <button class="swatch" title="amber" style="background:#B45309"></button>
+    <button class="swatch" title="moss" style="background:#1A7F4B"></button>
+  </span>
+  <span class="note" style="margin:0;flex-basis:100%">Toggle + retint need JavaScript (a real browser tab). In sandboxed previews (iPad Files/QuickLook) this page is static: light theme, petrol — every component still renders.</span>
+</div>
+
+<div class="gate"><b>v0.5 deltas on show (design.md §8 #12–#17):</b> 5-page shell + BROKKR brand block · <code>--my-track</code> rails · pill radius 99 · fixed <code>--my-term-*</code> terminal palette · motion 120/200ms ease · curated-swatch accent retint via <code>color-mix(in oklab, …)</code>. Everything else is the locked m14 core. Screen-level truth: mythical-project <code>docs/design/control-room/handoff/Control Room.dc.html</code>.</div>
+
+<h2 id="c-app-shell">App shell — 56px top bar (§6) <span class="ver">app-shell · v1</span></h2>
+<div class="note">Brand block: M8 mark + <code>mythical●</code> wordmark + all-caps BROKKR product label right-aligned under the wordmark. Five-page nav; container status chip; theme toggle. The window under it never scrolls.</div>
+<div class="shellbar">
+  <div class="brand">
+    <svg viewBox="0 0 256 256"><rect width="256" height="256" rx="52" fill="var(--my-surface)"/><rect x="3" y="3" width="250" height="250" rx="49" fill="none" stroke="var(--my-border)" stroke-width="6"/><path d="M48 204V72L128 152L208 72V168" fill="none" stroke="var(--my-ink)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/><circle cx="48" cy="72" r="13" fill="var(--my-accent)" stroke="var(--my-surface)" stroke-width="5"/><circle cx="128" cy="152" r="13" fill="var(--my-accent)" stroke="var(--my-surface)" stroke-width="5"/><circle cx="208" cy="72" r="13" fill="var(--my-accent)" stroke="var(--my-surface)" stroke-width="5"/><circle cx="208" cy="186" r="9" fill="var(--my-surface)" stroke="var(--my-accent)" stroke-width="6.5"/><circle cx="208" cy="209" r="12" fill="var(--my-surface)" stroke="var(--my-accent)" stroke-width="6.5"/></svg>
+    <div class="wordblock"><div class="word">mythical<span class="bdot">●</span></div><div class="prod">BROKKR</div></div>
+  </div>
+  <nav class="shellnav">
+    <a class="on" href="#">Sessions</a><a href="#">Projects</a><a href="#">Memory</a><a href="#">Files</a><a href="#">Settings</a>
+  </nav>
+  <span class="statuschip"><span class="dot ok"></span>container running</span>
+  <button class="iconbtn" title="theme">◐</button>
+  <button class="iconbtn" title="more">⋯</button>
+</div>
+
+<h2 id="f-color">Foundations — color tokens (§3)</h2>
+<div class="note">Chips render from the live vars (they follow the theme toggle / retint); the printed hexes are the locked values per theme — <b>L</b> light · <b>D</b> heritage dark. <code>--my-track</code> and the fixed <code>--my-term-*</code> set are new in v0.5.</div>
+<div class="tokgrid">
+  <div class="tok"><div class="chipc" style="background:var(--my-bg)"></div><div class="lab">bg<br><span class="hex">L #FAF9F6 · D #0B0C0F</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-surface)"></div><div class="lab">surface<br><span class="hex">L #FFFFFF · D #14161C</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-border)"></div><div class="lab">border<br><span class="hex">L #E7E3DB · D #262B36</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-track)"></div><div class="lab">track<br><span class="hex">L #EDEAE3 · D #20242D</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-ink)"></div><div class="lab">ink<br><span class="hex">L #16181D · D #ECE7DE</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-muted)"></div><div class="lab">muted<br><span class="hex">L #5A5F6A · D #9AA0AC</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-accent)"></div><div class="lab">accent<br><span class="hex">L #0F6B66 · D #3FB8AE</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-accent-strong)"></div><div class="lab">accent-strong<br><span class="hex">L #0B5450 · D #7FD1C9</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-accent-soft)"></div><div class="lab">accent-soft<br><span class="hex">L #E0F0EE · D #10302E</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-ok)"></div><div class="lab">ok<br><span class="hex">L #1A7F4B · D #4CC38A</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-warn)"></div><div class="lab">warn<br><span class="hex">L #B45309 · D #EFA443</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-error)"></div><div class="lab">error<br><span class="hex">L #B3261E · D #E5484D</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-info)"></div><div class="lab">info<br><span class="hex">L #2B5FAA · D #7AA7E8</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-ok-soft)"></div><div class="lab">ok-soft<br><span class="hex">L #E4F2EA · D #11301F</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-warn-soft)"></div><div class="lab">warn-soft<br><span class="hex">L #FAEEDD · D #33250E</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-error-soft)"></div><div class="lab">error-soft<br><span class="hex">L #FAE9E8 · D #341316</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-info-soft)"></div><div class="lab">info-soft<br><span class="hex">L #E8EEF8 · D #15233A</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-disabled-bg)"></div><div class="lab">disabled-bg<br><span class="hex">L #F1EFE9 · D #1A1C22</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-disabled-ink)"></div><div class="lab">disabled-ink<br><span class="hex">L #9AA0AC · D #5C616C</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-term-bg)"></div><div class="lab">term-bg<br><span class="hex">#0B0C0F (both)</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-term-ink)"></div><div class="lab">term-ink<br><span class="hex">#ECE7DE (both)</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-term-assistant)"></div><div class="lab">term-assistant<br><span class="hex">#3FB8AE (both)</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-term-user)"></div><div class="lab">term-user<br><span class="hex">#EFA443 (both)</span></div></div>
+  <div class="tok"><div class="chipc" style="background:var(--my-term-dim)"></div><div class="lab">term-dim<br><span class="hex">#9AA0AC (both)</span></div></div>
+</div>
+
+<h2 id="f-type">Foundations — type (§4)</h2>
+<div class="panel">
+  <div class="typerow"><span class="m">display · 44 · 650</span><span style="font-size:var(--my-fs-display);font-weight:650;letter-spacing:-.5px">Aa mythical</span></div>
+  <div class="typerow"><span class="m">h1 · 32 · 650 · −0.4px</span><span style="font-size:var(--my-fs-h1);font-weight:650;letter-spacing:-.4px">The team is asleep.</span></div>
+  <div class="typerow"><span class="m">h2 · 24 · 650 · −0.4px</span><span style="font-size:var(--my-fs-h2);font-weight:650;letter-spacing:-.4px">Sessions — the control room</span></div>
+  <div class="typerow"><span class="m">h3 · 20 · 650 · −0.3px</span><span style="font-size:var(--my-fs-h3);font-weight:650;letter-spacing:-.3px">Delivery queue</span></div>
+  <div class="typerow"><span class="m">body-lg · 16 · 400</span><span style="font-size:var(--my-fs-body-lg)">Unconfigured — a valid state.</span></div>
+  <div class="typerow"><span class="m">body · 14 · 400 (base)</span><span>Everything here runs on your machine. It works forever, connected or not.</span></div>
+  <div class="typerow"><span class="m">caption · 12 · 400</span><span style="font-size:var(--my-fs-caption);color:var(--my-muted)">Telemetry sends exactly this payload — nothing else.</span></div>
+  <div class="typerow"><span class="m">mono · 13 · tabular-nums</span><span style="font-family:var(--my-font-mono);font-size:var(--my-fs-mono);font-variant-numeric:tabular-nums">ctx 61% · in 1,204,551 · out 84,102 · $4.18</span></div>
+  <div class="typerow"><span class="m">micro-label · 10.5 · 650 · +0.4px</span><span class="micro">What they learned</span></div>
+</div>
+
+<h2 id="f-shape">Foundations — shape (§5)</h2>
+<div class="row">
+  <div class="radchip" style="border-radius:var(--my-r-control)">control 6</div>
+  <div class="radchip" style="border-radius:7px">row 7–9</div>
+  <div class="radchip" style="border-radius:var(--my-r-card)">card 10</div>
+  <div class="radchip" style="border-radius:var(--my-r-modal)">modal / hero 16</div>
+  <div class="radchip" style="border-radius:var(--my-r-pill)">pill 99 · non-interactive tags only</div>
+  <span class="note" style="margin:0">motion: <code>--my-t-fast 120ms ease</code> · <code>--my-t-base 200ms ease</code></span>
+</div>
+
+<h2 id="c-button">Buttons — full state matrix (§7) <span class="ver">button · v2</span></h2>
+<div class="note">Primary = ink fill; accent reserved for selection/focus/highlights; danger is <b>outline</b> in-flow — the filled danger exists only in the two lifecycle dialogs (§Dialogs below). Focus ring identical everywhere.</div>
+<div class="panel btnmatrix">
+  <span class="micro"></span><span class="statecap">default</span><span class="statecap">hover</span><span class="statecap">active</span><span class="statecap">focus</span><span class="statecap">disabled</span><span class="statecap">loading</span>
+  <span class="micro">primary</span>
+  <button class="btn b-primary">Save &amp; apply</button><button class="btn b-primary h">Save &amp; apply</button><button class="btn b-primary" style="transform:translateY(1px)">Save &amp; apply</button><button class="btn b-primary f">Save &amp; apply</button><button class="btn b-primary d">Save &amp; apply</button><button class="btn b-primary"><span class="spin"></span>Save &amp; apply</button>
+  <span class="micro">secondary</span>
+  <button class="btn b-secondary">Import config</button><button class="btn b-secondary h">Import config</button><button class="btn b-secondary" style="transform:translateY(1px)">Import config</button><button class="btn b-secondary f">Import config</button><button class="btn b-secondary d">Import config</button><button class="btn b-secondary"><span class="spin"></span>Import config</button>
+  <span class="micro">accent</span>
+  <button class="btn b-accent">Run setup</button><button class="btn b-accent h">Run setup</button><button class="btn b-accent" style="transform:translateY(1px)">Run setup</button><button class="btn b-accent f">Run setup</button><button class="btn b-accent d">Run setup</button><button class="btn b-accent"><span class="spin"></span>Run setup</button>
+  <span class="micro">ghost</span>
+  <button class="btn b-ghost">View details</button><button class="btn b-ghost h">View details</button><button class="btn b-ghost" style="transform:translateY(1px)">View details</button><button class="btn b-ghost f">View details</button><button class="btn b-ghost d">View details</button><button class="btn b-ghost"><span class="spin"></span>View details</button>
+  <span class="micro">danger (in-flow)</span>
+  <button class="btn b-danger">✕ Uninstall</button><button class="btn b-danger h">✕ Uninstall</button><button class="btn b-danger" style="transform:translateY(1px)">✕ Uninstall</button><button class="btn b-danger f">✕ Uninstall</button><button class="btn b-danger d">✕ Uninstall</button><button class="btn b-danger"><span class="spin"></span>✕ Uninstall</button>
+</div>
+
+<h2 id="c-input">Inputs, secret slots &amp; toggles (§7) <span class="ver">input · secret-slot · toggle · chip-dropdown · v3</span></h2>
+<div class="note">Error ≠ empty: unset slots render neutral (“unconfigured is a valid state”); error always pairs icon + message, never border alone. <b>v2 — shape encodes interactability (§5):</b> editable chips and toggles are squared (<code>--my-r-control</code> track, 4px thumb); the pill silhouette is reserved for non-interactive tags — the read-only chip keeps it (and never shows a hover fill). <b>v3</b> introduces <code>--my-control-border</code> per decision #21: interactive controls' resting boundary reaches ≥3:1 non-text contrast (WCAG 1.4.11) in both themes; <code>--my-border</code> stays on dividers, cards and non-interactive tags.</div>
+<div class="panel col">
+  <div class="row" style="align-items:flex-end">
+    <div class="field"><label>Agent name</label><input class="input" placeholder="skadi"></div>
+    <div class="field"><label>Focused</label><input class="input f" value="skadi"></div>
+    <div class="field"><label>Error</label><input class="input err" value="skadi!"><span class="errmsg">⚠ Lowercase snake_case only.</span></div>
+    <div class="field"><label>Disabled</label><input class="input" value="backend: local" disabled></div>
+  </div>
+  <div class="row">
+    <span class="slot"><span class="k">anthropic/</span>work-main <span style="color:var(--my-ok)">●</span> <span style="font-family:var(--my-font-mono)">sk-ant-…4Qx</span></span>
+    <span class="slot"><span class="k">github/</span>ci-bot <span class="unset">unset — a valid state</span></span>
+    <button class="toggle on" title="on"></button>
+    <button class="toggle" title="off"></button>
+    <button class="toggle d" title="disabled"></button>
+    <span class="check on">✓</span>
+    <span class="check"></span>
+    <span class="chipdd ro">backend: <b>local</b></span>
+    <span class="chipdd">review lane: <b>codex cross-model</b> <span class="car">▾</span></span>
+    <span class="chipdd">push flow: <b>propose-only</b> <span class="car">▾</span></span>
+  </div>
+</div>
+
+<h2 id="c-gauge">Context gauges — arc &amp; bar (§7) <span class="ver">gauge · v1</span></h2>
+<div class="note">Arc = detail views, bar = compact rows; same 75/90 ticks (rail = <code>--my-track</code>); whole-fill hue flip accent → warn → error, never a gradient; tabular-nums.</div>
+<div class="panel row" style="gap:28px;align-items:flex-end">
+  <div class="cell arc">
+    <svg viewBox="0 0 96 96">
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-track)" stroke-width="8"/>
+      <line x1="48" y1="3" x2="48" y2="13" stroke="var(--my-border)" stroke-width="1.5" transform="rotate(270 48 48)"/>
+      <line x1="48" y1="3" x2="48" y2="13" stroke="var(--my-border)" stroke-width="1.5" transform="rotate(324 48 48)"/>
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-accent)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="98.02" transform="rotate(-90 48 48)"/>
+      <text class="num" x="48" y="52" text-anchor="middle">61%</text>
+      <text class="cap" x="48" y="66" text-anchor="middle">context</text>
+    </svg>
+    <div class="statecap">nominal</div>
+  </div>
+  <div class="cell arc">
+    <svg viewBox="0 0 96 96">
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-track)" stroke-width="8"/>
+      <line x1="48" y1="3" x2="48" y2="13" stroke="var(--my-border)" stroke-width="1.5" transform="rotate(270 48 48)"/>
+      <line x1="48" y1="3" x2="48" y2="13" stroke="var(--my-border)" stroke-width="1.5" transform="rotate(324 48 48)"/>
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-warn)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="55.29" transform="rotate(-90 48 48)"/>
+      <text class="num" x="48" y="52" text-anchor="middle">78%</text>
+      <text class="cap" x="48" y="66" text-anchor="middle">context</text>
+    </svg>
+    <div class="statecap">warn ≥75%</div>
+  </div>
+  <div class="cell arc">
+    <svg viewBox="0 0 96 96">
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-track)" stroke-width="8"/>
+      <line x1="48" y1="3" x2="48" y2="13" stroke="var(--my-border)" stroke-width="1.5" transform="rotate(270 48 48)"/>
+      <line x1="48" y1="3" x2="48" y2="13" stroke="var(--my-border)" stroke-width="1.5" transform="rotate(324 48 48)"/>
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-error)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="17.59" transform="rotate(-90 48 48)"/>
+      <text class="num" x="48" y="52" text-anchor="middle">93%</text>
+      <text class="cap" x="48" y="66" text-anchor="middle">context</text>
+    </svg>
+    <div class="statecap">error ≥90%</div>
+  </div>
+  <div class="cell arc">
+    <svg viewBox="0 0 96 96">
+      <circle r="40" cx="48" cy="48" fill="none" stroke="var(--my-track)" stroke-width="8"/>
+      <circle class="pulse" r="40" cx="48" cy="48" fill="none" stroke="var(--my-muted)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.33" stroke-dashoffset="188.50" transform="rotate(-90 48 48)"/>
+      <text class="num" x="48" y="52" text-anchor="middle">—</text>
+      <text class="cap" x="48" y="66" text-anchor="middle">context</text>
+    </svg>
+    <div class="statecap">connecting…</div>
+  </div>
+  <div class="col" style="gap:18px;flex:1;min-width:210px">
+    <div class="bargauge g-ok"><div class="bar"><div class="fill" style="width:61%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div><div class="statecap" style="text-align:left">nominal 61%</div></div>
+    <div class="bargauge g-warn"><div class="bar"><div class="fill" style="width:78%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div><div class="statecap" style="text-align:left">warn ≥75%</div></div>
+    <div class="bargauge g-err"><div class="bar"><div class="fill" style="width:93%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div><div class="statecap" style="text-align:left">error ≥90%</div></div>
+    <div class="bargauge g-conn"><div class="bar"><div class="fill" style="width:100%"></div></div><div class="statecap" style="text-align:left">connecting…</div></div>
+  </div>
+</div>
+
+<h2 id="c-session-card">Session cards — five states (§7) <span class="ver">session-card · v1</span></h2>
+<div class="note">nominal / selected (accent double ring) / error ≥90% / idle / disconnected-stale (dashed border, pulsing dot, “reconnecting…”).</div>
+<div class="row">
+  <div class="scard"><div class="avatar">S</div><div class="smain"><div class="srow"><b>Skadi</b><span class="dot ok"></span><span class="slabel">working</span></div><div class="ssub">architect · opus · high · 2h 14m</div><div class="bargauge g-ok"><div class="bar"><div class="fill" style="width:61%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div></div></div></div>
+  <div class="scard sel"><div class="avatar">B</div><div class="smain"><div class="srow"><b>Brokkr</b><span class="dot ok"></span><span class="slabel">working</span></div><div class="ssub">worker · sonnet · 44m</div><div class="bargauge g-ok"><div class="bar"><div class="fill" style="width:38%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div></div></div></div>
+  <div class="scard"><div class="avatar">H</div><div class="smain"><div class="srow"><b>Heimdall</b><span class="dot err"></span><span class="slabel">context critical</span></div><div class="ssub">reviewer · opus · 5h 02m</div><div class="bargauge g-err"><div class="bar"><div class="fill" style="width:93%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div></div></div></div>
+  <div class="scard"><div class="avatar">M</div><div class="smain"><div class="srow"><b>Mimir</b><span class="dot mut"></span><span class="slabel">idle</span></div><div class="ssub">qa · haiku · 12m</div><div class="bargauge g-ok"><div class="bar"><div class="fill" style="width:12%"></div><span class="tick" style="left:75%"></span><span class="tick" style="left:90%"></span></div></div></div></div>
+  <div class="scard disc"><div class="avatar">F</div><div class="smain"><div class="srow"><b>Freyr</b><span class="dot warn"></span><span class="slabel">reconnecting…</span></div><div class="ssub">worker · sonnet · —</div><div class="bargauge g-conn"><div class="bar"><div class="fill" style="width:100%"></div></div></div></div></div>
+</div>
+
+<h2 id="c-terminal">Terminal, delivery queue &amp; send bar (§7) <span class="ver">terminal · queue-row · send-bar · v2</span></h2>
+<div class="note">The terminal uses the fixed <code>--my-term-*</code> set — heritage-dark in <b>both</b> themes. Stop-turn lives in the terminal chrome. Queue: ASAP / ON-DONE badges, queued→leased→delivered, two-step inline cancel.</div>
+<div class="col">
+  <div class="term">
+    <div class="termhead"><span class="dot ok"></span><span class="name">skadi — streaming</span><span class="noise">noise filter on</span><button class="stopbtn">■ stop turn (^C)</button></div>
+    <div class="termbody">
+      <div class="t-u">&gt; review the delivery queue lease logic for the persist-before-ack edge</div>
+      <div class="t-d">✱ Read core-daemon/src/delivery/local-delivery-engine.ts (412 lines)</div>
+      <div class="t-a">The lease is taken before the persist completes — if the daemon dies between lease and fsync, the message replays. That is the designed at-least-once edge; the consumer</div>
+      <div class="t-d">— turn interrupted (^C) —</div>
+      <div class="t-a">Resuming from the queue tail. Three messages pending.<span class="caret"></span></div>
+    </div>
+  </div>
+  <div class="term">
+    <div class="termhead"><span class="dot warn"></span><span class="name">freyr — disconnected</span></div>
+    <div class="termbanner">⚠ wake channel down — transcript frozen, queue still accepting (reconnecting…)</div>
+  </div>
+  <div class="qrow"><span class="badge asap">ASAP</span> Interrupt: stop touching the shared checkout <span class="qstate">leased · 4s</span><button class="qcancel">✕</button></div>
+  <div class="qrow"><span class="badge ondone">ON-DONE</span> After this turn: run the full bun test sweep <span class="qstate">queued</span><button class="qcancel confirm">cancel? confirm ✕</button></div>
+  <div class="qrow" style="color:var(--my-muted)"><span class="badge ondone">ON-DONE</span> Summarize the diff for the handoff <span class="qstate">delivered ✓</span></div>
+  <div>
+    <div class="sendbar">
+      <div class="seg"><button class="on">ASAP</button><button>ON-DONE</button></div>
+      <input placeholder="Message skadi…">
+      <button class="btn b-primary" style="height:30px">Send</button>
+    </div>
+    <div class="hint">ASAP interrupts the current turn; the agent sees it immediately. Delivery is persist-before-ack.</div>
+  </div>
+</div>
+
+<h2 id="c-wizard">Wizard — step &amp; validation states (§6) <span class="ver">wizard · v1</span></h2>
+<div class="note">Six dependency-ordered steps; done / current / upcoming / error / locked; the busy footer keeps Back enabled. Ends in one atomic Activate.</div>
+<div class="panel">
+  <div class="wsteps">
+    <span class="wstep done"><span class="n">✓</span>Paths</span>
+    <span class="wstep done"><span class="n">✓</span>Project &amp; repos</span>
+    <span class="wstep cur"><span class="n">3</span>Model &amp; key</span>
+    <span class="wstep err"><span class="n">!</span>Team &amp; review</span>
+    <span class="wstep"><span class="n">5</span>Telemetry</span>
+    <span class="wstep lock"><span class="n">🔒</span>Review &amp; activate</span>
+  </div>
+  <div class="wfoot">
+    <button class="btn b-secondary">← Back</button>
+    <span class="note" style="margin:0">Step 3 of 6 — nothing is written until Activate.</span>
+    <button class="btn b-primary"><span class="spin"></span>Fetching CLI…</button>
+  </div>
+</div>
+
+<h2 id="c-confirm-dialog">Confirm dialogs — the two lifecycle controls (§7) <span class="ver">confirm-dialog · v1</span></h2>
+<div class="note">The only filled-danger buttons in the product; recreate additionally gates behind a typed name match. Modals: radius 16, scrim + Esc dismiss.</div>
+<div class="dlgwrap">
+  <div class="dlg">
+    <h3>Say good-night?</h3>
+    <p>All 4 agents finish their current turn, then the team sleeps. Queues and memory persist — good-morning resumes exactly here.</p>
+    <div class="acts"><button class="btn b-secondary">Cancel</button><button class="btn b-dangerfill">Good-night</button></div>
+  </div>
+  <div class="dlg">
+    <h3>Recreate container?</h3>
+    <p>Applies the new mount manifest. Sessions end; volumes <code>mythical-env</code> / <code>mythical-state</code> survive. Type <b>brokkr-main</b> to confirm.</p>
+    <input class="input" style="width:100%" value="brokkr-main">
+    <div class="acts"><button class="btn b-secondary">Cancel</button><button class="btn b-dangerfill">Recreate</button></div>
+  </div>
+</div>
+
+<h2 id="c-toast">Toasts (§7) <span class="ver">toast · v1</span></h2>
+<div class="note">Bottom-center, soft status fill + icon + bold lead, auto-dismiss 2.6s — always icon + label, never color alone.</div>
+<div class="panel col" style="align-items:center">
+  <div class="toast t-ok">✓ <span><b>Saved.</b> Role policy applied to 3 running agents.</span></div>
+  <div class="toast t-info">ℹ <span><b>Queued.</b> Delivers when Skadi's turn completes.</span></div>
+  <div class="toast t-warn">⚠ <span><b>Context high.</b> Heimdall at 78% — consider a handoff.</span></div>
+  <div class="toast t-err">✕ <span><b>Key rejected.</b> anthropic/work-main returned 401 — replace the slot.</span></div>
+</div>
+
+<h2 id="c-empty-state">Empty states — the spine-node moments (§7) <span class="ver">empty-state · v1</span></h2>
+<div class="note">Muted hollow nodes + one accent node = “where you are”. Never a disabled ghost form, never an error tone.</div>
+<div class="row" style="align-items:stretch">
+  <div class="panel empty" style="flex:1;min-width:300px">
+    <div class="spine"><span class="node here"></span><span class="seg"></span><span class="node"></span><span class="seg"></span><span class="node"></span><span class="seg"></span><span class="node"></span></div>
+    <h3>Unconfigured — a valid state.</h3>
+    <p>Nothing is broken. The container is waiting for its first project.</p>
+    <div class="row"><button class="btn b-accent">Run setup</button><button class="btn b-secondary">Import config</button></div>
+  </div>
+  <div class="panel empty" style="flex:1;min-width:300px">
+    <div class="spine"><span class="node"></span><span class="seg"></span><span class="node"></span><span class="seg"></span><span class="node here"></span><span class="seg"></span><span class="node"></span></div>
+    <h3>The team is asleep.</h3>
+    <p>Queues and memory are intact. Good-morning picks up exactly where good-night left off.</p>
+    <div class="row"><button class="btn b-accent">Good-morning — spawn the team</button></div>
+  </div>
+</div>
+
+<h2 id="c-stat-tiles">Stat tiles — session detail header <span class="ver new">stat-tiles · v1 · NEW</span></h2>
+<div class="note">Detail-pane header metrics next to the arc gauge: tokens in/out (same box size), prompt-cache %, cost, spine savings (accent — the product's brag number). Mono, tabular-nums, micro-label keys.</div>
+<div class="panel tiles">
+  <div class="tile"><div class="k">Tokens in</div><div class="v">1,204,551</div><div class="d">this session</div></div>
+  <div class="tile"><div class="k">Tokens out</div><div class="v">84,102</div><div class="d">this session</div></div>
+  <div class="tile"><div class="k">Cache</div><div class="v">94.5%</div><div class="d">prompt-cache hit</div></div>
+  <div class="tile"><div class="k">Cost</div><div class="v">$4.18</div><div class="d">est. session</div></div>
+  <div class="tile save"><div class="k">Spine savings</div><div class="v">−212k</div><div class="d">tokens distilled away</div></div>
+</div>
+
+<h2 id="c-git-chip">Git status chip <span class="ver new">git-chip · v1 · NEW</span></h2>
+<div class="note">Branch + working-tree truth in the session detail header. Flags are honest counters, never red unless it is an error state; clean tree = quiet ok.</div>
+<div class="panel row">
+  <span class="gitchip">⎇ feat/control-room-daemon-gaps <span class="gitflag w">2↓ behind</span> <span class="gitflag w">4 uncommitted</span> <span class="gitflag e">1 unpushed</span></span>
+  <span class="gitchip">⎇ main <span class="gitflag o">clean ✓</span></span>
+</div>
+
+<h2 id="c-memory">Memory — tier bar &amp; memory card <span class="ver new">tier-bar · memory-card · v1 · NEW</span></h2>
+<div class="note">Three-tier framework (Project ◈ / Agents ◉ / Roles ⌘). Card: kind chip, tier glyph, priority dots, body, provenance + recall-strength bar; withheld renders as a warn-soft note (rank-only, reversible, nothing deleted).</div>
+<div class="panel col">
+  <div style="max-width:420px">
+    <div class="distbar"><i style="width:52%;background:var(--my-accent)"></i><i style="width:31%;background:var(--my-info)"></i><i style="width:17%;background:var(--my-muted)"></i></div>
+    <div class="distlegend"><span><span class="sq" style="background:var(--my-accent)"></span>◈ project 128</span><span><span class="sq" style="background:var(--my-info)"></span>◉ agents 76</span><span><span class="sq" style="background:var(--my-muted)"></span>⌘ roles 41</span></div>
+  </div>
+  <div class="row" style="align-items:stretch">
+    <div class="mcard">
+      <div class="mhead"><span class="kind">GOTCHA</span><span class="tierg">◈ project</span><span class="prio">●●<span class="off">●</span></span></div>
+      <div class="mbody">Worktrees under <code>/tmp/worktree</code> hit false cwd-based test failures — integrate in the primary checkout.</div>
+      <div class="mprov">records/migratio-024 · recalled 11× · 42d old</div>
+      <div class="strength"><i style="width:72%"></i></div>
+    </div>
+    <div class="mcard">
+      <div class="mhead"><span class="kind">LESSON</span><span class="tierg">◉ skadi</span><span class="prio">●<span class="off">●●</span></span></div>
+      <div class="mbody">BOSS prefers findings folded incrementally — never batch review rounds into one mega-commit.</div>
+      <div class="mprov">records/skadi-003 · recalled 0× · 201d old</div>
+      <div class="strength"><i style="width:9%"></i></div>
+      <div class="withheld">⚠ withheld from injection — score 0.31 &lt; 0.5 (never recalled, &gt;180d). Fades in rank only; nothing is deleted.</div>
+    </div>
+  </div>
+</div>
+
+<h2 id="c-project-hero">Project hero <span class="ver new">project-hero · v2 · NEW</span></h2>
+<div class="note">Projects detail header: gradient hero (rounds its inner gradient — never <code>overflow:hidden</code>, popovers must escape), avatar tile, inline rename ✎, active pill, then <b>editable dropdown chips</b> for the team policies (squared, §5); <code>backend</code> chip is read-only and keeps the pill tag look.</div>
+<div class="hero">
+  <div class="herotop">
+    <div class="heroav">M</div>
+    <div style="flex:1"><span class="herotitle">mythical-project</span><span class="heropen">✎</span></div>
+    <span class="pill act">ACTIVE</span>
+  </div>
+  <div class="herochips">
+    <span class="chipdd ro">backend: <b>local</b></span>
+    <span class="chipdd">review lane: <b>codex cross-model</b> <span class="car">▾</span></span>
+    <span class="chipdd">authority rhythm: <b>B — pre-authorized</b> <span class="car">▾</span></span>
+    <span class="chipdd">push flow: <b>propose-only</b> <span class="car">▾</span></span>
+  </div>
+  <div class="herostats"><span>4 agents</span><span>3 repos</span><span>team: working ●</span><span>active now</span></div>
+</div>
+
+<h2 id="c-popover">Dropdown popover <span class="ver new">popover · v1 · NEW</span></h2>
+<div class="note">Anchored below its chip; <code>--my-shadow-modal</code>, high z-index; ✓ marks current. Ancestors must never clip it.</div>
+<div class="panel" style="min-height:190px">
+  <div class="popwrap">
+    <span class="chipdd">review lane: <b>codex cross-model</b> <span class="car">▾</span></span>
+    <div class="pop">
+      <div class="it on">codex cross-model <span>✓</span></div>
+      <div class="it">clean-context ephemeral</div>
+      <div class="it">off — no review lane</div>
+    </div>
+  </div>
+</div>
+
+<h2 id="c-select">Select — native-parity styled dropdown <span class="ver new">select · v3 · NEW</span></h2>
+<div class="note"><code>&lt;mythical-select&gt;</code> — a form-associated web component with native <code>&lt;select&gt;</code> parity: same attributes (<code>name/value/disabled/required</code> + form association, label focus, form reset, <code>fieldset[disabled]</code>), same API (<code>value · selectedIndex · options · labels · validity · checkValidity() · reportValidity() · setCustomValidity()</code>), <code>input</code>/<code>change</code> on user commit, groups via <code>&lt;mythical-optgroup label&gt;</code>, full keyboard incl. closed-typeahead. Reference implementation: <code>packages/ui-core/src/select/mythical-select.js</code>. Two authoring modes — pure tags, or <b>progressive</b>: wrap a real native <code>&lt;select&gt;</code>, which keeps working when JS is unavailable (what sandboxed previews show). <code>variant="chip"</code> gives the compact policy-chip look — squared, like every interactive control (§5). <b>v2:</b> SVG caret (rotates on open), ✓ on the current option, group separators, viewport-aware flip-up, reduced-motion-aware pop-in; engines without <code>ElementInternals</code> degrade to a working native select. Not supported: <code>multiple</code>/<code>size</code> — use a native select there.</div>
+<div class="panel col">
+  <form id="selDemo" class="row" style="align-items:flex-end" onsubmit="return false">
+    <div class="field"><label for="sel1">Review lane — pure mode, groups, disabled option</label>
+      <mythical-select id="sel1" name="reviewLane" required>
+        <mythical-optgroup label="Cross-model">
+          <mythical-option value="codex" selected>codex cross-model</mythical-option>
+          <mythical-option value="ephemeral">clean-context ephemeral</mythical-option>
+        </mythical-optgroup>
+        <mythical-optgroup label="None">
+          <mythical-option value="off">off — no review lane</mythical-option>
+          <mythical-option value="yolo" disabled>no gates (disabled)</mythical-option>
+        </mythical-optgroup>
+      </mythical-select>
+    </div>
+    <div class="field"><label for="sel2">Model — progressive mode (a real &lt;select&gt; inside)</label>
+      <mythical-select id="sel2">
+        <select name="model">
+          <optgroup label="Anthropic"><option value="opus">opus</option><option value="sonnet" selected>sonnet</option><option value="haiku">haiku</option></optgroup>
+          <optgroup label="OpenAI"><option value="codex">codex</option></optgroup>
+        </select>
+      </mythical-select>
+    </div>
+    <div class="field"><label for="sel3">Disabled</label>
+      <mythical-select id="sel3" disabled><mythical-option value="local" selected>backend: local</mythical-option></mythical-select>
+    </div>
+    <mythical-select variant="chip" name="pushFlow" title="chip variant">
+      <mythical-option value="propose" selected>push flow: propose-only</mythical-option>
+      <mythical-option value="direct">push flow: direct</mythical-option>
+    </mythical-select>
+  </form>
+  <div class="hint" id="selOut">form value: — (upgrades with JS; without it the progressive instance stays a working native select)</div>
+</div>
+
+<h2 id="c-org-family">Org card &amp; family tiles <span class="ver new">org-card · family-tile · v1 · NEW</span></h2>
+<div class="note">The upgrade seam is an invitation, never a lock (dashed border, quiet). Family products render friendly whether present or absent — absence is one copy-able install line, never an error tone.</div>
+<div class="panel col">
+  <div class="orgcard"><span class="dot mut"></span><span><b>mythical-brokkr v0.5.1</b> · free tier · fully local · works forever</span><a class="up" href="#">◇ Upgrade / Connect →</a></div>
+  <div class="row" style="align-items:stretch">
+    <div class="famtile"><h4><span class="dot ok"></span>skuld</h4><p>Scheduler — scripts, reports &amp; maintenance toward your agents.</p><button class="btn b-secondary" style="height:28px;font-size:12px">Open :7481 →</button></div>
+    <div class="famtile"><h4><span class="dot mut"></span>saga</h4><p>Not installed — and that's fine. One line brings it up:</p><code>curl -fsSL mythicalos.ai/saga | sh</code></div>
+  </div>
+</div>
+
+<div class="foot">
+  mythical / brokkr component preview v0.5 · lives in the <code>mythical-design</code> repo (submodule of mythical-project) ·
+  book: <code>design.md</code> · tokens: <code>tokens.css</code> · screen-level truth:
+  <code>control-room/handoff/Control Room.dc.html</code> · history: mythical-project <code>docs/design/m14/preview-v07-design-tail.html</code> (WS1 record, screenshot-based) ·
+  <code>preview.html</code> is generated from <code>preview.src.html</code> by <code>scripts/generate-preview.sh</code> (git-hash stamp at top; the previous build is kept as <code>preview.&lt;YYYYMMDD&gt;-&lt;shortsha&gt;[-N].html</code>).
+</div>
+
+<script src="../packages/ui-core/src/select/mythical-select.js"></script>
+<script>
+/* Progressive enhancement only — the page is fully static without JS
+   (sandboxed previews like iPad Files/QuickLook show light theme + petrol). */
+function flipTheme(){
+  const r=document.documentElement, dark=r.getAttribute('data-theme')==='dark';
+  const b=document.getElementById('themeBtn');
+  if(dark){r.removeAttribute('data-theme');b.textContent='◐  heritage dark';}
+  else{r.setAttribute('data-theme','dark');b.textContent='◑  light';}
+}
+/* curated accent swatches (design.md §3: soft/strong/hover derived via color-mix, never hand-picked) */
+const HEX={petrol:'',blue:'#2B5FAA',violet:'#7A5AF8',amber:'#B45309',moss:'#1A7F4B'};
+document.querySelectorAll('.swatch').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const hex=HEX[btn.title], r=document.documentElement.style;
+    document.querySelectorAll('.swatch').forEach(s=>s.classList.remove('on'));btn.classList.add('on');
+    if(!hex){['--my-accent','--my-accent-strong','--my-accent-soft','--my-accent-hover'].forEach(p=>r.removeProperty(p));}
+    else{
+      r.setProperty('--my-accent',hex);
+      r.setProperty('--my-accent-strong',`color-mix(in oklab, ${hex} 72%, var(--my-ink))`);
+      r.setProperty('--my-accent-soft',`color-mix(in oklab, ${hex} 14%, var(--my-surface))`);
+      r.setProperty('--my-accent-hover',`color-mix(in oklab, ${hex} 88%, var(--my-ink))`);
+    }
+  });
+});
+
+/* mythical-select demo: FormData readout — proves native form participation */
+const selDemo=document.getElementById('selDemo'),selOut=document.getElementById('selOut');
+if(selDemo&&selOut&&window.customElements){
+  const dump=()=>{const fd=new FormData(selDemo);
+    selOut.textContent='form value (via FormData): '+([...fd.entries()].map(([k,v])=>k+'='+v).join(' · ')||'—');};
+  selDemo.addEventListener('change',dump);
+  customElements.whenDefined('mythical-select').then(()=>setTimeout(dump,0));
+}
+</script>
+</body>
+</html>

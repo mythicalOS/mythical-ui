@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  BUN_VERSION: "1.3.14"
+
+jobs:
+  publish:
+    name: publish
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@v4
+        with:
+          path: mythical-ui
+
+      # bun test (below) includes packages/ui-core/test/css.test.ts +
+      # packages/shell/css.test.tsx, which read the canonical tokens.css from
+      # a SIBLING mythical-design checkout — same reason/layout as ci.yml.
+      - name: Checkout mythical-design (sibling — canonical tokens.css)
+        uses: actions/checkout@v4
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      - name: Set up bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck (all packages)
+        run: bun run typecheck
+
+      - name: Unit tests (302)
+        run: bun test
+
+      - name: Build (all packages)
+        run: bun run build
+
+      # Standard npm auth file — GitHub Actions masks the NPM_TOKEN secret's
+      # value in all logs, including this interpolation; nothing is echoed.
+      - name: Write npm publish auth
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      # Publish order matters for CONSUMER installability: @mythicalos/ui-core
+      # must be live before @mythicalos/preact-ui / @mythicalos/react-ui (which
+      # depend on it), which must be live before @mythicalos/shell (which
+      # depends on preact-ui). `bun publish` (not `npm publish`) is used
+      # deliberately: it rewrites each dependent's `workspace:*` protocol
+      # dependency to the real local package version at pack time (verified
+      # with `bun pm pack` — see Task 9's report for the dry-run manifests);
+      # plain `npm publish` does NOT perform this rewrite and would publish a
+      # broken `"workspace:*"` version string no external install can resolve.
+      # Guard: skip a package whose exact version is already on the registry
+      # (idempotent re-runs / re-tagging one package don't fail the others).
+      - name: Publish packages (dependency order)
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          set -euo pipefail
+          publish_if_new() {
+            local dir="$1" name version
+            name=$(bun -e "console.log(require('./${dir}/package.json').name)")
+            version=$(bun -e "console.log(require('./${dir}/package.json').version)")
+            if npm view "${name}@${version}" version >/dev/null 2>&1; then
+              echo "already published: ${name}@${version} — skipping"
+              return 0
+            fi
+            echo "publishing ${name}@${version} from ${dir}"
+            (cd "${dir}" && bun publish --access public)
+          }
+          publish_if_new packages/ui-core
+          publish_if_new packages/preact-ui
+          publish_if_new packages/react-ui
+          publish_if_new packages/shell

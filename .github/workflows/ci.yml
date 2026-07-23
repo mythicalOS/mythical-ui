@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: "1.3.14"
+
+jobs:
+  # Typecheck, unit tests (302) and package builds for all 4 workspace packages.
+  # packages/ui-core/test/css.test.ts and packages/shell/css.test.tsx read the
+  # canonical tokens.css from a SIBLING mythical-design checkout (the same
+  # resolution the tests use locally: mythical-project/{mythical-ui,mythical-design}
+  # side by side) — there's no persistent sibling checkout on a runner, so both
+  # repos are checked out here as sibling directories under $GITHUB_WORKSPACE
+  # (mythicalOS/mythical-design is a public repo; a plain checkout works).
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@v4
+        with:
+          path: mythical-ui
+
+      - name: Checkout mythical-design (sibling — canonical tokens.css)
+        uses: actions/checkout@v4
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      - name: Set up bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Typecheck (all packages)
+        run: bun run typecheck
+
+      - name: Unit tests (302)
+        run: bun test
+
+      - name: Build (all packages)
+        run: bun run build
+
+  # Cross-engine mythical-select contract suite (354 Playwright tests). The
+  # fixtures are served over HTTP from packages/ui-core/playwright.config.js's
+  # webServer, rooted high enough to reach both the fixture/component AND the
+  # sibling mythical-design/tokens.css it links — same sibling checkout as the
+  # `test` job above, same reason.
+  select-parity:
+    name: select-parity
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@v4
+        with:
+          path: mythical-ui
+
+      - name: Checkout mythical-design (sibling — canonical tokens.css)
+        uses: actions/checkout@v4
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      - name: Set up bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: bunx playwright install --with-deps chromium firefox webkit
+
+      - name: mythical-select contract suite (354)
+        working-directory: mythical-ui/packages/ui-core
+        run: bun run test:select
+
+  # Public-safety + previews drift control. Runs the same sibling-checkout
+  # trick as the other jobs since previews/scripts/{generate-preview,check-ds}.sh
+  # also resolve tokens.css (and, for the fonts, the canonical source .woff2
+  # files) from the sibling mythical-design checkout.
+  hygiene:
+    name: hygiene
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@v4
+        with:
+          path: mythical-ui
+
+      - name: Checkout mythical-design (sibling — canonical tokens.css + fonts)
+        uses: actions/checkout@v4
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      # Denylist gate: internal demo/dev strings must never appear in this
+      # PUBLIC repo. Keep this list in sync with the genericize pass done for
+      # Task 9 — any hit here is a release blocker, not a style nit.
+      # Scan excludes .git (VCS internals) and .github (this workflow file
+      # necessarily contains the literal patterns below, to search for them —
+      # excluding it avoids the gate matching itself) and node_modules.
+      - name: Genericize grep gate (banned internal-demo terms)
+        run: |
+          set -euo pipefail
+          pattern='agent-daemon|agent-local-mcp|/private/tmp|hameddk|esmiley|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
+          if grep -rliIE "$pattern" . \
+              --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules
+          then
+            echo "::error::banned internal-demo term(s) found — see file(s) listed above"
+            exit 1
+          fi
+          echo "genericize gate: clean"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Regenerate previews/preview.html (must stay green)
+        run: ./previews/scripts/generate-preview.sh
+
+      - name: Self-containment check — no external URLs in preview.html
+        run: |
+          set -euo pipefail
+          hits=$(grep -noE 'https?://[^"'"'"'<) ]*' previews/preview.html | grep -v 'w3\.org/2000/svg' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::preview.html is not self-contained — external URL(s) found:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "preview.html self-containment: clean (only the inert SVG xmlns namespace URI, if any)"
+
+      - name: Check ds/ cards (drift control)
+        run: ./previews/scripts/check-ds.sh

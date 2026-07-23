@@ -4,6 +4,12 @@
   "type": "module",
   "license": "Apache-2.0",
   "publishConfig": { "access": "public" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mythicalOS/mythical-ui.git",
+    "directory": "packages/ui-core"
+  },
+  "homepage": "https://github.com/mythicalOS/mythical-ui#packages",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
