@@ -5,18 +5,33 @@
   "license": "Apache-2.0",
   "publishConfig": { "access": "public" },
   "exports": {
-    "./logic": "./src/index.ts",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./logic": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./styles.css": "./styles.css",
     "./select": {
       "types": "./src/select/mythical-select.d.ts",
       "default": "./src/select/register.js"
     }
   },
-  "files": ["src", "styles.css", "README.md"],
+  "files": ["dist", "styles.css", "src/select", "README.md", "NOTICE"],
   "sideEffects": ["*.css", "./src/select/register.js", "./src/select/mythical-select.js"],
+  "peerDependencies": {
+    "@mythicalos/tokens": "^0.5.11"
+  },
+  "peerDependenciesMeta": {
+    "@mythicalos/tokens": { "optional": true }
+  },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit",
-    "test:select": "playwright test"
+    "test:select": "playwright test",
+    "prepublishOnly": "bun run build && bun test && bun run typecheck"
   },
   "devDependencies": {
     "@playwright/test": "^1.61.1",

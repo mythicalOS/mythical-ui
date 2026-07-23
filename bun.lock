@@ -16,6 +16,12 @@
         "@playwright/test": "^1.61.1",
         "typescript": "^5",
       },
+      "peerDependencies": {
+        "@mythicalos/tokens": "^0.5.11",
+      },
+      "optionalPeers": [
+        "@mythicalos/tokens",
+      ],
     },
   },
   "packages": {

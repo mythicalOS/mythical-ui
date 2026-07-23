@@ -3,7 +3,7 @@
 // The `ConfirmDialog`/`Scrim` renderers stay in the framework bindings; this module keeps only the
 // prop-shape types and the typed-name-match gate that drives them.
 
-import type { Tone } from "./tone.ts";
+import type { Tone } from "./tone.js";
 
 export interface DialogBullet {
   tone: Tone;

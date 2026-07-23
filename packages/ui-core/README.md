@@ -8,6 +8,38 @@ text-composition helper, and the circular-gauge geometry.
 
 This package MUST NOT import `preact` or `react` — see `test/agnostic.test.ts`.
 
+## Install / Import
+
+```sh
+npm add @mythicalos/ui-core
+```
+
+`@mythicalos/tokens` is a peer dependency — load its stylesheet *before* this
+package's so the `--my-*` custom properties it defines are already in scope
+when `styles.css` resolves through them:
+
+```sh
+npm add @mythicalos/tokens
+```
+
+Three import forms, all consumable from a plain Node ESM script, a webpack/vite
+app, or a React/Preact bundle — `./logic` ships compiled ESM + `.d.ts` from
+`dist/` (not raw TypeScript source), so no consumer needs a TS loader for it:
+
+```ts
+// 1. logic — pure functions/types, zero DOM, zero framework runtime
+import { buttonClass, nextPollDelay, typedNameMatches } from "@mythicalos/ui-core/logic";
+// (equivalently, the package root re-exports the same thing)
+import { buttonClass } from "@mythicalos/ui-core";
+
+// 2. styles — the atom-class stylesheet; import @mythicalos/tokens' CSS first
+import "@mythicalos/tokens";
+import "@mythicalos/ui-core/styles.css";
+
+// 3. the <mythical-select> web component — a registration side effect
+import "@mythicalos/ui-core/select";
+```
+
 ## Usage
 
 ```ts

@@ -4,7 +4,7 @@
 // derived, matching the source's `clamped` value — both functions clamp independently so either
 // can be called on its own with an out-of-range input and stay consistent with the other.
 
-import type { Tone } from "./tone.ts";
+import type { Tone } from "./tone.js";
 
 /** Fill color steps by threshold per token rule #4: ok/accent < 75%, warn 75–89%, error ≥ 90%. */
 export function gaugeTone(pct: number): Tone {

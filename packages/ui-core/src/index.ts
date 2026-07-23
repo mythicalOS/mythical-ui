@@ -2,7 +2,7 @@
 // `preact`/`react` imports (enforced by test/agnostic.test.ts). Both the Preact and React bindings
 // import from here so they derive identical classes/behavior from one source.
 
-export { buttonClass, type BtnVariant, type BtnState } from "./logic/button.ts";
+export { buttonClass, type BtnVariant, type BtnState } from "./logic/button.js";
 
 export {
   nextPollDelay,
@@ -14,9 +14,9 @@ export {
   type PollResult,
   type PollEpochGuard,
   type PollTickIO,
-} from "./logic/poll.ts";
+} from "./logic/poll.js";
 
-export { typedNameMatches, BULLET_ICON, type DialogBullet } from "./logic/dialog.ts";
+export { typedNameMatches, BULLET_ICON, type DialogBullet } from "./logic/dialog.js";
 
 export {
   composeToastText,
@@ -24,9 +24,9 @@ export {
   type ToastStatus,
   type ToastSpec,
   type ToastBus,
-} from "./logic/toast.ts";
+} from "./logic/toast.js";
 
-export { gaugeTone, gaugeGeom, type GaugeGeom } from "./logic/gauge.ts";
+export { gaugeTone, gaugeGeom, type GaugeGeom } from "./logic/gauge.js";
 
 export {
   chipClass,
@@ -37,4 +37,4 @@ export {
   type ChipTone,
   type StatusTone,
   type BannerTone,
-} from "./logic/tone.ts";
+} from "./logic/tone.js";

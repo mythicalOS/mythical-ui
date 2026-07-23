@@ -1,0 +1,11 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "declaration": true,
+    "outDir": "dist",
+    "rootDir": "src",
+    "allowImportingTsExtensions": false
+  },
+  "include": ["src/logic/**/*.ts", "src/index.ts"]
+}
