@@ -46,14 +46,17 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Build FIRST: cross-package imports like `@mythicalos/ui-core/logic`
+      # resolve to built dist/, so typecheck and the binding tests need the
+      # dependency's dist present (same ordering as release.yml).
+      - name: Build (all packages, dependency order)
+        run: bun run build
+
       - name: Typecheck (all packages)
         run: bun run typecheck
 
-      - name: Unit tests (302)
+      - name: Unit tests
         run: bun test
-
-      - name: Build (all packages)
-        run: bun run build
 
   # Cross-engine mythical-select contract suite (354 Playwright tests). The
   # fixtures are served over HTTP from packages/ui-core/playwright.config.js's
