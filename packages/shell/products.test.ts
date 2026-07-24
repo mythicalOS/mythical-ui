@@ -6,9 +6,9 @@
 import { describe, expect, test } from "bun:test";
 import { FAMILY_NOTE, PRODUCTS } from "./src/index.ts";
 
-describe("PRODUCTS — exact registry content (ported verbatim from design-export)", () => {
-  test("exactly 4 products, in the export's order", () => {
-    expect(PRODUCTS.map((p) => p.key)).toEqual(["brokkr", "skuld", "saga", "edda"]);
+describe("PRODUCTS — exact registry content", () => {
+  test("exactly 3 products, in registry order", () => {
+    expect(PRODUCTS.map((p) => p.key)).toEqual(["brokkr", "skuld", "saga"]);
   });
 
   test("brokkr — online, navigable", () => {
@@ -39,17 +39,6 @@ describe("PRODUCTS — exact registry content (ported verbatim from design-expor
       name: "SAGA",
       initial: "G",
       role: "Chronicle & session history",
-      href: null,
-      state: "soon",
-    });
-  });
-
-  test("edda — soon, not yet navigable (null href)", () => {
-    expect(PRODUCTS[3]).toEqual({
-      key: "edda",
-      name: "EDDA",
-      initial: "E",
-      role: "Lore & knowledge base",
       href: null,
       state: "soon",
     });

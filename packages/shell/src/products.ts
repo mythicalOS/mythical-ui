@@ -13,9 +13,8 @@
 //   'online'  — reachable (ok dot)
 //   'soon'    — planned, not built (muted dot, click shows a "not built" note)
 //
-// Ported verbatim from design-export's mythical-ui/src/products.js — content is the
-// product-approved registry and is kept EXACTLY as the export (name/key/initial/role/
-// href/state for every entry), only the file gains a TS type.
+// Ported from the original design export; maintained here as the product-approved
+// registry (name/key/initial/role/href/state for every entry).
 
 export type ProductState = "here" | "online" | "soon";
 
@@ -50,14 +49,6 @@ export const PRODUCTS: Product[] = [
     name: "SAGA",
     initial: "G",
     role: "Chronicle & session history",
-    href: null,
-    state: "soon",
-  },
-  {
-    key: "edda",
-    name: "EDDA",
-    initial: "E",
-    role: "Lore & knowledge base",
     href: null,
     state: "soon",
   },
