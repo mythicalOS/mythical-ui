@@ -1481,6 +1481,12 @@ test('validity: blocked submit sets [data-user-invalid]; committing clears it an
   await expect(page.locator('#required-sel')).toHaveAttribute('data-user-invalid');
   expect(await page.evaluate(() => window.__submits)).toBe(0);
 
+  // Dismiss the native validation bubble before interacting again: Firefox
+  // CONSUMES the first click away from the anchored control to close it (see
+  // the fuller note before the re-submit below) — on Linux that swallowed the
+  // option-commit click.
+  await page.mouse.click(5, 5);
+
   // commit a real value through the UI → invalid state clears
   await page.locator('#required-sel button').click();
   await page.locator('#required-sel .opt[data-i="1"]').click(); // "Alpha choice"
@@ -1516,6 +1522,10 @@ test('validity: aria-invalid appears with the blocked-submit condition and clear
   await page.locator('#submit').click(); // blocked: required-sel is valueMissing
   await expect(page.locator('#required-sel')).toHaveAttribute('data-user-invalid');
   await expect(btn).toHaveAttribute('aria-invalid', 'true'); // tracks the same condition
+  // Dismiss the native validation bubble first — Firefox consumes the first
+  // click away from the anchored control to close it, which on Linux swallowed
+  // the option-commit click below.
+  await page.mouse.click(5, 5);
   await btn.click();
   await page.locator('#required-sel .opt[data-i="1"]').click(); // commit "Alpha choice"
   await expect(btn).not.toHaveAttribute('aria-invalid'); // valid again → reflection gone
