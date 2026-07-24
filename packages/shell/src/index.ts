@@ -10,6 +10,7 @@
 // after ui-core's — see this package's README for the three-layer import order.
 
 export { Logo, LogoMark, type LogoProps, type LogoMarkProps } from "./Logo.js";
+export { ProductGlyph, hasProductGlyph, type ProductGlyphProps } from "./ProductGlyph.js";
 export {
   ProductSwitcher,
   type ProductSwitcherProps,

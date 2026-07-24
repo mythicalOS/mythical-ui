@@ -214,3 +214,41 @@ describe("ProductSwitcher — source scan: outside-click + Escape wiring is pres
     expect(guard).toContain("if (!open) return;");
   });
 });
+
+describe("product glyphs — the navigation marks (product-navigation reference)", () => {
+  test("every registry product renders an svg glyph mark, not its initial letter", () => {
+    const html = renderToString(
+      <SwitcherPanel current="brokkr" products={PRODUCTS} note="n" onPick={noop} />,
+    );
+    // one glyph per product row + one for the asgard footer note
+    const glyphCount = (html.match(/class="my-glyph"/g) ?? []).length;
+    expect(glyphCount).toBe(PRODUCTS.length + 1);
+    for (const p of PRODUCTS) expect(html).not.toContain(`>${p.initial}</span>`);
+  });
+
+  test("glyphs are token-colored (theme-aware), never hardcoded hex", () => {
+    const html = renderToString(
+      <SwitcherPanel current="brokkr" products={PRODUCTS} note="n" onPick={noop} />,
+    );
+    expect(html).toContain("var(--my-ink)");
+    expect(html).toContain("var(--my-accent)");
+    expect(html).not.toMatch(/#(16181D|0F6B66|ECE7DE|3FB8AE)/i);
+  });
+
+  test("the footer note carries the asgard glyph (the arch), not a text glyph", () => {
+    const html = renderToString(
+      <SwitcherPanel current="brokkr" products={PRODUCTS} note="n" onPick={noop} />,
+    );
+    expect(html).toContain("M12 53C12 17 84 17 84 53"); // the bifröst arch path
+    expect(html).not.toContain("✦");
+  });
+
+  test("a custom product key without registered art falls back to the initial letter", () => {
+    const custom: Product[] = [
+      { key: "x", name: "XPROD", initial: "X", role: "r", href: "/x", state: "online" },
+    ];
+    const html = renderToString(<SwitcherPanel current="x" products={custom} note="n" onPick={noop} />);
+    expect(html).not.toContain("my-glyph\" viewBox"); // no art for "x"… 
+    expect(html).toContain(">X</span>"); // …so the mark is the initial
+  });
+});

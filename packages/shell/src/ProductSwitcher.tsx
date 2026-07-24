@@ -23,6 +23,7 @@
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Logo } from "./Logo.js";
+import { ProductGlyph, hasProductGlyph } from "./ProductGlyph.js";
 import { PRODUCTS, FAMILY_NOTE, type Product, type ProductState } from "./products.js";
 
 export interface ProductSwitcherProps {
@@ -105,7 +106,9 @@ export function SwitcherPanel({ current, products, note, onPick }: SwitcherPanel
             role="menuitem"
             onClick={() => onPick(p)}
           >
-            <span class="my-switcher__mark">{p.initial}</span>
+            <span class="my-switcher__mark">
+              {hasProductGlyph(p.key) ? <ProductGlyph productKey={p.key} /> : p.initial}
+            </span>
             <span class="my-switcher__body">
               <span class="my-switcher__name">
                 {p.name}
@@ -119,7 +122,9 @@ export function SwitcherPanel({ current, products, note, onPick }: SwitcherPanel
       })}
       <div class="my-switcher__divider" />
       <div class="my-switcher__note">
-        <span class="my-switcher__note-glyph">✦</span>
+        <span class="my-switcher__note-glyph">
+          <ProductGlyph productKey="asgard" size={18} />
+        </span>
         <span>{note}</span>
       </div>
     </div>

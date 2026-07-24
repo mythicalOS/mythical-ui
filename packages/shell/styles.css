@@ -176,6 +176,9 @@
 }
 .my-switcher__item:hover { background: var(--my-surface-hover); }
 .my-switcher__item.is-current { background: var(--my-accent-soft); }
+/* the product glyph marks (see ProductGlyph.tsx) — block so the svg centers in its tile */
+.my-glyph { display: block; }
+
 .my-switcher__mark {
   width: 32px;
   height: 32px;
@@ -190,7 +193,9 @@
   font-size: var(--my-fs-body); /* export: literal 14px — exact match, lossless */
   font-family: var(--my-font-mono);
 }
-.my-switcher__item.is-current .my-switcher__mark { background: var(--my-accent); color: var(--my-surface); } /* remapped from export's literal #fff — see fidelity note above */
+.my-switcher__item.is-current .my-switcher__mark { background: var(--my-accent-soft); } /* the current
+  product's tile goes accent-SOFT (the product-navigation reference's markBg): the glyph keeps its
+  ink/accent colors — a full-accent tile would swallow the glyph's accent dots. */
 .my-switcher__body { min-width: 0; flex: 1; }
 .my-switcher__name {
   display: flex;
@@ -239,9 +244,8 @@
 }
 .my-switcher__note-glyph {
   flex: none;
-  font-size: var(--my-fs-mono); /* export: literal 13px — exact match, lossless (glyph, not code;
-    reusing the 13px scale step regardless of its "mono" name, same as ui-core's own precedent of
-    reusing --my-fs-caption for non-caption tiny text). */
+  display: flex;
+  align-items: center; /* the asgard glyph mark (was a text ✦ before the glyph pass) */
 }
 
 /* ═══ Nav tabs ═════════════════════════════════════════════════════════════ */
