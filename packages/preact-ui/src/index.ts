@@ -137,6 +137,7 @@ export {
   FilePreview,
   FileScopePicker,
   deriveFileTreeRows,
+  countFileRows,
   countLoadedFiles,
   previewMeta,
   previewBodyMode,

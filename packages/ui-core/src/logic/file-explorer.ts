@@ -657,7 +657,11 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
       });
       return;
     }
-    if (state.entries.length === 0) {
+    // EMPTY is a positive claim — "there is nothing here" — and only a COMPLETE listing can support
+    // it. A truncated listing that happens to carry no entries proves nothing about the directory,
+    // so it falls through to the truncated note alone rather than asserting both "this directory is
+    // empty" and "some entries are hidden", which contradict each other.
+    if (state.entries.length === 0 && state.truncated !== true) {
       rows.push({
         type: "note",
         id: `${id}\u0000note`,
@@ -728,12 +732,28 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
   return rows;
 }
 
-/** Total FILE entries across every LOADED listing — the rail header's honest count under lazy
- *  loading. It counts what has actually been listed, never a total nobody proved.
+/** The number of FILE rows actually rendered — the rail header's default count, and the only one
+ *  that is provably equal to what the operator can see. Pure. */
+export function countFileRows(rows: readonly FileTreeRow[]): number {
+  let n = 0;
+  for (const row of rows) if (row.type === "file") n++;
+  return n;
+}
+
+/**
+ * Total FILE entries DISCOVERED across every cached listing — a different number from
+ * `countFileRows`, and deliberately so.
  *
- *  Malformed names are excluded on exactly the same test `deriveFileTreeRows` uses to drop them, so
- *  the header can never claim a file the tree does not render. `Object.keys` is own-enumerable only,
- *  matching the own-key guard on the row walk. Pure. */
+ * This counts what the caller has listed so far ANYWHERE in its cache, including directories that
+ * are currently collapsed or no longer reachable from the active roots. It is therefore NOT the
+ * count of visible rows and must not be presented as one: a collapsed `docs/` whose listing is
+ * cached still contributes its files here while rendering none. `FileTree` defaults its header to
+ * `countFileRows` for exactly that reason; pass this explicitly as `count` only when "files
+ * discovered so far" is the number you actually mean.
+ *
+ * Malformed and duplicate names are excluded on the same tests the walk applies, and `Object.keys`
+ * is own-enumerable only, matching the walk's own-key guard. Pure.
+ */
 export function countLoadedFiles(dirs: Readonly<Record<string, DirState>>): number {
   let n = 0;
   for (const key of Object.keys(dirs)) {

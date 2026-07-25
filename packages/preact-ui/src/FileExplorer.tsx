@@ -25,6 +25,7 @@ import {
   badgeClass,
   breadcrumbSegments,
   buildBreadcrumb,
+  countFileRows,
   countLoadedFiles,
   deriveFileTreeRows,
   formatFileSize,
@@ -52,6 +53,7 @@ import {
 export {
   breadcrumbSegments,
   buildBreadcrumb,
+  countFileRows,
   countLoadedFiles,
   deriveFileTreeRows,
   formatFileSize,
@@ -164,7 +166,9 @@ export interface FileTreeProps {
 export function FileTree(props: FileTreeProps) {
   const { mode, roots, dirs, expanded, selectedId = null, marks, title = "Files", count, branch, scope, onToggleDir, onSelectFile } = props;
   const rows = deriveFileTreeRows({ mode, roots, dirs, expanded, selectedId, marks });
-  const total = count ?? countLoadedFiles(dirs);
+  // the rendered-row count — provably what the operator sees (countLoadedFiles is a
+  // different, cache-wide number; see its doc)
+  const total = count ?? countFileRows(rows);
 
   return (
     <div class={props.class === undefined ? "my-files__rail" : `my-files__rail ${props.class}`}>

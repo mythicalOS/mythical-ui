@@ -20,6 +20,7 @@ import {
   chevronGlyph,
   childRelPath,
   classifyDirNode,
+  countFileRows,
   countLoadedFiles,
   deriveFileTreeRows,
   dirRowClass,
@@ -510,6 +511,50 @@ describe("deriveFileTreeRows", () => {
     expect(rows.filter((r) => r.type === "file")).toHaveLength(2);
   });
 
+  test("a TRUNCATED listing never also claims to be empty — the two contradict", () => {
+    const id = nodeId(ROOT_K, "");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs: { [id]: loaded([], true) },
+      expanded: new Set([id]),
+    });
+    const notes = rows.filter((r) => r.type === "note");
+    expect(notes.map((n) => (n as { status: string }).status)).toEqual(["truncated"]);
+    expect(JSON.stringify(rows)).not.toContain("is empty");
+  });
+
+  test("a COMPLETE empty listing still asserts the honest empty state", () => {
+    const id = nodeId(ROOT_K, "");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs: { [id]: loaded([], false) },
+      expanded: new Set([id]),
+    });
+    expect(rows.filter((r) => r.type === "note").map((n) => (n as { status: string }).status)).toEqual(["empty"]);
+  });
+
+  test("countFileRows is the visible count; countLoadedFiles is the cache-wide one", () => {
+    const rootId = nodeId(ROOT_K, "");
+    const docsId = nodeId(ROOT_K, "docs");
+    const dirs: Record<string, DirState> = {
+      [rootId]: loaded([{ name: "docs", kind: "dir" }, { name: "top.md", kind: "file" }]),
+      // cached but its directory is CLOSED — discovered, not visible
+      [docsId]: loaded([{ name: "a.md", kind: "file" }]),
+    };
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs,
+      expanded: new Set([rootId]), // docs stays collapsed
+    });
+    expect(countFileRows(rows)).toBe(1); // only top.md is on screen
+    expect(countLoadedFiles(dirs)).toBe(2); // top.md + the cached, unrendered a.md
+    // the visible count always equals the rendered file rows, by construction
+    expect(countFileRows(rows)).toBe(rows.filter((r) => r.type === "file").length);
+  });
+
   test("the header count still matches rendered rows once duplicates are collapsed", () => {
     const dirs: Record<string, DirState> = {
       [nodeId(ROOT_K, "")]: loaded([
@@ -518,13 +563,14 @@ describe("deriveFileTreeRows", () => {
         { name: "y.md", kind: "file" },
       ]),
     };
-    const rendered = deriveFileTreeRows({
+    const rows = deriveFileTreeRows({
       mode: "project",
       roots: [{ key: ROOT_K, label: "core" }],
       dirs,
       expanded: new Set([nodeId(ROOT_K, "")]),
-    }).filter((r) => r.type === "file").length;
-    expect(countLoadedFiles(dirs)).toBe(rendered);
+    });
+    const rendered = rows.filter((r) => r.type === "file").length;
+    expect(countFileRows(rows)).toBe(rendered);
     expect(rendered).toBe(2);
   });
 
@@ -602,13 +648,14 @@ describe("deriveFileTreeRows", () => {
         { name: "real.md", kind: "file" },
       ]),
     };
-    const rendered = deriveFileTreeRows({
+    const rows = deriveFileTreeRows({
       mode: "project",
       roots: [{ key: ROOT_K, label: "core" }],
       dirs,
       expanded: new Set([nodeId(ROOT_K, "")]),
-    }).filter((r) => r.type === "file").length;
-    expect(countLoadedFiles(dirs)).toBe(rendered);
+    });
+    const rendered = rows.filter((r) => r.type === "file").length;
+    expect(countFileRows(rows)).toBe(rendered);
     expect(rendered).toBe(1);
   });
 

@@ -142,6 +142,7 @@ export {
 export {
   // tree derivation
   deriveFileTreeRows,
+  countFileRows,
   countLoadedFiles,
   classifyDirNode,
   repoBadges,
