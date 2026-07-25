@@ -146,6 +146,7 @@ export {
   classifyDirNode,
   repoBadges,
   isUsableEntryName,
+  isUsableRootKey,
   MAX_TREE_DEPTH,
   // glyphs
   NODE_GLYPH,

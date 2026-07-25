@@ -36,6 +36,7 @@ import {
   isHonestStatus,
   isMarkdownName,
   isUsableEntryName,
+  isUsableRootKey,
   MAX_TREE_DEPTH,
   NODE_ID_SEP,
   nodeId,
@@ -445,6 +446,75 @@ describe("deriveFileTreeRows", () => {
     const files = rows.filter((r) => r.type === "file");
     expect(files).toHaveLength(1);
     expect(files[0]).toMatchObject({ name: "ok.md" });
+  });
+
+  // ── review-round-2 regressions ──
+  test("a root key that cannot round-trip through nodeId is dropped, not rendered corrupted", () => {
+    expect(isUsableRootKey("work")).toBe(true);
+    expect(isUsableRootKey("")).toBe(false);
+    expect(isUsableRootKey(`a${NODE_ID_SEP}b`)).toBe(false);
+
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: `a${NODE_ID_SEP}b`, label: "corrupt" }, { key: "ok", label: "ok" }],
+      dirs: {},
+      expanded: new Set(),
+    });
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ rootKey: "ok" });
+  });
+
+  test("every id the walk emits round-trips exactly — the nodeId invariant is enforced, not assumed", () => {
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: "core", label: "core" }],
+      dirs: {
+        [nodeId("core", "")]: loaded([{ name: "docs", kind: "dir" }]),
+        [nodeId("core", "docs")]: loaded([{ name: "x.md", kind: "file" }]),
+      },
+      expanded: new Set([nodeId("core", ""), nodeId("core", "docs")]),
+    });
+    for (const row of rows) {
+      if (row.type === "note") continue;
+      expect(splitNodeId(row.id)).toEqual({ rootKey: row.rootKey, relPath: row.relPath });
+    }
+  });
+
+  test('"." and ".." are never composed into a non-canonical path', () => {
+    expect(isUsableEntryName(".")).toBe(false);
+    expect(isUsableEntryName("..")).toBe(false);
+    expect(isUsableEntryName("...")).toBe(true); // a legal, ordinary name
+    const id = nodeId(ROOT_K, "docs");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs: {
+        [nodeId(ROOT_K, "")]: loaded([{ name: "docs", kind: "dir" }]),
+        [id]: loaded([{ name: "..", kind: "dir" }, { name: ".", kind: "dir" }, { name: "x.md", kind: "file" }]),
+      },
+      expanded: new Set([nodeId(ROOT_K, ""), id]),
+    });
+    expect(rows.map((r) => ("relPath" in r ? r.relPath : null)).filter(Boolean)).not.toContain("docs/..");
+    expect(JSON.stringify(rows)).not.toContain("docs/..");
+  });
+
+  test("the header count never claims a file the tree does not render", () => {
+    const dirs: Record<string, DirState> = {
+      [nodeId(ROOT_K, "")]: loaded([
+        { name: "", kind: "file" },
+        { name: "a/b", kind: "file" },
+        { name: ".", kind: "file" },
+        { name: "real.md", kind: "file" },
+      ]),
+    };
+    const rendered = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs,
+      expanded: new Set([nodeId(ROOT_K, "")]),
+    }).filter((r) => r.type === "file").length;
+    expect(countLoadedFiles(dirs)).toBe(rendered);
+    expect(rendered).toBe(1);
   });
 
   test("traversal depth is bounded even for a pathologically deep listing", () => {

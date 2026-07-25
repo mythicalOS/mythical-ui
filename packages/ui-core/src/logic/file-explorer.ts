@@ -130,8 +130,16 @@ export function isMarkdownName(name: string): boolean {
 
 // ── path composition ──────────────────────────────────────────────────────────
 
-/** A stable identity for one node: root key + relative path, joined on NUL. Neither field can
- *  contain a NUL, so the join is unambiguous and `splitNodeId` is its exact inverse. */
+/**
+ * A stable identity for one node: root key + relative path, joined on NUL.
+ *
+ * The join is unambiguous — and `splitNodeId` is an exact inverse — precisely WHEN neither field
+ * contains the separator. That is not assumed: `deriveFileTreeRows` screens every root key through
+ * `isUsableRootKey` and every entry name through `isUsableEntryName`, so no id the component emits
+ * can round-trip lossily. A caller building an id by hand from an UNSCREENED root key is outside
+ * that guarantee (a key containing the separator splits back into a different pair) — screen with
+ * `isUsableRootKey` first, exactly as the walk does.
+ */
 export const NODE_ID_SEP = "\u0000";
 
 export function nodeId(rootKey: string, relPath: string): string {
@@ -467,7 +475,24 @@ export const MAX_TREE_DEPTH = 64;
  * `nodeId`'s separator outright). None of these can name a real filesystem entry.
  */
 export function isUsableEntryName(name: string): boolean {
-  return typeof name === "string" && name.length > 0 && !name.includes("/") && !name.includes(NODE_ID_SEP);
+  if (typeof name !== "string" || name.length === 0) return false;
+  if (name.includes("/") || name.includes(NODE_ID_SEP)) return false;
+  // "." and ".." are directory-table artefacts, never real entries. Composing them would yield a
+  // non-canonical path (`docs/../x.md`) that is handed back through the selection callbacks and used
+  // as a cache identity — a plausible-but-wrong address for a node that is really somewhere else.
+  if (name === "." || name === "..") return false;
+  return true;
+}
+
+/**
+ * Whether a ROOT key can serve as half of a node id. This is what ENFORCES the invariant `nodeId`
+ * documents: a key containing the NUL separator would make `splitNodeId` return a different pair
+ * than went in (`"a\0b"` + `""` splits back to `"a"` + `"b\0"`), silently corrupting the identity
+ * that `dirs` / `marks` are keyed by. Root keys are caller-supplied and generic, so the component
+ * checks rather than assumes.
+ */
+export function isUsableRootKey(key: string): boolean {
+  return typeof key === "string" && key.length > 0 && !key.includes(NODE_ID_SEP);
 }
 
 /** The indent class for a depth. */
@@ -665,17 +690,27 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
     }
   };
 
-  for (const root of roots) walk(root.key, "", root.label, 0, undefined, root);
+  // A root whose key cannot round-trip through `nodeId` is dropped rather than rendered under a
+  // corrupted identity — the same policy applied to malformed entry names below.
+  for (const root of roots) {
+    if (!isUsableRootKey(root.key)) continue;
+    walk(root.key, "", root.label, 0, undefined, root);
+  }
   return rows;
 }
 
 /** Total FILE entries across every LOADED listing — the rail header's honest count under lazy
- *  loading. It counts what has actually been listed, never a total nobody proved. Pure. */
+ *  loading. It counts what has actually been listed, never a total nobody proved.
+ *
+ *  Malformed names are excluded on exactly the same test `deriveFileTreeRows` uses to drop them, so
+ *  the header can never claim a file the tree does not render. `Object.keys` is own-enumerable only,
+ *  matching the own-key guard on the row walk. Pure. */
 export function countLoadedFiles(dirs: Readonly<Record<string, DirState>>): number {
   let n = 0;
   for (const key of Object.keys(dirs)) {
     const state = dirs[key]!;
-    if (state.status === "loaded") for (const e of state.entries) if (e.kind === "file") n++;
+    if (state.status !== "loaded") continue;
+    for (const e of state.entries) if (e.kind === "file" && isUsableEntryName(e.name)) n++;
   }
   return n;
 }
