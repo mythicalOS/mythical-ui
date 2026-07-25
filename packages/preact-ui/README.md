@@ -67,6 +67,10 @@ markup is byte-identical to what this component rendered before the prop existed
   `aria-pressed` for the state and an `aria-label` for the action (`Show token` / `Hide token`);
 - revealing swaps only the input's own `type`; the value is never copied into any other node,
   attribute or `aria-*` string;
+- the field carries `autocomplete="new-password"`, not the atom's usual `off` — browsers largely
+  ignore `off` on a password field and will autofill it and offer to save it as a login;
+- it is the only path in this component that calls a hook, so a plain `Input` still consumes
+  nothing from preact's shared `useId` sequence;
 - because a `<button>` may not sit inside a `<label>`, this path pairs label and control by
   `for`/`id` instead of wrapping (an `id` is generated if you don't pass one).
 

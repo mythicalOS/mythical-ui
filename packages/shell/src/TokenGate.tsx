@@ -45,13 +45,18 @@ export const TOKEN_GATE_INVALID_BODY =
 /**
  * The failure line, or `undefined` when there is nothing true to say.
  *
- * Both halves must be present: a status without a reason (or the reverse) would have to be padded
- * with something the product did not actually receive, and this card does not do that. `status` is
- * compared against `undefined`, never truthiness — `0` is a real status (a fetch that never
- * reached the server reports it) and must print.
+ * Both halves must be present AND be the real thing: a status without a reason (or the reverse)
+ * would have to be padded with something the product did not actually receive, and this card does
+ * not do that. The guards are runtime, not just typed — this ships to JavaScript consumers, and
+ * `null` (a `res.status ?? null`), `NaN` (a parsed header that wasn't a number) or an empty
+ * reason body are exactly how a fabricated "null · Unauthorized" line would get printed.
+ *
+ * Note it tests the number, never its truthiness: `0` is a real status — a request that never
+ * reached the server reports it — and must print.
  */
 export function authErrorLine(status?: number, reason?: string): string | undefined {
-  if (status === undefined || reason === undefined) return undefined;
+  if (typeof status !== "number" || !Number.isFinite(status)) return undefined;
+  if (typeof reason !== "string" || reason.trim().length === 0) return undefined;
   return `${status} · ${reason} — enter the token to continue`;
 }
 

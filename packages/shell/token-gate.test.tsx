@@ -84,6 +84,21 @@ describe("authErrorLine — the never-fabricate rule, as a pure function", () =>
     expect(authErrorLine(401, undefined)).toBeUndefined();
     expect(authErrorLine()).toBeUndefined();
   });
+
+  test.each([
+    ["null status", null, "invalid token"],
+    ["NaN status", NaN, "invalid token"],
+    ["Infinity status", Infinity, "invalid token"],
+    ["string status", "401", "invalid token"],
+    ["null reason", 401, null],
+    ["empty reason", 401, ""],
+    ["whitespace reason", 401, "   \n"],
+    ["non-string reason", 401, 42],
+  ])("%s ⇒ undefined — the guards are runtime, not just typed", (_name, status, reason) => {
+    // this ships to JavaScript consumers; a `res.status ?? null` or an empty error body must not
+    // become "null · Unauthorized — …"
+    expect(authErrorLine(status as number, reason as string)).toBeUndefined();
+  });
 });
 
 describe("TokenGate — the card's structure, top to bottom", () => {
@@ -168,6 +183,8 @@ describe("TokenGate — the failure line is printed, never invented", () => {
     ["neither", { invalid: true }],
     ["not invalid, but both present", { status: 401, reason: "bad token" }],
     ["nothing at all", {}],
+    ["an empty reason body", { invalid: true, status: 401, reason: "" }],
+    ["a null status from JS", { invalid: true, status: null, reason: "bad token" }],
   ])("%s ⇒ no error line at all", (_name, props) => {
     const out = html(props as Partial<TokenGateCardProps>);
     expect(out).not.toContain("token-entry__err");

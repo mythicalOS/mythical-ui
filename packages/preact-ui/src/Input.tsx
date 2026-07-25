@@ -40,6 +40,8 @@ export interface InputProps {
 export const REVEAL_SHOW_LABEL = "Show token";
 export const REVEAL_HIDE_LABEL = "Hide token";
 
+const NOOP = () => {};
+
 export interface RevealToggleProps {
   /** True while the secret is shown in the clear. */
   revealed: boolean;
@@ -70,10 +72,10 @@ export function RevealToggle({ revealed, disabled, onToggle }: RevealToggleProps
 
 export interface InputBodyProps extends InputProps {
   /** Reveal state, lifted out of `Input` so a DOM-free test can render BOTH states. */
-  revealed: boolean;
-  onToggleReveal: () => void;
+  revealed?: boolean;
+  onToggleReveal?: () => void;
   /** Fallback id for the reveal path's explicit label/control pairing (see below). */
-  autoId: string;
+  autoId?: string;
 }
 
 /**
@@ -102,7 +104,7 @@ export function InputBody(props: InputBodyProps) {
       id={id}
       // The ONLY thing revealing changes: password ⇄ text on the field itself. The value is
       // never copied anywhere else in the tree.
-      type={reveal && props.revealed ? "text" : type}
+      type={reveal && props.revealed === true ? "text" : type}
       class={cls.join(" ")}
       value={props.value ?? ""}
       placeholder={props.placeholder}
@@ -111,7 +113,11 @@ export function InputBody(props: InputBodyProps) {
       // Local single-user config UI: these are identifiers/paths/config values (slugs, names,
       // model ids, urls), never autofill targets — kill browser autocomplete, the annoying
       // first-letter auto-capitalize, autocorrect, and spellcheck squiggles on all of them.
-      autocomplete="off"
+      // On the reveal path the field is a declared secret, and browsers/password managers largely
+      // IGNORE autocomplete="off" on type=password — they will autofill it and offer to save it
+      // as a login credential. `new-password` is what actually suppresses both, and is already
+      // this package's policy for credential entry (see MaskedSecretInput).
+      autocomplete={reveal ? "new-password" : "off"}
       autocapitalize="off"
       autocorrect="off"
       spellcheck={false}
@@ -126,9 +132,9 @@ export function InputBody(props: InputBodyProps) {
         <div class="input-reveal">
           {control}
           <RevealToggle
-            revealed={props.revealed}
+            revealed={props.revealed === true}
             disabled={props.disabled}
-            onToggle={props.onToggleReveal}
+            onToggle={props.onToggleReveal ?? NOOP}
           />
         </div>
       ) : (
@@ -162,10 +168,15 @@ export function InputBody(props: InputBodyProps) {
   );
 }
 
-export function Input(props: InputProps) {
+/** The revealable variant, and the ONLY place this component calls a hook. */
+function RevealableInput(props: InputProps) {
   // Held here, never lifted into the props: a revealed secret must not survive a parent re-render
   // decision, and no consumer can force the field open.
   const [revealed, setRevealed] = useState(false);
+  // Deliberately not called on the plain path: `useId` draws from preact's per-render id
+  // sequence, so calling it unconditionally would renumber the ids of every OTHER component in a
+  // consumer's tree — an invisible hydration-level regression for an input that asked for none of
+  // this.
   const autoId = useId();
   return (
     <InputBody
@@ -175,6 +186,16 @@ export function Input(props: InputProps) {
       autoId={autoId}
     />
   );
+}
+
+export function Input(props: InputProps) {
+  // Hook-free, exactly as before, unless the caller opted into the reveal affordance. Flipping
+  // `revealable` at runtime therefore remounts the field — `revealable` is a static declaration
+  // of what the field IS, not a state to animate.
+  if (props.revealable === true && (props.type ?? "text") === "password") {
+    return <RevealableInput {...props} />;
+  }
+  return <InputBody {...props} />;
 }
 
 export interface ToggleProps {

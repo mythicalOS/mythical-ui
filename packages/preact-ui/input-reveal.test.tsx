@@ -17,6 +17,7 @@
 
 import { describe, expect, test } from "bun:test";
 import { renderToString } from "preact-render-to-string";
+import { useId } from "preact/hooks";
 import type { VNode } from "preact";
 import {
   Input,
@@ -79,6 +80,27 @@ describe("Input — the default (no `revealable`) is byte-identical to the pre-f
     expect(off).toBe(absent);
     expect(off).not.toContain("input-reveal");
   });
+
+  test("a plain Input calls NO hook — it does not consume preact's id sequence", () => {
+    // `useId` draws from a per-render counter shared with every other component in the consumer's
+    // tree. If Input took one unconditionally, adding this feature would silently renumber the
+    // ids of unrelated components (a hydration-mismatch class of bug). Proof: an id-taking
+    // sibling rendered after a plain Input must still get the FIRST id.
+    const Probe = () => <i id={useId()} />;
+    const withInput = renderToString(
+      <div>
+        <Input value="" />
+        <Probe />
+      </div>,
+    );
+    const withoutInput = renderToString(
+      <div>
+        <Probe />
+      </div>,
+    );
+    const idOf = (html: string) => html.match(/<i id="([^"]+)"/)?.[1];
+    expect(idOf(withInput)).toBe(idOf(withoutInput)!);
+  });
 });
 
 describe("Input — revealable password field: the hidden (default) state", () => {
@@ -112,6 +134,15 @@ describe("Input — revealable password field: the hidden (default) state", () =
 
   test("keyboard reachable and not a tab trap — no tabindex is set at all", () => {
     expect(html).not.toContain("tabindex");
+  });
+
+  test("a declared secret is not offered to the password manager", () => {
+    // browsers largely ignore autocomplete=off on type=password: they autofill it and offer to
+    // save it as a login. new-password is what actually suppresses both.
+    expect(html).toContain('autocomplete="new-password"');
+    // …and ONLY on this path — every other field keeps the atom's long-standing "off"
+    expect(renderToString(<Input label="T" type="password" value="v" />)).toContain('autocomplete="off"');
+    expect(renderToString(<Input label="T" value="v" />)).toContain('autocomplete="off"');
   });
 
   test("the label is bound by for/id, so the <button> is not inside a <label>", () => {
