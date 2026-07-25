@@ -249,6 +249,22 @@ describe("QueueRow — the cancel affordance (invariant 4)", () => {
     }
   });
 
+  test("a STALE list renders its rows WITHOUT any cancel control", () => {
+    // the row is still shown (stale is its own state, flagged), but its status is last-known data,
+    // so offering a cancel would contradict the banner right above it
+    const html = renderToString(
+      <QueuePanel source={{ kind: "stale", items: [item({ status: "queued" })] }} canCancel onCancel={noop} />,
+    );
+    expect(html).toContain(QUEUE_STALE_COPY);
+    expect(html).toContain("re-run the fold matrix"); // the row IS rendered
+    expect(html).not.toContain("my-qrow__cancel"); // but with no live cancel
+    // the same list from a FRESH read does carry the control
+    const fresh = renderToString(
+      <QueuePanel source={{ kind: "ok", items: [item({ status: "queued" })] }} canCancel onCancel={noop} />,
+    );
+    expect(fresh).toContain("my-qrow__cancel");
+  });
+
   test("the armed row swaps to the two-step confirm — inline, never a modal", () => {
     const html = renderToString(<QueueRow item={item()} armed canCancel />);
     expect(html).toContain(queueRowClass("queued", true));

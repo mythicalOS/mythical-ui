@@ -31,6 +31,7 @@ import {
   canSend,
   cancelReducer,
   clearDraftOnSend,
+  isFreshSource,
   currentWakeRows,
   deliveryClassButtonClass,
   expandLabel,
@@ -183,9 +184,19 @@ describe("invariant 3 — queue source→view honesty", () => {
 
   test("`stale` is its own state — a stale EMPTY list is a flagged list, never `empty`", () => {
     const view = queueView({ kind: "stale", items: [] });
-    expect(view).toEqual({ kind: "list", items: [], staleCopy: QUEUE_STALE_COPY });
+    expect(view).toEqual({ kind: "list", items: [], staleCopy: QUEUE_STALE_COPY, fresh: false });
     const fresh = queueView({ kind: "ok", items: [item()] });
-    expect(fresh).toEqual({ kind: "list", items: [item()], staleCopy: null });
+    expect(fresh).toEqual({ kind: "list", items: [item()], staleCopy: null, fresh: true });
+  });
+
+  test("only a completed successful read is FRESH — everything else suppresses cancel", () => {
+    expect(isFreshSource({ kind: "ok", items: [] })).toBe(true);
+    expect(isFreshSource({ kind: "stale", items: [item()] })).toBe(false);
+    expect(isFreshSource({ kind: "loading" })).toBe(false);
+    expect(isFreshSource({ kind: "unavailable", reason: "error" })).toBe(false);
+    // the view carries the verdict, so a binding never re-derives it
+    const stale = queueView({ kind: "stale", items: [item()] });
+    expect(stale.kind === "list" && stale.fresh).toBe(false);
   });
 
   test("the stale banner promises no recovery", () => {
@@ -270,8 +281,10 @@ describe("invariant 4 — cancel affordance", () => {
     // the source stopped carrying items at all
     expect(shouldDisarmCancel("e1", true, { kind: "loading" })).toBe(true);
     expect(shouldDisarmCancel("e1", true, { kind: "unavailable", reason: "error" })).toBe(true);
-    // a stale source still carrying the queued row keeps the arm
-    expect(shouldDisarmCancel("e1", true, { kind: "stale", items: [item({ id: "e1" })] })).toBe(false);
+    // a STALE source disarms even though it still carries the queued row: the row's status is
+    // last-known data, so an arm held against it would aim a cancel at information we know is out
+    // of date (the row is displayed, just never with a live cancel control)
+    expect(shouldDisarmCancel("e1", true, { kind: "stale", items: [item({ id: "e1" })] })).toBe(true);
   });
 
   test("badge / row / status derivation", () => {

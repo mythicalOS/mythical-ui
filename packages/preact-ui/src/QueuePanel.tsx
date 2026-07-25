@@ -10,7 +10,8 @@
 // design card's "queue empty — deliveries land here by class (ASAP interrupts · ON-DONE waits)";
 // `loading` never renders empty; the three unavailable reasons render DISTINCTLY; `stale` is its own
 // state, flagged as last-known data with no retry claim. The cancel affordance exists ONLY on
-// `queued` records AND only when the caller says the record is cancellable.
+// `queued` records, only when the caller says the record is cancellable, and only while the
+// source is FRESH — a stale (last-known) list carries no cancel controls at all.
 
 import { useEffect, useReducer } from "preact/hooks";
 import {
@@ -158,22 +159,28 @@ export function QueuePanel(props: QueuePanelProps) {
       {view.kind === "list" ? (
         <div class={QUEUE_CLASSES.list}>
           {view.staleCopy !== null ? <div class={QUEUE_CLASSES.stale}>{view.staleCopy}</div> : null}
-          {view.items.map((item) => (
-            <QueueRow
-              key={item.id}
-              item={item}
-              canCancel={canCancel}
-              armed={cancel.armedId === item.id}
-              onArm={() => dispatch({ type: "arm", id: item.id })}
-              onConfirm={() => {
-                // Re-checked at the moment of confirm: the intent only fires if the row is STILL
-                // cancellable in the current source — never a stale-arm cancel.
-                if (canCancelRow(item.status, canCancel)) props.onCancel?.(item.id);
-                dispatch({ type: "confirm" });
-              }}
-              onDisarm={() => dispatch({ type: "disarm" })}
-            />
-          ))}
+          {view.items.map((item) => {
+            // A STALE list is last-known data, so no row in it may carry a cancel affordance: the
+            // row's real status is unknown, and offering a cancel would contradict the banner right
+            // above it. `view.fresh` is ui-core's freshness verdict, not a local guess.
+            const rowCanCancel = canCancel && view.fresh;
+            return (
+              <QueueRow
+                key={item.id}
+                item={item}
+                canCancel={rowCanCancel}
+                armed={cancel.armedId === item.id}
+                onArm={() => dispatch({ type: "arm", id: item.id })}
+                onConfirm={() => {
+                  // Re-checked at the moment of confirm: the intent only fires if the row is STILL
+                  // fresh AND cancellable — never a stale-arm cancel.
+                  if (canCancelRow(item.status, rowCanCancel)) props.onCancel?.(item.id);
+                  dispatch({ type: "confirm" });
+                }}
+                onDisarm={() => dispatch({ type: "disarm" })}
+              />
+            );
+          })}
         </div>
       ) : null}
     </div>

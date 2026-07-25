@@ -85,7 +85,25 @@ export type QueueSource =
 export type QueueView =
   | { kind: "state"; copy: string }
   | { kind: "empty"; copy: string }
-  | { kind: "list"; items: readonly QueueItem[]; staleCopy: string | null };
+  | {
+      kind: "list";
+      items: readonly QueueItem[];
+      staleCopy: string | null;
+      /** See `isFreshSource` — false suppresses every cancel affordance in the list. */
+      fresh: boolean;
+    };
+
+/**
+ * HONESTY INVARIANT (binding): only a completed SUCCESSFUL read is fresh. A `stale` list is
+ * last-known data — the poll is failing, so each row's status is what it WAS, not what it is. That
+ * makes a cancel control on a stale row a claim the component cannot support: it would assert the
+ * record is still `queued` right beside a banner saying the list is no longer current. Stale rows
+ * therefore render with no cancel affordance, and an armed confirm force-disarms when its source
+ * goes stale (`shouldDisarmCancel`).
+ */
+export function isFreshSource(source: QueueSource): boolean {
+  return source.kind === "ok";
+}
 
 /**
  * HONESTY INVARIANT (binding): the empty presentation renders ONLY on `ok` + zero items — i.e. only
@@ -118,9 +136,9 @@ export function queueView(
     case "ok":
       return source.items.length === 0
         ? { kind: "empty", copy: QUEUE_EMPTY_COPY }
-        : { kind: "list", items: source.items, staleCopy: null };
+        : { kind: "list", items: source.items, staleCopy: null, fresh: true };
     case "stale":
-      return { kind: "list", items: source.items, staleCopy: QUEUE_STALE_COPY };
+      return { kind: "list", items: source.items, staleCopy: QUEUE_STALE_COPY, fresh: false };
   }
 }
 
@@ -174,14 +192,18 @@ export function cancelReducer(state: CancelState, event: CancelEvent): CancelSta
 
 /**
  * An armed two-step cancel must NEVER outlive its cancelability. Force-disarm when cancelability is
- * lost (`canCancel` flips false), OR the armed row is no longer a live `queued` record in the
- * CURRENT source — it left the queue (leased/delivered/canceled), vanished, or the source went
- * unavailable/loading (no items at all).
+ * lost (`canCancel` flips false), when the source stops being FRESH (it went stale, unavailable, or
+ * back to loading — the armed row is then last-known data, not a live record), or when the armed row
+ * is no longer a live `queued` record in the current source (it left the queue as
+ * leased/delivered/canceled, or vanished).
  */
 export function shouldDisarmCancel(armedId: string | null, canCancel: boolean, source: QueueSource): boolean {
   if (armedId === null) return false;
   if (!canCancel) return true;
-  const items = source.kind === "ok" || source.kind === "stale" ? source.items : [];
+  // deliberately `ok` only: a `stale` list still carries items, but they are the LAST RECEIVED
+  // statuses, so an arm held against them would be a cancel aimed at data we know is out of date
+  if (!isFreshSource(source)) return true;
+  const items = source.kind === "ok" ? source.items : [];
   const row = items.find((it) => it.id === armedId);
   return row === undefined || !canCancelRow(row.status, canCancel);
 }

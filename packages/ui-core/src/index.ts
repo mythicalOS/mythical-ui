@@ -299,6 +299,7 @@ export {
   QUEUE_CLASSES,
   canCancelRow,
   cancelReducer,
+  isFreshSource,
   queueBadgeClass,
   queueBadgeLabel,
   queueRowClass,
