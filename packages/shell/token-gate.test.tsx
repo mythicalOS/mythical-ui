@@ -79,6 +79,10 @@ describe("authErrorLine — the never-fabricate rule, as a pure function", () =>
     );
   });
 
+  test.each([100, 401, 403, 500, 599])("%p is inside the HTTP range and prints", (status) => {
+    expect(authErrorLine(status, "nope")).toBe(`${status} · nope — enter the token to continue`);
+  });
+
   test("either half missing ⇒ undefined, never a padded line", () => {
     expect(authErrorLine(undefined, "invalid token")).toBeUndefined();
     expect(authErrorLine(401, undefined)).toBeUndefined();
@@ -94,6 +98,10 @@ describe("authErrorLine — the never-fabricate rule, as a pure function", () =>
     ["empty reason", 401, ""],
     ["whitespace reason", 401, "   \n"],
     ["non-string reason", 401, 42],
+    ["a -1 sentinel, which is not a status", -1, "no response"],
+    ["a fractional status", 401.5, "invalid token"],
+    ["a status below the HTTP range", 99, "invalid token"],
+    ["a status above the HTTP range", 600, "invalid token"],
   ])("%s ⇒ undefined — the guards are runtime, not just typed", (_name, status, reason) => {
     // this ships to JavaScript consumers; a `res.status ?? null` or an empty error body must not
     // become "null · Unauthorized — …"

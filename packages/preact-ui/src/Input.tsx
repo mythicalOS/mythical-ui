@@ -11,7 +11,7 @@
 // the task report's "concerns" section if a future core module should absorb these too.
 
 import type { ComponentChildren, JSX } from "preact";
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 
 export interface InputProps {
   label?: ComponentChildren;
@@ -107,7 +107,7 @@ export function InputBody(props: InputBodyProps) {
   if (props.dirty) cls.push("is-dirty");
   if (props.readOnly) cls.push("readonly-input");
   const type = props.type ?? "text";
-  const reveal = props.revealable === true && type === "password";
+  const reveal = isRevealMode(props);
   // The reveal path needs an id on the input: its toggle is a <button>, and a <button> is a
   // labelable element — HTML forbids one inside a <label> that isn't labelling it, and the
   // accessible-name computation would fold the button's own name ("Show token") into the
@@ -189,27 +189,57 @@ export function InputBody(props: InputBodyProps) {
  *
  * Deliberately NOT `useId`: that draws from preact's shared per-render id sequence, so taking one
  * here would renumber the ids of every OTHER component in a consumer's tree — an invisible
- * regression for an input that asked for none of this. A module counter is safe precisely because
- * this id never leaves the component: its only job is to pair this instance's own `<label for>`
- * with its own `<input id>`, so it has to be unique on the page, not reproducible across a
- * server/client pair.
+ * regression for an input that asked for none of this.
+ *
+ * A module counter is enough because this id never leaves the component: its only job is to pair
+ * this instance's own `<label for>` with its own `<input id>`, and both sides always come from
+ * this one value, so they cannot disagree — not across a re-render, and not across a server
+ * render and its hydration. It only has to be unique on the page, which the namespaced prefix
+ * makes it. Pass `id` explicitly if you want a specific, stable one.
  */
 let revealIdSeq = 0;
 
+/** True when the field is a secret that opted into the reveal affordance. */
+export function isRevealMode(props: Pick<InputProps, "revealable" | "type">): boolean {
+  return props.revealable === true && (props.type ?? "text") === "password";
+}
+
+/**
+ * The reveal state to render this pass.
+ *
+ * ANY change of the field's mode clears it. A field that stops being a revealable secret and
+ * later becomes one again must come back hidden: the alternative is a password rendered in the
+ * clear that no one asked to see, on a render the user never touched.
+ */
+export function resolveRevealed(stored: boolean, storedMode: boolean, mode: boolean): boolean {
+  return storedMode === mode ? stored : false;
+}
+
 export function Input(props: InputProps) {
-  // Both hooks run unconditionally, and `Input` always renders the same child component, so
-  // flipping `revealable` or `type` re-renders the field instead of remounting it — a focused
-  // input keeps its focus, caret and selection.
+  const mode = isRevealMode(props);
+  // `Input` always renders the same child component and always runs the same hooks, so flipping
+  // `revealable` or `type` re-renders the field instead of remounting it — a focused input keeps
+  // its focus, caret and selection. That makes clearing the reveal on a mode change this
+  // component's own job (see resolveRevealed), which is why the flag is a ref read during render
+  // rather than plain state: it has to be cleared on the very render that changes the mode.
   //
-  // `revealed` is held here and never lifted into the props: a revealed secret must not survive a
-  // parent's re-render decision, and no consumer can force the field open.
-  const [revealed, setRevealed] = useState(false);
-  const [autoId] = useState(() => `my-input-${++revealIdSeq}`);
+  // It is held here and never lifted into the props either way: a revealed secret must not
+  // survive a parent's re-render decision, and no consumer can force the field open.
+  const revealed = useRef(false);
+  const lastMode = useRef(mode);
+  const [, bumpRender] = useState(0);
+  revealed.current = resolveRevealed(revealed.current, lastMode.current, mode);
+  lastMode.current = mode;
+
+  const [autoId] = useState(() => `mythicalos-input-${++revealIdSeq}`);
   return (
     <InputBody
       {...props}
-      revealed={revealed}
-      onToggleReveal={() => setRevealed((v) => !v)}
+      revealed={revealed.current}
+      onToggleReveal={() => {
+        revealed.current = !revealed.current;
+        bumpRender((n) => n + 1);
+      }}
       autoId={autoId}
     />
   );

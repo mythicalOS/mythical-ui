@@ -55,9 +55,20 @@ export const TOKEN_GATE_INVALID_BODY =
  * reached the server reports it — and must print.
  */
 export function authErrorLine(status?: number, reason?: string): string | undefined {
-  if (typeof status !== "number" || !Number.isFinite(status)) return undefined;
+  if (!isRealStatus(status)) return undefined;
   if (typeof reason !== "string" || reason.trim().length === 0) return undefined;
   return `${status} · ${reason} — enter the token to continue`;
+}
+
+/**
+ * Whether `status` can be something a response actually reported: an HTTP status code, or `0` —
+ * what a request that never reached the server comes back as. A sentinel like `-1`, a fraction, a
+ * NaN or a `null` is not a status, and printing one would be inventing the very thing this card
+ * refuses to invent.
+ */
+function isRealStatus(status: unknown): status is number {
+  if (typeof status !== "number" || !Number.isInteger(status)) return false;
+  return status === 0 || (status >= 100 && status <= 599);
 }
 
 /** The product's display name, from the shared registry. Falls back to the key as given: naming

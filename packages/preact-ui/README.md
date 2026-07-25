@@ -76,7 +76,11 @@ markup is byte-identical to what this component rendered before the prop existed
 - because a `<button>` may not sit inside a `<label>`, this path pairs label and control by
   `for`/`id` instead of wrapping (an `id` is generated if you don't pass one);
 - flipping `revealable` or `type` re-renders the field, it does not remount it — a focused input
-  keeps its focus, caret and selection.
+  keeps its focus, caret and selection — and any such flip returns the field to hidden, so a
+  secret revealed before the flip is never in the clear after it;
+- the generated id is namespaced (`mythicalos-input-N`). It is only ever used to pair this
+  field's own label with its own input, so both sides always agree; pass `id` yourself if you
+  server-render and want a specific one.
 
 Requires `@mythicalos/ui-core` **≥ 0.2.0** for the toggle's styles (`.input-reveal`,
 `.input-reveal__btn`).

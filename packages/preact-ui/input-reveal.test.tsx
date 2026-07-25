@@ -26,6 +26,8 @@ import {
   Input,
   InputBody,
   RevealToggle,
+  isRevealMode,
+  resolveRevealed,
   REVEAL_HIDE_LABEL,
   REVEAL_SHOW_LABEL,
   type InputBodyProps,
@@ -175,6 +177,23 @@ describe("Input — revealable password field: the hidden (default) state", () =
     expect(out).not.toContain("token");
   });
 
+  test("the generated id is namespaced, so it cannot collide with a consumer's own", () => {
+    const id = html.match(/<label class="field-label" for="([^"]+)">/)?.[1];
+    expect(id).toMatch(/^mythicalos-input-\d+$/);
+  });
+
+  test("two fields on one page get different ids", () => {
+    const two = renderToString(
+      <div>
+        <Input label="A" type="password" value="" revealable />
+        <Input label="B" type="password" value="" revealable />
+      </div>,
+    );
+    const ids = [...two.matchAll(/<label class="field-label" for="([^"]+)">/g)].map((m) => m[1]);
+    expect(ids.length).toBe(2);
+    expect(new Set(ids).size).toBe(2);
+  });
+
   test("an explicit id prop still wins over the generated one", () => {
     const withId = renderToString(
       <Input id="ui-token" label="UI token" type="password" revealable value="" />,
@@ -313,6 +332,41 @@ describe("Input — flipping the prop re-renders, it does not remount", () => {
   });
 });
 
+describe("Input — a mode change always returns the field to hidden", () => {
+  // The decision itself is pure so it can be exercised exhaustively; the component reads it once
+  // per render (asserted by the source scan below), which is the only part a DOM-free test cannot
+  // drive.
+  test("same mode ⇒ the stored state is kept", () => {
+    expect(resolveRevealed(true, true, true)).toBe(true);
+    expect(resolveRevealed(false, true, true)).toBe(false);
+    expect(resolveRevealed(true, false, false)).toBe(true);
+    expect(resolveRevealed(false, false, false)).toBe(false);
+  });
+
+  test("mode changed ⇒ hidden, in BOTH directions", () => {
+    // leaving revealable, and coming back to it: a password revealed before the field stopped
+    // being a revealable secret must not be in the clear when it becomes one again
+    expect(resolveRevealed(true, true, false)).toBe(false);
+    expect(resolveRevealed(true, false, true)).toBe(false);
+    expect(resolveRevealed(false, true, false)).toBe(false);
+    expect(resolveRevealed(false, false, true)).toBe(false);
+  });
+
+  test("the mode is exactly revealable + type=password", () => {
+    expect(isRevealMode({ revealable: true, type: "password" })).toBe(true);
+    expect(isRevealMode({ revealable: true, type: "text" })).toBe(false);
+    expect(isRevealMode({ revealable: true })).toBe(false);
+    expect(isRevealMode({ revealable: false, type: "password" })).toBe(false);
+    expect(isRevealMode({ type: "password" })).toBe(false);
+  });
+
+  test("Input applies it on every render, before rendering the body", () => {
+    const src = readFileSync(join(import.meta.dir, "src", "Input.tsx"), "utf8");
+    expect(src).toContain("revealed.current = resolveRevealed(revealed.current, lastMode.current, mode);");
+    expect(src).toContain("lastMode.current = mode;");
+  });
+});
+
 describe("Input — the toggle is wired to the field's own state", () => {
   test("InputBody hands the toggle the real onToggleReveal it was given", () => {
     let calls = 0;
@@ -346,8 +400,8 @@ describe("Input — the toggle is wired to the field's own state", () => {
     // by source scan instead, the same way product-switcher.test.tsx checks its document-level
     // listener wiring. A no-op here would pass every render assertion above.
     const src = readFileSync(join(import.meta.dir, "src", "Input.tsx"), "utf8");
-    expect(src).toContain("onToggleReveal={() => setRevealed((v) => !v)}");
-    expect(src).toContain("const [revealed, setRevealed] = useState(false);");
+    expect(src).toContain("revealed.current = !revealed.current;");
+    expect(src).toContain("bumpRender((n) => n + 1);");
   });
 });
 
