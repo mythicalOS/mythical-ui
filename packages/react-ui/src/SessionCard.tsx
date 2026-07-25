@@ -189,7 +189,7 @@ export function SessionCard(props: SessionCardProps) {
     </>
   );
 
-  const classes = `${sessionCardClass({ selected, stale })} ${cls}`.trimEnd();
+  const classes = sessionCardClass({ selected, stale, extra: cls });
 
   return onSelect === undefined ? (
     <div className={classes}>{body}</div>

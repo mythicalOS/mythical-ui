@@ -148,8 +148,10 @@ describe("SessionCard — the design card's container states", () => {
 
   test("an extra class prop is appended alongside the core-derived classes", () => {
     expect(renderToString(<SessionCard name="J" class="rail-extra" />)).toContain(
-      `class="${sessionCardClass()} rail-extra"`,
+      `class="${sessionCardClass({ extra: "rail-extra" })}"`,
     );
+    // …and the whole attribute is core-derived: no stray separator when there is no extra class
+    expect(renderToString(<SessionCard name="J" />)).toContain(`class="${sessionCardClass()}"`);
   });
 });
 

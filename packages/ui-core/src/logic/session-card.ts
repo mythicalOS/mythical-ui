@@ -49,11 +49,17 @@ function isObject<T extends object>(v: T | null | undefined): v is T {
 
 /**
  * Normalize a product's threshold pair ONCE, so the band and the bar's ticks can never disagree
- * about where the thresholds are. A member that is not a finite number strictly inside the rail
- * (0 < t < 100) is not a usable threshold — it marks nothing the meter can draw — so it falls back
- * to the design default rather than silently reclassifying every reading. (`{warn: NaN}` must not
- * quietly make every session look nominal; `{warn: -5}` must not quietly make every session look
- * hot while drawing no tick to explain why.)
+ * about where the thresholds are. Two corrections:
+ *
+ *   · A member that is not a finite number strictly inside the rail (0 < t < 100) is not a usable
+ *     threshold — it marks nothing the meter can draw — so it falls back to the design default
+ *     rather than silently reclassifying every reading. (`{warn: NaN}` must not quietly make every
+ *     session look nominal; `{warn: -5}` must not quietly make every session look hot while
+ *     drawing no tick to explain why.)
+ *   · The pair is ORDERED (`warn` ≤ `critical`). A mis-ordered pair leaves the higher tick
+ *     unreachable — with `{warn: 90, critical: 75}` an 80% reading is already `error` while a
+ *     `warn` tick still sits at 90, so the bar marks a boundary that can never be crossed. Both
+ *     boundaries the product asked for are kept; only which one is named `warn` is corrected.
  */
 export function normalizeCtxThresholds(thresholds?: CtxThresholds | null): CtxThresholds {
   // These are PUBLIC entry points a product reaches with runtime-shaped config (a settings blob,
@@ -62,10 +68,9 @@ export function normalizeCtxThresholds(thresholds?: CtxThresholds | null): CtxTh
   const t = isObject(thresholds) ? thresholds : CTX_THRESHOLDS_DEFAULT;
   const usable = (v: unknown, fallback: number): number =>
     typeof v === "number" && Number.isFinite(v) && v > 0 && v < CTX_BAR_SPAN ? v : fallback;
-  return {
-    warn: usable(t.warn, CTX_THRESHOLDS_DEFAULT.warn),
-    critical: usable(t.critical, CTX_THRESHOLDS_DEFAULT.critical),
-  };
+  const warn = usable(t.warn, CTX_THRESHOLDS_DEFAULT.warn);
+  const critical = usable(t.critical, CTX_THRESHOLDS_DEFAULT.critical);
+  return { warn: Math.min(warn, critical), critical: Math.max(warn, critical) };
 }
 
 /**
@@ -92,8 +97,8 @@ export function ctxReading(pct: number | null | undefined): number | undefined {
 
 /**
  * Band for a context reading, derived from the whole percent the card displays. Absent ⇒
- * `"unknown"`. `critical` is tested first, so a mis-ordered threshold pair (critical < warn) still
- * degrades to the more severe band rather than silently under-reporting.
+ * `"unknown"`. The thresholds are normalized (and ordered) first, so the band and the bar's ticks
+ * always agree.
  */
 export function ctxBand(pct: number | null | undefined, thresholds?: CtxThresholds | null): CtxBand {
   const v = ctxReading(pct);
@@ -340,11 +345,19 @@ export function sessionStatusText(status: SessionStatus, override?: string | nul
 // card container, identity line, subline
 // ════════════════════════════════════════════════════════════════════════════════════════
 
-/** Container class. `selected` and `stale` are INDEPENDENT — a selected session can also be
- *  disconnected, so they are two modifiers, never one enum. */
-export function sessionCardClass(input?: { selected?: boolean; stale?: boolean } | null): string {
+/** Container class — the WHOLE class attribute the card's root carries, including any extra
+ *  classes a product passes, so neither binding composes a class string of its own. `selected` and
+ *  `stale` are INDEPENDENT: a selected session can also be disconnected, so they are two
+ *  modifiers, never one enum. */
+export function sessionCardClass(
+  input?: { selected?: boolean; stale?: boolean; extra?: string | null } | null,
+): string {
   const i = isObject(input) ? input : {};
-  return `my-session-card${i.selected === true ? " is-selected" : ""}${i.stale === true ? " is-stale" : ""}`;
+  const extra = typeof i.extra === "string" ? i.extra.trim() : "";
+  return (
+    `my-session-card${i.selected === true ? " is-selected" : ""}${i.stale === true ? " is-stale" : ""}` +
+    (extra.length > 0 ? ` ${extra}` : "")
+  );
 }
 
 /** What an unnameable session's avatar shows — a question mark, not a fabricated initial. */
@@ -384,6 +397,15 @@ export interface SessionSpine {
   savedTok?: number;
 }
 
+/**
+ * The most nodes the strip will draw. The strip is a fixed-width row of 13px nodes, so beyond this
+ * they cannot be told apart anyway — and a runaway count from a malformed wire value must not be
+ * able to build an unbounded node list and lock the render. The LABEL beside the strip always
+ * states the TRUE count, so the bound costs no honesty: the strip is a bounded illustration, the
+ * number is the claim.
+ */
+export const SPINE_MAX_NODES = 24;
+
 export interface SpineNode {
   /** The live tip (hollow); every other node is a completed distill (filled). */
   tip: boolean;
@@ -392,12 +414,13 @@ export interface SpineNode {
 /**
  * Nodes for the strip: one filled node per completed distill, plus the hollow live tip.
  * An UNREPORTED `distills` yields `[]` — no strip, no fabricated "0 distills" (invariant 1). A
- * REPORTED 0 is a real reading and yields the tip alone. Non-integer/negative counts are floored
- * to a sane node count rather than crashing the render.
+ * REPORTED 0 is a real reading and yields the tip alone. Non-integer/negative counts are floored,
+ * and the list is capped at `SPINE_MAX_NODES` so a runaway value cannot lock the render (the
+ * strip's label still states the true count).
  */
 export function sessionSpineNodes(distills: number | null | undefined): SpineNode[] {
   if (!isReading(distills)) return [];
-  const n = Math.max(0, Math.floor(distills));
+  const n = Math.min(SPINE_MAX_NODES - 1, Math.max(0, Math.floor(distills)));
   const nodes: SpineNode[] = [];
   for (let i = 0; i < n; i++) nodes.push({ tip: false });
   nodes.push({ tip: true });

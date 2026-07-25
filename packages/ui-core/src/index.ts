@@ -251,6 +251,7 @@ export {
   SESSION_STATUS_UNKNOWN,
   SESSION_AVATAR_UNKNOWN,
   SPINE_SAVED_UNKNOWN,
+  SPINE_MAX_NODES,
   type CtxThresholds,
   type CtxBand,
   type CtxBarTick,

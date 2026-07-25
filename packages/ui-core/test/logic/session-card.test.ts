@@ -38,6 +38,7 @@ import {
   CTX_THRESHOLDS_DEFAULT,
   CTX_UNKNOWN_TEXT,
   SESSION_AVATAR_UNKNOWN,
+  SPINE_MAX_NODES,
   type CtxBand,
   type CtxThresholds,
   type SessionLifecycle,
@@ -271,8 +272,28 @@ describe("INVARIANT 3 — 75/90 are DEFAULTS, not constants baked into the deriv
     expect(ctxBarGeom(50, { warn: 40, critical: 80 }).ticks.map((t) => t.pct)).toEqual([40, 80]);
   });
 
-  test("a mis-ordered threshold pair degrades to the MORE severe band, never under-reports", () => {
-    expect(ctxBand(80, { warn: 90, critical: 75 })).toBe("error");
+  test("a mis-ordered pair is ORDERED, so neither tick marks an unreachable boundary", () => {
+    // {warn: 90, critical: 75} would otherwise make 80 an `error` while a `warn` tick still sat at
+    // 90 — a boundary the band can never cross. Both boundaries are kept; only their names swap.
+    expect(normalizeCtxThresholds({ warn: 90, critical: 75 })).toEqual({ warn: 75, critical: 90 });
+    expect(ctxBand(80, { warn: 90, critical: 75 })).toBe("warn");
+    expect(ctxBand(95, { warn: 90, critical: 75 })).toBe("error");
+    expect(ctxBarGeom(80, { warn: 90, critical: 75 }).ticks.map((t) => t.pct)).toEqual([75, 90]);
+  });
+
+  test("every tick the bar draws is a boundary the band can actually cross", () => {
+    for (const t of [
+      { warn: 75, critical: 90 },
+      { warn: 90, critical: 40 },
+      { warn: 60, critical: 60 },
+      { warn: Number.NaN, critical: 30 },
+    ]) {
+      const norm = normalizeCtxThresholds(t);
+      expect(norm.warn).toBeLessThanOrEqual(norm.critical);
+      for (const tick of ctxBarGeom(0, t).ticks) {
+        expect(ctxBand(Math.ceil(tick.pct), t)).not.toBe("ok");
+      }
+    }
   });
 
   test("an UNUSABLE threshold falls back to the default in BOTH the band and the ticks", () => {
@@ -295,7 +316,8 @@ describe("INVARIANT 3 — 75/90 are DEFAULTS, not constants baked into the deriv
   });
 
   test("one broken member falls back alone — the usable one is honored", () => {
-    expect(normalizeCtxThresholds({ warn: Number.NaN, critical: 60 })).toEqual({ warn: 75, critical: 60 });
+    // the NaN warn falls back to 75, the usable critical of 60 is kept — then the pair is ordered
+    expect(normalizeCtxThresholds({ warn: Number.NaN, critical: 60 })).toEqual({ warn: 60, critical: 75 });
     expect(ctxBarGeom(0, { warn: Number.NaN, critical: 60 }).ticks.map((t) => t.pct)).toEqual([60, 75]);
   });
 
@@ -312,6 +334,7 @@ describe("INVARIANT 3 — 75/90 are DEFAULTS, not constants baked into the deriv
       expect(new Set(ticks)).toEqual(new Set([norm.warn, norm.critical]));
       expect(ctxBand(Math.ceil(norm.critical), t)).toBe("error");
       expect(ctxBand(Math.ceil(norm.warn), t)).not.toBe("ok");
+      expect(norm.warn).toBeLessThanOrEqual(norm.critical);
     }
   });
 
@@ -660,5 +683,36 @@ describe("hostile / runtime-shaped config cannot crash a render or bend an invar
     // …while a status the product DID claim can still be reworded
     const down = sessionStatus({ lifecycle: "active", connected: false });
     expect(sessionStatusText(down, "wake unavailable")).toBe("wake unavailable");
+  });
+});
+
+describe("spine strip — the node list is bounded", () => {
+  test("a runaway count cannot build an unbounded node list", () => {
+    expect(sessionSpineNodes(1_000_000)).toHaveLength(SPINE_MAX_NODES);
+    expect(sessionSpineNodes(Number.MAX_SAFE_INTEGER)).toHaveLength(SPINE_MAX_NODES);
+    // the cap keeps the tip
+    expect(sessionSpineNodes(1_000_000).at(-1)).toEqual({ tip: true });
+    expect(sessionSpineSummary({ distills: 1_000_000 })?.nodes).toHaveLength(SPINE_MAX_NODES);
+  });
+
+  test("the LABEL still states the true count — the strip is a bounded illustration", () => {
+    expect(sessionSpineSummary({ distills: 1_000_000 })?.label).toBe("spine · 1000000 distills");
+  });
+
+  test("counts at or below the cap are drawn exactly", () => {
+    expect(sessionSpineNodes(SPINE_MAX_NODES - 1)).toHaveLength(SPINE_MAX_NODES);
+    expect(sessionSpineNodes(SPINE_MAX_NODES - 2)).toHaveLength(SPINE_MAX_NODES - 1);
+  });
+});
+
+describe("sessionCardClass — the WHOLE root class attribute is derived in core", () => {
+  test("a product's extra classes are appended, with no stray whitespace either way", () => {
+    expect(sessionCardClass({ extra: "rail-extra" })).toBe("my-session-card rail-extra");
+    expect(sessionCardClass({ selected: true, stale: true, extra: "a b" })).toBe(
+      "my-session-card is-selected is-stale a b",
+    );
+    for (const extra of ["", "   ", undefined, null]) {
+      expect(sessionCardClass({ extra })).toBe("my-session-card");
+    }
   });
 });

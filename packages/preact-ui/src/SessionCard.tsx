@@ -200,7 +200,7 @@ export function SessionCard(props: SessionCardProps) {
     </Fragment>
   );
 
-  const classes = `${sessionCardClass({ selected, stale })} ${cls}`.trimEnd();
+  const classes = sessionCardClass({ selected, stale, extra: cls });
 
   return onSelect === undefined ? (
     <div class={classes}>{body}</div>
