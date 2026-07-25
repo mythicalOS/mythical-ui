@@ -12,8 +12,9 @@
    @mythicalos/shell/styles.css.
 
    Fidelity note (same "stale-token discipline" as ui-core's own extraction): the design
-   source's own tokens.css is v0.4-era and predates two v0.5 canonical distinctions (rule #11 — control
-   boundaries use --my-control-border, --my-border is dividers/cards/non-interactive only — and
+   source's own tokens.css is v0.4-era and predates two v0.5 canonical distinctions (rule #11 —
+   control boundaries use --my-control-border, --my-border is dividers/cards/non-interactive
+   only — and
    the --my-fs-micro token, v0.5.11). Two categories of rule were remapped against the CANONICAL
    tokens.css (mythical-design/tokens.css) rather than copied as-is; every instance is called out
    inline below and the full list (plus the borderline cases considered and left as literal) is

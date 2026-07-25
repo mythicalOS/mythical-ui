@@ -17,10 +17,11 @@
 // functions so the panel markup and the routing decision are independently testable without a
 // DOM: `SwitcherPanel` (unconditional render of the open panel — not part of the package's public
 // barrel, but exported from this module for direct test import) and `resolveSwitcherPick` (the
-// pure onNavigate/onUnbuilt decision, mirroring the export's inline `pick` closure exactly). The
-// outside-click/Escape *wiring itself* (document mousedown/keydown listeners) still requires a
-// real DOM to execute; see product-switcher.test.tsx for the source-scan that verifies the
-// wiring is present, and the report for the full depth discussion.
+// pure onNavigate/onUnbuilt decision, mirroring the export's inline `pick` closure exactly).
+// Because `SwitcherPanel` takes no hooks, a test can also call it as a plain function and invoke
+// a row's REAL onPick closure off the returned vnode tree. The outside-click/Escape *wiring
+// itself* (document mousedown/keydown listeners) is the one part that still needs a real DOM to
+// execute; product-switcher.test.tsx covers it with a source scan instead.
 
 import { useEffect, useRef, useState } from "preact/hooks";
 import { Logo } from "./Logo.js";

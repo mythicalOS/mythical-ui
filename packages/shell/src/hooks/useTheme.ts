@@ -2,13 +2,12 @@
 // <html data-theme="…">, which flips every design token (see mythical-design's tokens.css).
 // 'light' is the default; 'dark' is the heritage/terminal theme.
 //
-// Ported from the design source's useTheme hook, EXTENDED with a `storageKey` option: the
-// export hard-coded the localStorage key as `mythical:theme`, but BROKKR's
-// existing production app already persists under `mythical.ui.theme` (see
-// BROKKR's internal ui/src/state/theme.ts's THEME_STORAGE_KEY) — a silent key rename on install
-// would reset every existing user's theme choice back to the default. `storageKey` defaults to
-// the export's original `mythical:theme` (unchanged behavior for a fresh consumer) but lets
-// BROKKR (and any product with a pre-existing key) pass its own so installs don't lose state.
+// Ported from the design source's useTheme hook, EXTENDED with a `storageKey` option: the export
+// hard-coded the localStorage key as `mythical:theme`, but a product that shipped before this
+// package existed may already persist its users' choice under a different key (BROKKR uses
+// `mythical.ui.theme`) — a silent key rename on install would reset every existing user's theme
+// back to the default. `storageKey` defaults to the export's original `mythical:theme`
+// (unchanged behavior for a fresh consumer) and lets any such product pass its own instead.
 
 import { useCallback, useEffect, useState } from "preact/hooks";
 

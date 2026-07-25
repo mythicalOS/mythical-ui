@@ -14,6 +14,10 @@
 //      rendered HTML, just reached via the panel directly instead of a simulated click.
 //   2. The click-routing decision (soon/href-less ⇒ onUnbuilt, online non-current ⇒ onNavigate,
 //      current ⇒ no-op) is the pure `resolveSwitcherPick` — no rendering or DOM involved at all.
+//      The two are joined end to end by calling the hook-free `SwitcherPanel` as a plain function
+//      and invoking a row's REAL `onPick` closure off the returned vnode tree (see `panelRows`
+//      below) — the technique nav-tabs.test.tsx / workspace.test.tsx already use. That runs the
+//      shipped click path; only the browser's event dispatch is missing.
 //   3. The outside-click/Escape *wiring* (the actual `document.addEventListener` calls) is
 //      verified by a source scan (the same technique packages/preact-ui/hooks.test.ts uses for
 //      usePoll's un-mockable timer/visibility wiring) rather than functional execution — this
@@ -25,6 +29,7 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToString } from "preact-render-to-string";
+import type { VNode } from "preact";
 import { ASGARD, PRODUCTS, ProductSwitcher, type Product } from "./src/index.ts";
 import {
   COMMAND_CENTER_LABEL,
@@ -40,6 +45,48 @@ const noop = () => {};
 
 function stripComments(source: string): string {
   return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+}
+
+/** A panel row vnode, with the real closure the shipped component attached to it. */
+type RowVNode = VNode<{ product: Product; onPick: () => void; role: string; isCurrent: boolean }>;
+
+/**
+ * Every row of the panel, in document order, as REAL vnodes carrying their real `onPick`
+ * closures. `SwitcherPanel` uses no hooks, so calling it as a plain function (not through
+ * h()/render()) hands back the tree preact would have built — the same technique
+ * nav-tabs.test.tsx and workspace.test.tsx use to reach un-clickable handlers without a DOM.
+ */
+function panelRows(props: SwitcherPanelProps): RowVNode[] {
+  const panel = (SwitcherPanel as unknown as (p: SwitcherPanelProps) => VNode)(props);
+  const rows: RowVNode[] = [];
+  const walk = (node: unknown): void => {
+    if (Array.isArray(node)) {
+      for (const n of node) walk(n);
+      return;
+    }
+    if (!node || typeof node !== "object") return;
+    const props = (node as { props?: Record<string, unknown> }).props;
+    if (!props || typeof props !== "object") return;
+    if ("product" in props && "onPick" in props) {
+      rows.push(node as RowVNode);
+      return;
+    }
+    walk(props["children"]);
+  };
+  walk(panel);
+  return rows;
+}
+
+/** The rows rendered from the `products` list, in order. */
+function productRows(props: SwitcherPanelProps): RowVNode[] {
+  return panelRows(props).slice(0, props.products.length);
+}
+
+/** The command-center row — the one below the "command center" label. */
+function commandCenterRow(props: SwitcherPanelProps): RowVNode {
+  const rows = panelRows(props);
+  expect(rows.length).toBe(props.products.length + 1);
+  return rows[rows.length - 1]!;
 }
 
 describe("ProductSwitcher — closed render (the only state reachable without a DOM click)", () => {
@@ -222,7 +269,7 @@ describe("SwitcherPanel — the command-center section (design source: divider +
     expect(tail).not.toContain("my-switcher__dot--online");
   });
 
-  test("the section label is the only soon dot in the panel — no shipped product wears one", () => {
+  test("it is the only not-yet-built dot in the panel — no shipped product wears one", () => {
     expect((html.match(/my-switcher__dot--soon/g) ?? []).length).toBe(1);
   });
 
@@ -233,32 +280,55 @@ describe("SwitcherPanel — the command-center section (design source: divider +
     expect(custom).toContain("custom note copy");
   });
 
-  // Two halves, because render-to-string never fires the handler: (1) the row is really wired to
-  // hand ASGARD to onPick — a source scan, the same technique this file uses for the outside-click
-  // wiring; (2) what onPick then does with it — the pure routing decision.
-  test("the command-center row hands the ASGARD entry to onPick (not a hardcoded or missing arg)", () => {
-    const panelSrc = stripComments(
-      readFileSync(join(import.meta.dir, "src", "ProductSwitcher.tsx"), "utf8"),
-    );
-    const start = panelSrc.indexOf("export function SwitcherPanel");
-    expect(start).toBeGreaterThan(-1);
-    const body = panelSrc.slice(start);
-    // the row rendered with product={ASGARD} is the one whose onPick passes ASGARD along
-    const asgardRow = body.slice(body.indexOf("product={ASGARD}"));
-    expect(asgardRow).toContain("product={ASGARD}");
-    expect(asgardRow).toMatch(/onPick=\{\(\) => onPick\(ASGARD\)\}/);
+  // The click path, executed for real. `SwitcherPanel` is hook-free, so calling it as a plain
+  // function hands back the actual vnode tree with the actual onPick closures attached — the same
+  // technique nav-tabs.test.tsx / workspace.test.tsx use. Invoking the command-center row's own
+  // closure runs the shipped code path, not a reconstruction of it.
+  test("invoking the command-center row's real onPick closure hands over the ASGARD entry", () => {
+    let picked: Product | undefined;
+    const row = commandCenterRow({
+      current: "brokkr",
+      products: PRODUCTS,
+      note: ASGARD.role,
+      onPick: (p) => (picked = p),
+    });
+    row.props.onPick();
+    expect(picked).toBe(ASGARD);
   });
 
-  test("onPick routes ASGARD to onUnbuilt — never a navigation, real or faked", () => {
+  test("that closure, wired to the shipped routing decision, ends in onUnbuilt — never a navigation, real or faked", () => {
     let unbuilt: Product | undefined;
     let navigated = false;
-    const result = resolveSwitcherPick(ASGARD, "brokkr", {
-      onNavigate: () => (navigated = true),
-      onUnbuilt: (p) => (unbuilt = p),
+    // exactly what ProductSwitcher's own `pick` does with the product the row hands it
+    const row = commandCenterRow({
+      current: "brokkr",
+      products: PRODUCTS,
+      note: ASGARD.role,
+      onPick: (p) =>
+        resolveSwitcherPick(p, "brokkr", {
+          onNavigate: () => (navigated = true),
+          onUnbuilt: (u) => (unbuilt = u),
+        }),
     });
-    expect(result.action).toBe("unbuilt");
+    row.props.onPick();
     expect(unbuilt).toBe(ASGARD);
     expect(navigated).toBe(false);
+  });
+
+  test("a product row's closure hands over that product — the rows are not cross-wired", () => {
+    const rows = productRows({ current: "brokkr", products: PRODUCTS, note: "n", onPick: () => {} });
+    expect(rows.length).toBe(PRODUCTS.length);
+    for (const [i, p] of PRODUCTS.entries()) {
+      let picked: Product | undefined;
+      const row = productRows({
+        current: "brokkr",
+        products: PRODUCTS,
+        note: "n",
+        onPick: (q) => (picked = q),
+      })[i]!;
+      row.props.onPick();
+      expect(picked).toBe(p);
+    }
   });
 
   test("the row is inert at render time — nothing fires onPick during a render", () => {
@@ -393,6 +463,22 @@ describe("ProductSwitcher — source scan: outside-click + Escape wiring is pres
     const effectStart = body.indexOf("useEffect(() => {");
     const guard = body.slice(effectStart, effectStart + 80);
     expect(guard).toContain("if (!open) return;");
+  });
+
+  // The rows' closures are proven above by direct invocation; what a DOM-free test cannot reach is
+  // the seam between them and the stateful component — that <SwitcherPanel onPick={pick}> really
+  // is the panel it renders, and that `pick` really is the shipped routing decision.
+  test("the panel it renders is handed the component's own `pick` as onPick", () => {
+    expect(body).toMatch(/<SwitcherPanel[^>]*onPick=\{pick\}/s);
+  });
+
+  test("`pick` routes through resolveSwitcherPick, and only navigates on that decision's say-so", () => {
+    const pickStart = body.indexOf("const pick =");
+    expect(pickStart).toBeGreaterThan(-1);
+    const pickBody = body.slice(pickStart, body.indexOf("return (", pickStart));
+    expect(pickBody).toContain("resolveSwitcherPick(p, current, { onNavigate, onUnbuilt })");
+    expect(pickBody).toMatch(/result\.action === "navigate-href"/);
+    expect(pickBody).toMatch(/window\.location\.href = result\.href/);
   });
 });
 
