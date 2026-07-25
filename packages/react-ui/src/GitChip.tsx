@@ -12,6 +12,7 @@
 import {
   GIT_BRANCH_GLYPH,
   GIT_BRANCH_UNKNOWN,
+  GIT_CHIP_PARTS,
   GIT_CLEAN_LABEL,
   GIT_DETACHED_LABEL,
   GIT_LOADING_NOTE,
@@ -38,6 +39,7 @@ export {
   hasGitStatus,
   GIT_BRANCH_GLYPH,
   GIT_BRANCH_UNKNOWN,
+  GIT_CHIP_PARTS,
   GIT_CLEAN_LABEL,
   GIT_DETACHED_LABEL,
   GIT_LOADING_NOTE,
@@ -67,7 +69,7 @@ export interface GitChipProps {
 export function GitChip(props: GitChipProps) {
   const { status, stale = false, className: cls = "" } = props;
   const staleMark = stale ? (
-    <span className="my-gitchip__stale" title={GIT_STALE_TITLE}>
+    <span className={GIT_CHIP_PARTS.stale} title={GIT_STALE_TITLE}>
       {GIT_STALE_LABEL}
     </span>
   ) : null;
@@ -76,11 +78,11 @@ export function GitChip(props: GitChipProps) {
     const flags = gitFlags(status);
     return (
       <span className={`${gitChipClass({ stale })} ${cls}`}>
-        <span className="my-gitchip__branch">
+        <span className={GIT_CHIP_PARTS.branch}>
           {GIT_BRANCH_GLYPH} {gitBranchLabel(status.branch)}
         </span>
         {flags.length > 0 ? (
-          <span className="my-gitchip__flags">
+          <span className={GIT_CHIP_PARTS.flags}>
             {flags.map((f) => (
               <span className={gitFlagClass(f.tone)} key={f.label}>
                 {f.label}
@@ -96,10 +98,10 @@ export function GitChip(props: GitChipProps) {
   const note = gitChipNote({ unavailableNote: props.unavailableNote, loading: props.loading });
   return (
     <span className={`${gitChipClass({ unavailable: true, stale })} ${cls}`}>
-      <span className="my-gitchip__branch" title={note}>
+      <span className={GIT_CHIP_PARTS.branch} title={note}>
         {GIT_BRANCH_GLYPH} {GIT_BRANCH_UNKNOWN}
       </span>
-      <span className="my-gitchip__note">{note}</span>
+      <span className={GIT_CHIP_PARTS.note}>{note}</span>
       {staleMark}
     </span>
   );

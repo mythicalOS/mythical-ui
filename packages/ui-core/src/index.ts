@@ -44,6 +44,7 @@ export {
   saveBarNote,
   saveBarDirty,
   saveBarClass,
+  SAVE_BAR_PARTS,
   SAVE_BAR_SEP,
   SAVE_BAR_DISCARD_LABEL,
   SAVE_BAR_SAVE_LABEL,
@@ -53,6 +54,7 @@ export {
 export {
   statTilesClass,
   statTileClass,
+  STAT_TILE_PARTS,
   formatStatCompact,
   formatStatCount,
   formatStatUsd,
@@ -70,6 +72,7 @@ export {
   gitChipClass,
   gitFlagClass,
   gitChipNote,
+  GIT_CHIP_PARTS,
   GIT_BRANCH_GLYPH,
   GIT_BRANCH_UNKNOWN,
   GIT_DETACHED_LABEL,

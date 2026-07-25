@@ -16,6 +16,7 @@ import type { ComponentChildren } from "preact";
 import {
   SAVE_BAR_DISCARD_LABEL,
   SAVE_BAR_SAVE_LABEL,
+  SAVE_BAR_PARTS,
   SAVE_BAR_SEP,
   saveBarClass,
   saveBarDirty,
@@ -28,6 +29,7 @@ export {
   saveBarNote,
   saveBarDirty,
   saveBarClass,
+  SAVE_BAR_PARTS,
   SAVE_BAR_SEP,
   SAVE_BAR_DISCARD_LABEL,
   SAVE_BAR_SAVE_LABEL,
@@ -56,13 +58,13 @@ export function SaveBar(props: SaveBarProps) {
   if (note.count === 0) return null;
   return (
     <div class={`${saveBarClass()} ${cls}`}>
-      <span class="my-savebar__note">
-        <b class="my-savebar__count">{note.countLabel}</b>
+      <span class={SAVE_BAR_PARTS.note}>
+        <b class={SAVE_BAR_PARTS.count}>{note.countLabel}</b>
         {SAVE_BAR_SEP}
         {note.detail}
       </span>
       {props.children}
-      <span class="my-savebar__actions">
+      <span class={SAVE_BAR_PARTS.actions}>
         <Button variant="sec" onClick={props.onDiscard}>
           {props.discardLabel ?? SAVE_BAR_DISCARD_LABEL}
         </Button>

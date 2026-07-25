@@ -340,12 +340,13 @@ a:focus-visible, .link:focus-visible, .is-focus {
    The card draws it `position:absolute` inside its own bordered screen frame; a packaged atom has
    no such frame to anchor to, so it is `fixed` to the viewport (what the reference product's
    sheet does too) — a consumer that needs it scoped to a pane overrides `position` via the
-   passthrough class. */
+   passthrough class. Padding is the card's `9px 16px`; the product's own sheet insets it to 24px
+   horizontally, which a consumer can restore from its own sheet. */
 .my-savebar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
   background: var(--my-surface); border-top: 1px solid var(--my-border);
   display: flex; align-items: center; gap: 10px;
-  padding: 9px var(--my-sp-5); font-size: var(--my-fs-caption);
+  padding: 9px var(--my-sp-4); font-size: var(--my-fs-caption); /* the card's 9px 16px */
   animation: my-savebar-up 180ms ease-out; /* the card's "slides up (180ms)" */
 }
 @keyframes my-savebar-up { from { transform: translateY(100%); } }

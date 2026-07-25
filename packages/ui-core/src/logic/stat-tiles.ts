@@ -38,14 +38,25 @@ export const STAT_TILE_EMPTY = "—";
  *  mono face the tile value is set in. */
 export const STAT_TILE_MINUS = "−";
 
+/** Every class the row renders, containers and elements — the bindings import these rather than
+ *  spelling the strings themselves, so the two frameworks cannot drift apart on a rename. */
+export const STAT_TILE_PARTS = {
+  row: "my-stat-tiles",
+  tile: "my-stat-tile",
+  label: "my-stat-tile__label",
+  value: "my-stat-tile__value",
+  sub: "my-stat-tile__sub",
+} as const;
+
 /** Row container class. */
 export function statTilesClass(): string {
-  return "my-stat-tiles";
+  return STAT_TILE_PARTS.row;
 }
 
 /** Tile class: base + optional tone modifier. */
 export function statTileClass(tone?: StatTileTone): string {
-  return tone === undefined ? "my-stat-tile" : `my-stat-tile my-stat-tile--${tone}`;
+  const base = STAT_TILE_PARTS.tile;
+  return tone === undefined ? base : `${base} ${base}--${tone}`;
 }
 
 /** True only for a real, finite number — `undefined`, `null` and `NaN`/`Infinity` all fall through

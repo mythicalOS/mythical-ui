@@ -17,6 +17,7 @@ import {
   formatStatCount,
   formatStatPercent,
   formatStatUsd,
+  STAT_TILE_PARTS,
   statTileClass,
   statTilesClass,
   type StatTile,
@@ -30,6 +31,7 @@ export {
   formatStatUsd,
   statTileClass,
   statTilesClass,
+  STAT_TILE_PARTS,
   STAT_TILE_EMPTY,
   STAT_TILE_MINUS,
   type StatTile,
@@ -53,9 +55,9 @@ export function StatTiles(props: StatTilesProps) {
     <div class={`${statTilesClass()} ${cls}`}>
       {tiles.map((t, i) => (
         <div class={statTileClass(t.tone)} key={`${i}:${t.label}`}>
-          <div class="my-stat-tile__label">{t.label}</div>
-          <div class="my-stat-tile__value">{t.value}</div>
-          {t.sub !== undefined ? <div class="my-stat-tile__sub">{t.sub}</div> : null}
+          <div class={STAT_TILE_PARTS.label}>{t.label}</div>
+          <div class={STAT_TILE_PARTS.value}>{t.value}</div>
+          {t.sub !== undefined ? <div class={STAT_TILE_PARTS.sub}>{t.sub}</div> : null}
         </div>
       ))}
     </div>

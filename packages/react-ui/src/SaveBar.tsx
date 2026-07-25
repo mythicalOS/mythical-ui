@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import {
   SAVE_BAR_DISCARD_LABEL,
   SAVE_BAR_SAVE_LABEL,
+  SAVE_BAR_PARTS,
   SAVE_BAR_SEP,
   saveBarClass,
   saveBarDirty,
@@ -25,6 +26,7 @@ export {
   saveBarNote,
   saveBarDirty,
   saveBarClass,
+  SAVE_BAR_PARTS,
   SAVE_BAR_SEP,
   SAVE_BAR_DISCARD_LABEL,
   SAVE_BAR_SAVE_LABEL,
@@ -52,13 +54,13 @@ export function SaveBar(props: SaveBarProps) {
   if (note.count === 0) return null;
   return (
     <div className={`${saveBarClass()} ${cls}`}>
-      <span className="my-savebar__note">
-        <b className="my-savebar__count">{note.countLabel}</b>
+      <span className={SAVE_BAR_PARTS.note}>
+        <b className={SAVE_BAR_PARTS.count}>{note.countLabel}</b>
         {SAVE_BAR_SEP}
         {note.detail}
       </span>
       {props.children}
-      <span className="my-savebar__actions">
+      <span className={SAVE_BAR_PARTS.actions}>
         <Button variant="sec" onClick={props.onDiscard}>
           {props.discardLabel ?? SAVE_BAR_DISCARD_LABEL}
         </Button>

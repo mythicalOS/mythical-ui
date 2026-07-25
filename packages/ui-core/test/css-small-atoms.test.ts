@@ -10,6 +10,9 @@ import { describe, expect, test } from "bun:test";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import {
+  GIT_CHIP_PARTS,
+  SAVE_BAR_PARTS,
+  STAT_TILE_PARTS,
   gitChipClass,
   gitFlagClass,
   saveBarClass,
@@ -63,11 +66,17 @@ describe("save bar", () => {
   test("saveBarClass's output has a selector", () => {
     expectSelectorsFor(saveBarClass());
   });
-  test("the element classes the bindings render have selectors", () => {
-    for (const c of ["my-savebar__note", "my-savebar__count", "my-savebar__actions"]) {
+  test("EVERY declared part has a selector — enumerated from ui-core, not restated here", () => {
+    for (const c of Object.values(SAVE_BAR_PARTS)) {
       expect({ c, found: hasClassSelector(c) }).toEqual({ c, found: true });
     }
   });
+  test("the horizontal padding is the card's 16px, on the canonical token", () => {
+    const rule = css.match(/\.my-savebar\s*\{([^}]*)\}/);
+    expect(rule).not.toBeNull();
+    expect(rule?.[1]).toContain("padding: 9px var(--my-sp-4)");
+  });
+
   test("the card's 180ms slide-up exists AND has a prefers-reduced-motion opt-out", () => {
     expect(css).toContain("@keyframes my-savebar-up");
     expect(css).toMatch(/animation:\s*my-savebar-up\s+180ms/);
@@ -84,8 +93,8 @@ describe("stat tiles", () => {
       expectSelectorsFor(statTileClass(tone));
     }
   });
-  test("the element classes the bindings render have selectors", () => {
-    for (const c of ["my-stat-tile__label", "my-stat-tile__value", "my-stat-tile__sub"]) {
+  test("EVERY declared part has a selector — enumerated from ui-core, not restated here", () => {
+    for (const c of Object.values(STAT_TILE_PARTS)) {
       expect({ c, found: hasClassSelector(c) }).toEqual({ c, found: true });
     }
   });
@@ -111,13 +120,8 @@ describe("git chip", () => {
   test("gitFlagClass output — every tone — has selectors", () => {
     for (const tone of ["warn", "error", "ok"] as GitFlagTone[]) expectSelectorsFor(gitFlagClass(tone));
   });
-  test("the element classes the bindings render have selectors", () => {
-    for (const c of [
-      "my-gitchip__branch",
-      "my-gitchip__flags",
-      "my-gitchip__note",
-      "my-gitchip__stale",
-    ]) {
+  test("EVERY declared part has a selector — enumerated from ui-core, not restated here", () => {
+    for (const c of Object.values(GIT_CHIP_PARTS)) {
       expect({ c, found: hasClassSelector(c) }).toEqual({ c, found: true });
     }
   });

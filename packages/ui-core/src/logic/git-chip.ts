@@ -116,17 +116,30 @@ export interface GitChipState {
   stale?: boolean;
 }
 
+/** Every class the chip renders, root and elements — the bindings import these rather than
+ *  spelling the strings themselves, so the two frameworks cannot drift apart on a rename. */
+export const GIT_CHIP_PARTS = {
+  root: "my-gitchip",
+  branch: "my-gitchip__branch",
+  flags: "my-gitchip__flags",
+  flag: "my-gitchip__flag",
+  note: "my-gitchip__note",
+  stale: "my-gitchip__stale",
+} as const;
+
 /** Root class: base + the unavailable/stale modifiers. */
 export function gitChipClass(state: GitChipState = {}): string {
-  let cls = "my-gitchip";
-  if (state.unavailable === true) cls += " my-gitchip--unavailable";
-  if (state.stale === true) cls += " my-gitchip--stale";
+  const base = GIT_CHIP_PARTS.root;
+  let cls = base;
+  if (state.unavailable === true) cls += ` ${base}--unavailable`;
+  if (state.stale === true) cls += ` ${base}--stale`;
   return cls;
 }
 
 /** Flag badge class: base + tone modifier (always present — the tone IS the flag's meaning). */
 export function gitFlagClass(tone: GitFlagTone): string {
-  return `my-gitchip__flag my-gitchip__flag--${tone}`;
+  const base = GIT_CHIP_PARTS.flag;
+  return `${base} ${base}--${tone}`;
 }
 
 /** The unavailable arm's sentence: a caller-supplied reason wins; else the loading line while the

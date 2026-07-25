@@ -16,7 +16,10 @@ import {
   GIT_UNAVAILABLE_NOTE,
   SAVE_BAR_DISCARD_LABEL,
   SAVE_BAR_SAVE_LABEL,
+  SAVE_BAR_PARTS,
   SAVE_BAR_SEP,
+  STAT_TILE_PARTS,
+  GIT_CHIP_PARTS,
   buttonClass,
   gitChipClass,
   gitFlagClass,
@@ -45,7 +48,7 @@ describe("SaveBar", () => {
     expect(html).toContain(note.countLabel);
     expect(html).toContain(note.detail);
     expect(html).toContain(SAVE_BAR_SEP);
-    expect(html).toContain('class="my-savebar__count"');
+    expect(html).toContain(`class="${SAVE_BAR_PARTS.count}"`);
   });
 
   test("pluralizes through ui-core, never locally", () => {
@@ -114,28 +117,28 @@ describe("StatTiles", () => {
 
   test("label / value / sub each render into their own slot, in order", () => {
     const html = renderToStaticMarkup(<StatTiles tiles={[tiles[0] as StatTile]} />);
-    expect(html).toContain('<div class="my-stat-tile__label">tokens in</div>');
-    expect(html).toContain('<div class="my-stat-tile__value">1,204,551</div>');
-    expect(html).toContain('<div class="my-stat-tile__sub">this session</div>');
-    expect(html.indexOf("my-stat-tile__label")).toBeLessThan(html.indexOf("my-stat-tile__value"));
-    expect(html.indexOf("my-stat-tile__value")).toBeLessThan(html.indexOf("my-stat-tile__sub"));
+    expect(html).toContain(`<div class="${STAT_TILE_PARTS.label}">tokens in</div>`);
+    expect(html).toContain(`<div class="${STAT_TILE_PARTS.value}">1,204,551</div>`);
+    expect(html).toContain(`<div class="${STAT_TILE_PARTS.sub}">this session</div>`);
+    expect(html.indexOf(STAT_TILE_PARTS.label)).toBeLessThan(html.indexOf(STAT_TILE_PARTS.value));
+    expect(html.indexOf(STAT_TILE_PARTS.value)).toBeLessThan(html.indexOf(STAT_TILE_PARTS.sub));
   });
 
   test("a tile with no sub renders no sub element — the atom invents no caption", () => {
     const html = renderToStaticMarkup(<StatTiles tiles={[{ label: "cost", value: "$4.18" }]} />);
-    expect(html).not.toContain("my-stat-tile__sub");
+    expect(html).not.toContain(STAT_TILE_PARTS.sub);
   });
 
   test("an empty list renders the row and nothing else (no fabricated placeholder tiles)", () => {
     const html = renderToStaticMarkup(<StatTiles tiles={[]} />);
     expect(html).toContain(statTilesClass());
-    expect(html).not.toContain("my-stat-tile__value");
+    expect(html).not.toContain(STAT_TILE_PARTS.value);
   });
 
   test("a non-array tiles prop renders an empty row rather than crashing", () => {
     const html = renderToStaticMarkup(<StatTiles tiles={undefined as unknown as StatTile[]} />);
     expect(html).toContain(statTilesClass());
-    expect(html).not.toContain("my-stat-tile__value");
+    expect(html).not.toContain(STAT_TILE_PARTS.value);
   });
 
   test("duplicate labels do not collide", () => {
@@ -206,7 +209,7 @@ describe("GitChip — available arm", () => {
     );
     expect(html).toContain("main");
     expect(html).not.toContain(GIT_CLEAN_LABEL);
-    expect(html).not.toContain("my-gitchip__flag");
+    expect(html).not.toContain(GIT_CHIP_PARTS.flag);
   });
 });
 
@@ -217,7 +220,7 @@ describe("GitChip — unavailable arm (the honesty this atom exists for)", () =>
     expect(html).toContain(GIT_UNAVAILABLE_NOTE);
     expect(html).toContain(GIT_BRANCH_UNKNOWN);
     expect(html).not.toContain(GIT_CLEAN_LABEL);
-    expect(html).not.toContain("my-gitchip__flag");
+    expect(html).not.toContain(GIT_CHIP_PARTS.flag);
   });
 
   test("a product-supplied reason wins over the defaults and is also the branch-slot title", () => {
@@ -271,6 +274,6 @@ describe("GitChip — stale is flagged on BOTH arms", () => {
     const html = renderToStaticMarkup(
       <GitChip status={{ branch: "main", behind: 0, uncommitted: 0, unpushed: 0 }} />,
     );
-    expect(html).not.toContain("my-gitchip__stale");
+    expect(html).not.toContain(GIT_CHIP_PARTS.stale);
   });
 });

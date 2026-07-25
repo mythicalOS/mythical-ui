@@ -57,8 +57,18 @@ export function saveBarDirty(changed: readonly string[]): boolean {
   return saveBarNote(changed).count > 0;
 }
 
+/** Every class the bar renders, root and elements. The bindings import these rather than spelling
+ *  the strings themselves, so a rename cannot land in one framework and not the other, and the
+ *  stylesheet test can enumerate the parts instead of restating a hand-written list. */
+export const SAVE_BAR_PARTS = {
+  root: "my-savebar",
+  note: "my-savebar__note",
+  count: "my-savebar__count",
+  actions: "my-savebar__actions",
+} as const;
+
 /** Root class for the bar. No tone axis — the modifier space is reserved for the caller's own
  *  passthrough class, which the bindings append. */
 export function saveBarClass(): string {
-  return "my-savebar";
+  return SAVE_BAR_PARTS.root;
 }
