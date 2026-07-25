@@ -79,6 +79,28 @@ export function keyAction(ev: unknown): KeyAction {
 
 // ── class derivation ──
 
+/** The send button's label. */
+export const SEND_BUTTON_LABEL = "Send";
+
+/**
+ * Every structural class the send bar renders. Named here — not typed literally in a binding — so
+ * the Preact and React bindings cannot drift.
+ *
+ * DEVIATION FROM THE DESIGN CARD (deliberate, carried over from the shipped implementation this was
+ * extracted from): the card draws the delivery class as a `<select>`. The shipped bar uses a
+ * two-button segmented control with `aria-pressed`, because with exactly two mutually exclusive
+ * options both are visible at once — the current class is readable without opening a menu, which is
+ * what a delivery decision needs. Everything else in the bar follows the card.
+ */
+export const SENDBAR_CLASSES = {
+  wrap: "my-sendbar-wrap",
+  segment: "my-sendbar__seg",
+  input: "my-sendbar__input",
+  send: "my-sendbar__send",
+  hint: "my-sendbar__hint",
+  notice: "my-sendbar__notice",
+} as const;
+
 /** The bar wrapper: `my-sendbar`, plus `is-disabled` when the whole bar is unusable. */
 export function sendBarClass(disabled: boolean): string {
   return disabled ? "my-sendbar is-disabled" : "my-sendbar";

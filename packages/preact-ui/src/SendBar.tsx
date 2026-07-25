@@ -16,7 +16,10 @@
 import { useState } from "preact/hooks";
 import type { JSX } from "preact";
 import {
+  DELIVERY_CLASSES,
   DELIVERY_HINT,
+  SENDBAR_CLASSES,
+  SEND_BUTTON_LABEL,
   canSend,
   clearDraftOnSend,
   deliveryClassButtonClass,
@@ -83,10 +86,10 @@ export function SendBar(props: SendBarProps) {
   };
 
   return (
-    <div class="my-sendbar-wrap">
+    <div class={SENDBAR_CLASSES.wrap}>
       <div class={sendBarClass(disabled)}>
-        <div class="my-sendbar__seg" role="group">
-          {(["asap", "on-done"] as const).map((c) => (
+        <div class={SENDBAR_CLASSES.segment} role="group">
+          {DELIVERY_CLASSES.map((c) => (
             <button
               key={c}
               type="button"
@@ -100,7 +103,7 @@ export function SendBar(props: SendBarProps) {
           ))}
         </div>
         <textarea
-          class="my-sendbar__input"
+          class={SENDBAR_CLASSES.input}
           rows={1}
           placeholder={sendPlaceholder(disabled, props.disabledReason, props.targetName)}
           value={text}
@@ -108,12 +111,17 @@ export function SendBar(props: SendBarProps) {
           onInput={(e) => setText((e.target as HTMLTextAreaElement).value)}
           onKeyDown={onKeyDown}
         />
-        <button type="button" class="my-sendbar__send" disabled={!canSend(text, disabled, busy)} onClick={doSend}>
-          Send
+        <button
+          type="button"
+          class={SENDBAR_CLASSES.send}
+          disabled={!canSend(text, disabled, busy)}
+          onClick={doSend}
+        >
+          {SEND_BUTTON_LABEL}
         </button>
       </div>
-      {showDeliveryHint(disabled) ? <div class="my-sendbar__hint">{DELIVERY_HINT}</div> : null}
-      {props.notice ? <div class="my-sendbar__notice">{props.notice}</div> : null}
+      {showDeliveryHint(disabled) ? <div class={SENDBAR_CLASSES.hint}>{DELIVERY_HINT}</div> : null}
+      {props.notice ? <div class={SENDBAR_CLASSES.notice}>{props.notice}</div> : null}
     </div>
   );
 }

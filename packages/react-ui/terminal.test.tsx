@@ -205,6 +205,25 @@ describe("QueuePanel — source→view honesty (invariant 3)", () => {
     expect(html).not.toContain(QUEUE_EMPTY_COPY);
   });
 
+  test("a caller's detail is APPENDED, so the distinct base sentence always survives", () => {
+    const html = rts(
+      <QueuePanel
+        source={{ kind: "unavailable", reason: "unsupported" }}
+        unavailableDetail={{ unsupported: "The daemon is in server mode." }}
+      />,
+    );
+    expect(html).toContain(QUEUE_UNAVAILABLE_COPY.unsupported);
+    expect(html).toContain("The daemon is in server mode.");
+  });
+
+  test("no detail map can flatten the three reasons into one message", () => {
+    const flatten = { unsupported: "Unavailable.", error: "Unavailable.", unaddressable: "Unavailable." };
+    const seen = (["unsupported", "error", "unaddressable"] as const).map((reason) =>
+      rts(<QueuePanel source={{ kind: "unavailable", reason }} unavailableDetail={flatten} />),
+    );
+    expect(new Set(seen).size).toBe(3);
+  });
+
   test("the three unavailable reasons render distinctly", () => {
     const seen = (["unsupported", "error", "unaddressable"] as const).map((reason) => {
       const html = rts(<QueuePanel source={{ kind: "unavailable", reason }} />);
@@ -243,6 +262,30 @@ describe("QueueRow — the cancel affordance (invariant 4)", () => {
     expect(html).toContain("Cancel it");
     expect(html).toContain("Keep");
     expect(html).not.toContain("my-scrim");
+  });
+
+test("an armed row that is NOT cancellable renders no active cancel control (invariant 4)", () => {
+    // arming a leased/delivered/canceled row, or a row whose permission was revoked, must not
+    // produce a live "Cancel it" — including in the render before a disarming effect runs
+    for (const status of ["leased", "delivered", "canceled"] as const) {
+      const html = rts(<QueueRow item={item({ status })} armed canCancel />);
+      expect(html).not.toContain("Cancel it");
+      expect(html).not.toContain("Cancel this delivery?");
+      expect(html).toContain(queueRowClass(status, false));
+    }
+    const revoked = rts(<QueueRow item={item({ status: "queued" })} armed canCancel={false} />);
+    expect(revoked).not.toContain("Cancel it");
+    expect(revoked).not.toContain("my-qrow__cancel");
+  });
+
+  test("rows with a repeated id still render one element each (no key collision)", () => {
+    const dup: TermRow[] = [
+      { kind: "assistant", text: "first", id: "same" },
+      { kind: "assistant", text: "second", id: "same" },
+    ];
+    const html = rts(<Terminal source={{ kind: "ready", rows: dup }} />);
+    expect(html).toContain("first");
+    expect(html).toContain("second");
   });
 
   test("badges and row classes come from ui-core", () => {

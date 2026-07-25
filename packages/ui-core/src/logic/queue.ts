@@ -53,6 +53,25 @@ export const QUEUE_CANCEL_NO = "Keep";
 export const QUEUE_CANCEL_LABEL = "✕ cancel";
 
 /**
+ * Every structural class the queue renders. Named here — not typed literally in a binding — so the
+ * Preact and React bindings cannot drift.
+ */
+export const QUEUE_CLASSES = {
+  panel: "my-queue",
+  list: "my-queue__list",
+  state: "my-queue__state",
+  stale: "my-queue__stale",
+  empty: "my-queue__empty",
+  rowBody: "my-qrow__body",
+  rowStatus: "my-qrow__status",
+  cancel: "my-qrow__cancel",
+  ask: "my-qrow__ask",
+  actions: "my-qrow__acts",
+  confirmYes: "my-qmini my-qmini--yes",
+  confirmNo: "my-qmini my-qmini--no",
+} as const;
+
+/**
  * The queue's input. `stale` is its OWN state, never folded into `ok` — a failing poll that still
  * holds the last received list is a materially different claim from a fresh successful read.
  */
@@ -76,19 +95,26 @@ export type QueueView =
  *  - `stale` with zero items renders a flagged (but empty) LIST, never the empty copy — the last
  *    received list happening to be empty is not a fresh "there is nothing queued" claim.
  *
- * `unavailableCopy` lets a product supply a more specific, still-honest reason string per reason;
- * omitting it falls back to this package's defaults. It cannot collapse two reasons into one
- * message by accident — the reasons remain distinct keys either way.
+ * `unavailableDetail` lets a product ADD what it knows about a reason (e.g. which mode the daemon
+ * is in). It is APPENDED to this package's own sentence, never substituted for it — a caller
+ * therefore cannot collapse two reasons into one message, deliberately or by accident: the distinct
+ * base sentences always survive, so two reasons can never render identical copy.
  */
+export function unavailableText(reason: QueueUnavailableReason, detail?: string): string {
+  const base = QUEUE_UNAVAILABLE_COPY[reason];
+  const extra = detail?.trim();
+  return extra ? `${base} ${extra}` : base;
+}
+
 export function queueView(
   source: QueueSource,
-  unavailableCopy?: Partial<Record<QueueUnavailableReason, string>>,
+  unavailableDetail?: Partial<Record<QueueUnavailableReason, string>>,
 ): QueueView {
   switch (source.kind) {
     case "loading":
       return { kind: "state", copy: QUEUE_LOADING_COPY };
     case "unavailable":
-      return { kind: "state", copy: unavailableCopy?.[source.reason] ?? QUEUE_UNAVAILABLE_COPY[source.reason] };
+      return { kind: "state", copy: unavailableText(source.reason, unavailableDetail?.[source.reason]) };
     case "ok":
       return source.items.length === 0
         ? { kind: "empty", copy: QUEUE_EMPTY_COPY }

@@ -44,27 +44,63 @@ function termBlock(): string {
   return m?.[1] ?? "";
 }
 
-/** The theme-flipping locals: every one of these has a different value under [data-theme="dark"],
- *  so anything inside the terminal that inherits one would follow the app theme. */
-const FLIPPING_LOCALS = [
-  "--my-bg",
-  "--my-surface",
-  "--my-surface-hover",
-  "--my-border",
-  "--my-control-border",
-  "--my-ink",
-  "--my-muted",
-  "--my-accent",
-  "--my-accent-strong",
-  "--my-accent-soft",
-  "--my-warn",
-  "--my-warn-soft",
+/** Strip CSS comments so a token name mentioned in prose is never mistaken for a declaration. */
+function stripComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+/**
+ * The theme-flipping set, DERIVED rather than hand-listed: every --my-* token the canonical
+ * tokens.css re-declares under [data-theme="dark"] has a different value in the two themes, so
+ * anything inside the terminal resolving one of them would follow the app theme. Deriving it is the
+ * point — a hand-maintained allowlist silently stops covering tokens added upstream later.
+ *
+ * The fallback is the same set as of tokens v0.5, so the guard still runs when the sibling design
+ * repo is not checked out beside this one; `flippingIsDerived` records which source was used.
+ */
+const FALLBACK_FLIPPING = [
+  "--my-bg", "--my-surface", "--my-border", "--my-control-border", "--my-track", "--my-ink",
+  "--my-muted", "--my-accent", "--my-accent-strong", "--my-accent-soft", "--my-ok", "--my-warn",
+  "--my-error", "--my-info", "--my-ink-hover", "--my-accent-hover", "--my-surface-hover",
+  "--my-disabled-bg", "--my-disabled-ink", "--my-ok-soft", "--my-warn-soft", "--my-error-soft",
+  "--my-info-soft", "--my-scrim", "--my-shadow-modal",
 ];
+const flippingIsDerived = existsSync(tokensPath);
+const FLIPPING: Set<string> = (() => {
+  if (!flippingIsDerived) return new Set(FALLBACK_FLIPPING);
+  const tokens = stripComments(readFileSync(tokensPath, "utf8"));
+  const darkStart = tokens.search(/\[data-theme="dark"\]/);
+  if (darkStart < 0) return new Set(FALLBACK_FLIPPING);
+  return new Set(
+    Array.from(tokens.slice(darkStart).matchAll(/(--my-[a-zA-Z0-9-]+)\s*:/g)).map((m) => m[1]!),
+  );
+})();
+
+/** The flipping tokens `.my-term` actually re-points onto the term palette. */
+function repointed(): string[] {
+  const block = stripComments(termBlock());
+  return Array.from(block.matchAll(/(--my-[a-zA-Z0-9-]+)\s*:/g))
+    .map((m) => m[1]!)
+    .filter((name) => FLIPPING.has(name));
+}
+
+/** Every rule whose selector mentions `.my-term`, as {selector, body} pairs. */
+function termRules(): { selector: string; body: string }[] {
+  return Array.from(stripComments(css).matchAll(/([^{}]+)\{([^{}]*)\}/g))
+    .map((m) => ({ selector: m[1]!.trim(), body: m[2]! }))
+    .filter((r) => /\.my-term/.test(r.selector));
+}
 
 describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", () => {
   test("the terminal surface class has a real rule", () => {
     expect(TERM_CLASS).toBe("my-term");
     expect(hasClassSelector(TERM_CLASS)).toBe(true);
+  });
+
+  test("the flipping-token set is real and non-trivial", () => {
+    expect(FLIPPING.size).toBeGreaterThan(15);
+    // the tokens that must NOT flip — the terminal palette itself
+    for (const t of ["--my-term-bg", "--my-term-ink", "--my-term-dim"]) expect(FLIPPING.has(t)).toBe(false);
   });
 
   test("its own surface and ink come from --my-term-*, not from the theme locals", () => {
@@ -73,23 +109,48 @@ describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", ()
     expect(block).toMatch(/color:\s*var\(--my-term-ink\)/);
   });
 
-  test("it re-points EVERY theme-flipping local onto the fixed term palette", () => {
-    const block = termBlock();
-    const missing = FLIPPING_LOCALS.filter((name) => !new RegExp(`${escapeRegex(name)}\\s*:`).test(block));
-    expect(missing).toEqual([]);
-  });
-
-  test("each re-pointed local resolves through a --my-term-* token, never a theme token", () => {
-    const block = termBlock();
-    for (const name of FLIPPING_LOCALS) {
+  test("every flipping local it re-points resolves ONLY through --my-term-* tokens", () => {
+    const block = stripComments(termBlock());
+    const names = repointed();
+    expect(names.length).toBeGreaterThan(10);
+    for (const name of names) {
       const decl = block.match(new RegExp(`${escapeRegex(name)}\\s*:([^;]+);`));
       expect(decl).not.toBeNull();
       const value = decl?.[1] ?? "";
-      // every var() reference in the value must be a --my-term-* token
       const refs = Array.from(value.matchAll(/var\(\s*(--my-[a-zA-Z0-9-]+)/g)).map((m) => m[1]!);
       expect(refs.length).toBeGreaterThan(0);
       expect(refs.filter((r) => !r.startsWith("--my-term-"))).toEqual([]);
     }
+  });
+
+  test("NO rule in the terminal set resolves a flipping token that .my-term has not pinned", () => {
+    // This is the real guarantee, and it is why the set above is derived: a terminal rule reaching
+    // for --my-error (say) would render the app's LIGHT red inside a permanently dark pane. Either
+    // the token is re-pointed on .my-term (and so inherits a term-palette value), or the rule must
+    // not use it at all.
+    const pinned = new Set(repointed());
+    const offenders: string[] = [];
+    for (const rule of termRules()) {
+      for (const m of rule.body.matchAll(/var\(\s*(--my-[a-zA-Z0-9-]+)/g)) {
+        const token = m[1]!;
+        if (FLIPPING.has(token) && !pinned.has(token)) offenders.push(`${rule.selector} → ${token}`);
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  test("the documented residual is exactly the status hues, and nothing in the set uses them", () => {
+    // --my-ok/--my-error/--my-info (and their softs) are deliberately NOT re-pointed: the five-token
+    // terminal palette has no green/red/blue, so any value would be invented. The guard above is
+    // what keeps that honest, so pin the residual explicitly rather than leaving it implied.
+    const pinned = new Set(repointed());
+    for (const t of ["--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft"]) {
+      expect(pinned.has(t)).toBe(false);
+    }
+    // and every OTHER flipping token IS pinned
+    const residual = new Set(["--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft"]);
+    const unpinned = [...FLIPPING].filter((t) => !pinned.has(t) && !residual.has(t)).sort();
+    expect(unpinned).toEqual([]);
   });
 
   test("NO theme-conditional selector may reach into the terminal", () => {

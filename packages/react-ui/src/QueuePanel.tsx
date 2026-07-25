@@ -6,8 +6,10 @@
 // derivation, and the two-step cancel state machine all come from `@mythicalos/ui-core`.
 //
 // Honesty (binding, inherited from ui-core): the empty copy is CAPABILITY-NEUTRAL and renders ONLY
-// on `ok` + zero items; `loading` never renders empty; the three unavailable reasons render
-// DISTINCTLY; `stale` is its own state with no retry claim. The cancel affordance exists ONLY on
+// on `ok` + zero items — never an operational-emptiness or store-existence claim, and never the
+// design card's "queue empty — deliveries land here by class (ASAP interrupts · ON-DONE waits)";
+// `loading` never renders empty; the three unavailable reasons render DISTINCTLY; `stale` is its own
+// state, flagged as last-known data with no retry claim. The cancel affordance exists ONLY on
 // `queued` records AND only when the caller says the record is cancellable.
 
 import { useEffect, useReducer } from "react";
@@ -16,6 +18,7 @@ import {
   QUEUE_CANCEL_LABEL,
   QUEUE_CANCEL_NO,
   QUEUE_CANCEL_YES,
+  QUEUE_CLASSES,
   canCancelRow,
   cancelReducer,
   queueBadgeClass,
@@ -41,6 +44,7 @@ export {
   queueRowClass,
   queueView,
   shouldDisarmCancel,
+  unavailableText,
   type CancelEvent,
   type CancelState,
   type QueueItem,
@@ -61,20 +65,29 @@ export interface QueueRowProps {
   onDisarm?(): void;
 }
 
-/** One queue record. The registry atom — usable standalone, or through `QueuePanel`. */
+/**
+ * One queue record. The registry atom — usable standalone, or through `QueuePanel`.
+ *
+ * INVARIANT 4 is enforced HERE, not only by the panel: `armed` is honored only when the record is
+ * genuinely cancellable (`canCancelRow`). A caller that arms a `leased`/`delivered`/`canceled` row,
+ * or arms a row whose cancellability was revoked, gets the ordinary row back — never a live
+ * "Cancel it" button for something that cannot be cancelled. That also covers the render between a
+ * revocation and the panel's disarming effect.
+ */
 export function QueueRow(props: QueueRowProps) {
   const { item } = props;
+  const cancellable = canCancelRow(item.status, !!props.canCancel);
   const badge = <span className={queueBadgeClass(item.cls)}>{queueBadgeLabel(item.cls)}</span>;
-  if (props.armed) {
+  if (props.armed && cancellable) {
     return (
       <div className={queueRowClass(item.status, true)}>
         {badge}
-        <span className="my-qrow__ask">{QUEUE_CANCEL_ASK}</span>
-        <span className="my-qrow__acts">
-          <button type="button" className="my-qmini my-qmini--yes" onClick={props.onConfirm}>
+        <span className={QUEUE_CLASSES.ask}>{QUEUE_CANCEL_ASK}</span>
+        <span className={QUEUE_CLASSES.actions}>
+          <button type="button" className={QUEUE_CLASSES.confirmYes} onClick={props.onConfirm}>
             {QUEUE_CANCEL_YES}
           </button>
-          <button type="button" className="my-qmini my-qmini--no" onClick={props.onDisarm}>
+          <button type="button" className={QUEUE_CLASSES.confirmNo} onClick={props.onDisarm}>
             {QUEUE_CANCEL_NO}
           </button>
         </span>
@@ -84,10 +97,10 @@ export function QueueRow(props: QueueRowProps) {
   return (
     <div className={queueRowClass(item.status, false)}>
       {badge}
-      <span className="my-qrow__body">{item.body}</span>
-      <span className="my-qrow__status">{queueStatusLabel(item.status)}</span>
-      {canCancelRow(item.status, !!props.canCancel) ? (
-        <button type="button" className="my-qrow__cancel" onClick={props.onArm}>
+      <span className={QUEUE_CLASSES.rowBody}>{item.body}</span>
+      <span className={QUEUE_CLASSES.rowStatus}>{queueStatusLabel(item.status)}</span>
+      {cancellable ? (
+        <button type="button" className={QUEUE_CLASSES.cancel} onClick={props.onArm}>
           {QUEUE_CANCEL_LABEL}
         </button>
       ) : null}
@@ -102,8 +115,12 @@ export interface QueuePanelProps {
   onCancel?(id: string): void;
   /** Changing this clears any pending confirm (e.g. the selected target changed). */
   resetKey?: string;
-  /** Product-specific — still honest — copy per unavailable reason. Reasons stay distinct. */
-  unavailableCopy?: Partial<Record<QueueUnavailableReason, string>>;
+  /**
+   * Extra detail per unavailable reason, APPENDED to this package's own sentence — never
+   * substituted for it. Two reasons therefore always render different copy, whatever the caller
+   * supplies (see ui-core's `unavailableText`).
+   */
+  unavailableDetail?: Partial<Record<QueueUnavailableReason, string>>;
 }
 
 export function QueuePanel(props: QueuePanelProps) {
@@ -133,15 +150,15 @@ export function QueuePanel(props: QueuePanelProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [cancel.armedId]);
 
-  const view = queueView(source, props.unavailableCopy);
+  const view = queueView(source, props.unavailableDetail);
 
   return (
-    <div className="my-queue">
-      {view.kind === "state" ? <div className="my-queue__state">{view.copy}</div> : null}
-      {view.kind === "empty" ? <div className="my-queue__empty">{view.copy}</div> : null}
+    <div className={QUEUE_CLASSES.panel}>
+      {view.kind === "state" ? <div className={QUEUE_CLASSES.state}>{view.copy}</div> : null}
+      {view.kind === "empty" ? <div className={QUEUE_CLASSES.empty}>{view.copy}</div> : null}
       {view.kind === "list" ? (
-        <div className="my-queue__list">
-          {view.staleCopy !== null ? <div className="my-queue__stale">{view.staleCopy}</div> : null}
+        <div className={QUEUE_CLASSES.list}>
+          {view.staleCopy !== null ? <div className={QUEUE_CLASSES.stale}>{view.staleCopy}</div> : null}
           {view.items.map((item) => (
             <QueueRow
               key={item.id}

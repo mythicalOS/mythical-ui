@@ -33,6 +33,7 @@ import {
   clearDraftOnSend,
   currentWakeRows,
   deliveryClassButtonClass,
+  expandLabel,
   deliveryClassLabel,
   historySegmentCaption,
   historyToggleLabel,
@@ -46,6 +47,7 @@ import {
   queueStatusLabel,
   queueView,
   rowKey,
+  rowKeys,
   sendBarClass,
   sendPlaceholder,
   shouldDisarmCancel,
@@ -57,6 +59,7 @@ import {
   termTitleText,
   transcriptView,
   turnCaption,
+  unavailableText,
   visibleRows,
   type QueueItem,
   type QueueItemStatus,
@@ -201,17 +204,34 @@ describe("invariant 3 — queue source→view honesty", () => {
     }
   });
 
-  test("a caller may sharpen one reason's copy without collapsing the others", () => {
+  test("a caller may ADD detail to a reason — it is appended, never substituted", () => {
     const view = queueView(
       { kind: "unavailable", reason: "unsupported" },
-      { unsupported: "Local delivery is unavailable — the daemon is in server mode." },
+      { unsupported: "The daemon is in server mode." },
     );
-    expect(view).toEqual({ kind: "state", copy: "Local delivery is unavailable — the daemon is in server mode." });
-    // the other two still resolve to their own defaults
+    expect(view).toEqual({
+      kind: "state",
+      copy: `${QUEUE_UNAVAILABLE_COPY.unsupported} The daemon is in server mode.`,
+    });
+    // the other reasons still resolve to their own defaults
     expect(queueView({ kind: "unavailable", reason: "error" }, { unsupported: "x" })).toEqual({
       kind: "state",
       copy: QUEUE_UNAVAILABLE_COPY.error,
     });
+    // blank/absent detail leaves the base sentence untouched
+    expect(unavailableText("error")).toBe(QUEUE_UNAVAILABLE_COPY.error);
+    expect(unavailableText("error", "   ")).toBe(QUEUE_UNAVAILABLE_COPY.error);
+  });
+
+  test("NO detail map can make two reasons render the same copy", () => {
+    // the adversarial case the append rule exists for: a caller trying to flatten every reason to
+    // one message still cannot, because this package's own distinct sentence always leads
+    const flatten = { unsupported: "Unavailable.", error: "Unavailable.", unaddressable: "Unavailable." };
+    const copies = ALL_REASONS.map((reason) => {
+      const view = queueView({ kind: "unavailable", reason }, flatten);
+      return view.kind === "state" ? view.copy : "";
+    });
+    expect(new Set(copies).size).toBe(ALL_REASONS.length);
   });
 });
 
@@ -379,12 +399,28 @@ describe("transcript segmentation", () => {
     expect(visibleRows(mixed, false).map((r) => r.id)).toEqual(["a"]);
   });
 
-  test("expandability and row keys", () => {
+  test("expandability, its label, and single-row keys", () => {
     expect(isExpandable(row())).toBe(false);
     expect(isExpandable(row({ detail: "" }))).toBe(false);
     expect(isExpandable(row({ detail: "bun test" }))).toBe(true);
+    expect(expandLabel(false)).toBe("(expand)");
+    expect(expandLabel(true)).toBe("(collapse)");
     expect(rowKey(row({ id: "x" }), 3)).toBe("x");
     expect(rowKey(row(), 3)).toBe("3");
+  });
+
+  test("rowKeys is unique BY CONSTRUCTION — a caller repeating an id cannot collide", () => {
+    // repeated ids would otherwise expand two rows together and hand the renderer duplicate keys
+    const dup = [row({ id: "a" }), row({ id: "a" }), row({ id: "a" }), row({ id: "b" })];
+    const keys = rowKeys(dup);
+    expect(new Set(keys).size).toBe(dup.length);
+    expect(keys[0]).toBe("a"); // the first occurrence keeps the caller's id, so state is stable
+    // even a literal id that looks like a disambiguator this function hands out stays unique
+    const adversarial = [row({ id: "a" }), row({ id: "a" }), row({ id: "a#1" })];
+    expect(new Set(rowKeys(adversarial)).size).toBe(3);
+    // id-less rows fall back to their index
+    expect(rowKeys([row(), row()])).toEqual(["0", "1"]);
+    expect(rowKeys([])).toEqual([]);
   });
 
   test("a foreign segment is captioned by its own immutable id", () => {

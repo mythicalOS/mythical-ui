@@ -2,29 +2,34 @@
 // packages/preact-ui/src/Terminal.tsx. ALWAYS heritage-dark in both themes (token rule 3): the
 // surface is pinned by ui-core's `.my-term` block, never by a theme-conditional class here.
 //
-// Thin binding: render + wiring only. Every class string, every user-visible string, the six-branch
-// source resolution, the segmentation, and the Ctrl-C predicate come from `@mythicalos/ui-core`, so
-// this binding and its Preact sibling cannot drift on the honesty rules.
+// Thin binding: render + wiring only. Every class string (`TERM_CLASSES`), every user-visible
+// string, the six-branch source resolution, the segmentation, the row keying and the Ctrl-C
+// predicate come from `@mythicalos/ui-core` — this file types no class literal and no copy of its
+// own, so it and its Preact sibling cannot drift.
 //
 // Honesty (binding, inherited from ui-core): the wake-unavailable banner says exactly
 // `wake unavailable` — never "reconnecting", never a retry spinner; the turn caption renders ONLY
-// from a supplied boolean (`undefined` renders nothing); the six source branches keep loading
-// honesty; foreign transcript segments appear ONLY behind the disclosure, captioned and separated.
+// from a supplied boolean (`undefined` renders nothing, never a guessed "idle"); the six source
+// branches keep loading honesty (`loading` never renders `(no events)`; missing/unaddressable/
+// failed are distinct); foreign transcript segments appear ONLY behind the disclosure, each
+// captioned and separated — never blended into the selected session's log.
 
 import { useEffect, useRef, useState } from "react";
 import {
   TERM_CLASS,
+  TERM_CLASSES,
   TERM_NO_EVENTS_COPY,
   TERM_STALE_COPY,
   TERM_STOP_KEY_HINT,
   TERM_STOP_LABEL,
   TERM_WAKE_UNAVAILABLE_COPY,
   currentWakeRows,
+  expandLabel,
   historySegmentCaption,
   historyToggleLabel,
   isExpandable,
   noiseShow,
-  rowKey,
+  rowKeys,
   shouldStopOnKey,
   sourceRows,
   stopButtonClass,
@@ -39,6 +44,7 @@ import {
 
 export {
   TERM_CLASS,
+  TERM_CLASSES,
   TERM_STALE_COPY,
   TERM_WAKE_UNAVAILABLE_COPY,
   transcriptView,
@@ -87,7 +93,7 @@ export interface TerminalProps {
 
 function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
   const { row } = props;
-  const label = row.label ? <span className="my-term__label">{row.label}</span> : null;
+  const label = row.label ? <span className={TERM_CLASSES.label}>{row.label}</span> : null;
   if (!isExpandable(row)) {
     return (
       <div className={termRowClass(row.kind)}>
@@ -99,13 +105,31 @@ function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
   }
   return (
     <div className={termRowClass(row.kind)}>
-      <button type="button" className="my-term__head" aria-expanded={props.expanded} onClick={props.onToggle}>
+      <button type="button" className={TERM_CLASSES.head} aria-expanded={props.expanded} onClick={props.onToggle}>
         {label}
         {label ? " " : null}
-        {row.text} <span className="my-term__expand">{props.expanded ? "(collapse)" : "(expand)"}</span>
+        {row.text} <span className={TERM_CLASSES.expand}>{expandLabel(props.expanded)}</span>
       </button>
-      {props.expanded ? <pre className="my-term__detail">{row.detail}</pre> : null}
+      {props.expanded ? <pre className={TERM_CLASSES.detail}>{row.detail}</pre> : null}
     </div>
+  );
+}
+
+/** A keyed run of rows. `rowKeys` guarantees uniqueness even when the caller repeats a row id. */
+function RowList(props: {
+  rows: readonly TermRow[];
+  prefix?: string;
+  expanded: Set<string>;
+  onToggle(key: string): void;
+}) {
+  const keys = rowKeys(props.rows);
+  return (
+    <>
+      {props.rows.map((row, i) => {
+        const key = props.prefix ? `${props.prefix}${keys[i]}` : keys[i]!;
+        return <RowView key={key} row={row} expanded={props.expanded.has(key)} onToggle={() => props.onToggle(key)} />;
+      })}
+    </>
   );
 }
 
@@ -156,33 +180,33 @@ export function Terminal(props: TerminalProps) {
 
   return (
     <div className={TERM_CLASS}>
-      <div className="my-term__titlebar">
-        <span className="my-term__lights" aria-hidden="true">
-          <span className="my-term__light my-term__light--r" />
-          <span className="my-term__light my-term__light--a" />
-          <span className="my-term__light my-term__light--g" />
+      <div className={TERM_CLASSES.titlebar}>
+        <span className={TERM_CLASSES.lights} aria-hidden="true">
+          <span className={TERM_CLASSES.lightRed} />
+          <span className={TERM_CLASSES.lightAmber} />
+          <span className={TERM_CLASSES.lightGreen} />
         </span>
         {props.onToggleNoise ? (
           <button
             type="button"
-            className="my-term__noise"
+            className={TERM_CLASSES.noiseToggle}
             aria-pressed={noiseFilterEnabled}
             onClick={props.onToggleNoise}
           >
             {titleText}
           </button>
         ) : (
-          <span className="my-term__title">{titleText}</span>
+          <span className={TERM_CLASSES.staticTitle}>{titleText}</span>
         )}
-        <span className="my-term__tb-right">
+        <span className={TERM_CLASSES.titleRight}>
           {caption !== null ? (
             props.turnInFlight ? (
-              <span className="my-term__turn">
-                <span className="my-term__turn-dot" aria-hidden="true" />
+              <span className={TERM_CLASSES.turn}>
+                <span className={TERM_CLASSES.turnDot} aria-hidden="true" />
                 {caption}
               </span>
             ) : (
-              <span className="my-term__idle">{caption}</span>
+              <span className={TERM_CLASSES.idle}>{caption}</span>
             )
           ) : null}
           {stopAvailable ? (
@@ -192,51 +216,47 @@ export function Terminal(props: TerminalProps) {
               disabled={props.stopBusy}
               onClick={props.onStopTurn}
             >
-              {TERM_STOP_LABEL} <span className="my-term__stop-key">{TERM_STOP_KEY_HINT}</span>
+              {TERM_STOP_LABEL} <span className={TERM_CLASSES.stopKey}>{TERM_STOP_KEY_HINT}</span>
             </button>
           ) : null}
         </span>
       </div>
-      <div ref={paneRef} className="my-term__body" tabIndex={0}>
+      <div ref={paneRef} className={TERM_CLASSES.body} tabIndex={0}>
         {props.wakeUnavailable ? (
-          <div className="my-term__banner">
-            <span className="my-term__banner-dot" aria-hidden="true" />
+          <div className={TERM_CLASSES.banner}>
+            <span className={TERM_CLASSES.bannerDot} aria-hidden="true" />
             {TERM_WAKE_UNAVAILABLE_COPY}
           </div>
         ) : null}
         {view.kind === "log" && view.stale ? (
-          <div className="my-term__banner">
-            <span className="my-term__banner-dot" aria-hidden="true" />
+          <div className={TERM_CLASSES.banner}>
+            <span className={TERM_CLASSES.bannerDot} aria-hidden="true" />
             {TERM_STALE_COPY}
           </div>
         ) : null}
         {history.length > 0 ? (
-          <button type="button" className="my-term__more" onClick={() => setShowHistory((s) => !s)}>
+          <button type="button" className={TERM_CLASSES.more} onClick={() => setShowHistory((s) => !s)}>
             {historyToggleLabel(showHistory, history.length)}
           </button>
         ) : null}
         {showHistory
-          ? history.map((seg) => (
-              <div className="my-term__hist" key={seg.id}>
-                <div className="my-term__hist-cap">{seg.caption ?? historySegmentCaption(seg.id)}</div>
-                {visibleRows(seg.rows, showNoise).map((row, i) => {
-                  const key = `${seg.id}:${rowKey(row, i)}`;
-                  return <RowView key={key} row={row} expanded={expanded.has(key)} onToggle={() => toggle(key)} />;
-                })}
+          ? history.map((seg, si) => (
+              <div className={TERM_CLASSES.segment} key={`${si}:${seg.id}`}>
+                <div className={TERM_CLASSES.segmentCaption}>{seg.caption ?? historySegmentCaption(seg.id)}</div>
+                <RowList
+                  rows={visibleRows(seg.rows, showNoise)}
+                  prefix={`hist:${si}:`}
+                  expanded={expanded}
+                  onToggle={toggle}
+                />
               </div>
             ))
           : null}
-        {view.kind === "state" ? <div className="my-term__state">{view.copy}</div> : null}
-        {emptyLog ? <div className="my-term__state">{TERM_NO_EVENTS_COPY}</div> : null}
-        {rows.map((row, i) => {
-          const key = rowKey(row, i);
-          return <RowView key={key} row={row} expanded={expanded.has(key)} onToggle={() => toggle(key)} />;
-        })}
-        {localRows.map((row, i) => {
-          const key = `local:${rowKey(row, i)}`;
-          return <RowView key={key} row={row} expanded={expanded.has(key)} onToggle={() => toggle(key)} />;
-        })}
-        {props.caret ? <span className="my-term__caret" aria-hidden="true" /> : null}
+        {view.kind === "state" ? <div className={TERM_CLASSES.state}>{view.copy}</div> : null}
+        {emptyLog ? <div className={TERM_CLASSES.state}>{TERM_NO_EVENTS_COPY}</div> : null}
+        <RowList rows={rows} expanded={expanded} onToggle={toggle} />
+        <RowList rows={localRows} prefix="local:" expanded={expanded} onToggle={toggle} />
+        {props.caret ? <span className={TERM_CLASSES.caret} aria-hidden="true" /> : null}
       </div>
     </div>
   );

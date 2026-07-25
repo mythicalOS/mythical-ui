@@ -841,6 +841,19 @@ button.my-session-card { cursor: pointer; }
   --my-accent-soft: color-mix(in oklab, var(--my-term-assistant) 18%, var(--my-term-bg));
   --my-warn: var(--my-term-user);
   --my-warn-soft: color-mix(in oklab, var(--my-term-user) 18%, var(--my-term-bg));
+  --my-track: color-mix(in oklab, var(--my-term-ink) 12%, var(--my-term-bg));
+  --my-ink-hover: var(--my-term-ink);
+  --my-accent-hover: var(--my-term-assistant);
+  --my-disabled-bg: color-mix(in oklab, var(--my-term-ink) 6%, var(--my-term-bg));
+  --my-disabled-ink: var(--my-term-dim);
+  --my-scrim: color-mix(in oklab, var(--my-term-bg) 55%, transparent);
+  --my-shadow-modal: 0 16px 48px color-mix(in oklab, var(--my-term-bg) 50%, transparent);
+  /* NOT re-pointed, deliberately: --my-ok/--my-error/--my-info and their softs. The five-token
+     terminal palette defines no green/red/blue, so any value here would be an invented colour. No
+     rule in the terminal set uses them (enforced by test/terminal-css.test.ts, which derives the
+     flipping-token set from the canonical tokens.css and rejects any unpinned reference under a
+     .my-term selector). A consumer nesting a status-toned atom INSIDE the terminal is the one known
+     residual; the terminal's own alert hue is --my-term-user. */
 
   display: flex; flex-direction: column;
   background: var(--my-term-bg); color: var(--my-term-ink);
@@ -858,8 +871,11 @@ button.my-session-card { cursor: pointer; }
   color: var(--my-term-dim);
 }
 .my-term__lights { display: inline-flex; gap: 5px; flex: none; }
+/* window-chrome traffic lights. They are DECORATION, so per token rule 2 they may not borrow the
+   status hues (--my-error/--my-ok) the way a macOS titlebar would; per token rule 3 they are drawn
+   from the terminal's own five-token palette. */
 .my-term__light { width: 9px; height: 9px; border-radius: var(--my-r-pill); background: var(--my-term-dim); }
-.my-term__light--r { background: var(--my-error); }
+.my-term__light--r { background: var(--my-term-dim); }
 .my-term__light--a { background: var(--my-term-user); }
 .my-term__light--g { background: var(--my-term-assistant); }
 .my-term__noise {
@@ -874,16 +890,22 @@ button.my-session-card { cursor: pointer; }
   width: 7px; height: 7px; border-radius: var(--my-r-pill);
   background: var(--my-term-assistant); animation: my-term-pulse 1s ease-in-out infinite;
 }
+/* the stop control lives INSIDE the terminal, so per token rule 3 it wears the term palette rather
+   than the app's danger red (which flips with the app theme). `is-prominent` raises it to the
+   terminal's one alert hue — the heritage amber — when a turn is actually in flight. */
 .my-term__stop {
-  border: 1px solid var(--my-error); border-radius: var(--my-r-control);
-  background: none; color: var(--my-error);
+  border: 1px solid var(--my-term-dim); border-radius: var(--my-r-control);
+  background: none; color: var(--my-term-ink);
   padding: 2px 9px; font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
   font-weight: var(--my-fw-medium); cursor: pointer;
 }
-.my-term__stop:hover:not(:disabled) { background: var(--my-error-soft); }
-.my-term__stop:disabled { border-color: var(--my-disabled-ink); color: var(--my-disabled-ink); cursor: not-allowed; }
-.my-term__stop:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
-.my-term__stop.is-prominent { background: var(--my-error); color: var(--my-term-ink); }
+.my-term__stop:hover:not(:disabled) { background: color-mix(in oklab, var(--my-term-ink) 8%, var(--my-term-bg)); }
+.my-term__stop:disabled { border-color: var(--my-term-dim); color: var(--my-term-dim); cursor: not-allowed; }
+.my-term__stop:focus-visible { outline: 2px solid var(--my-term-assistant); outline-offset: 2px; }
+.my-term__stop.is-prominent { border-color: var(--my-term-user); color: var(--my-term-user); }
+.my-term__stop.is-prominent:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--my-term-user) 18%, var(--my-term-bg));
+}
 .my-term__stop-key { opacity: .7; }
 
 /* body */

@@ -8,13 +8,17 @@
 // Honesty (binding, inherited from ui-core): the per-class hint is
 // `ASAP takes the first turn gap · ON-DONE waits for full idle.` — the design card's older
 // "ASAP interrupts" wording is FALSE (delivery always waits for a turn boundary) and must never be
-// reintroduced. The hint renders ONLY where the controls are usable.
+// reintroduced. The hint renders ONLY where the controls are usable; a disabled bar surfaces just
+// the caller's truthful reason.
 //
 // Keyboard: Enter=send, Shift/Alt-Enter=newline, IME composition suppressed (`keyAction`).
 
 import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
+  DELIVERY_CLASSES,
   DELIVERY_HINT,
+  SENDBAR_CLASSES,
+  SEND_BUTTON_LABEL,
   canSend,
   clearDraftOnSend,
   deliveryClassButtonClass,
@@ -81,10 +85,10 @@ export function SendBar(props: SendBarProps) {
   };
 
   return (
-    <div className="my-sendbar-wrap">
+    <div className={SENDBAR_CLASSES.wrap}>
       <div className={sendBarClass(disabled)}>
-        <div className="my-sendbar__seg" role="group">
-          {(["asap", "on-done"] as const).map((c) => (
+        <div className={SENDBAR_CLASSES.segment} role="group">
+          {DELIVERY_CLASSES.map((c) => (
             <button
               key={c}
               type="button"
@@ -98,7 +102,7 @@ export function SendBar(props: SendBarProps) {
           ))}
         </div>
         <textarea
-          className="my-sendbar__input"
+          className={SENDBAR_CLASSES.input}
           rows={1}
           placeholder={sendPlaceholder(disabled, props.disabledReason, props.targetName)}
           value={text}
@@ -108,15 +112,15 @@ export function SendBar(props: SendBarProps) {
         />
         <button
           type="button"
-          className="my-sendbar__send"
+          className={SENDBAR_CLASSES.send}
           disabled={!canSend(text, disabled, busy)}
           onClick={doSend}
         >
-          Send
+          {SEND_BUTTON_LABEL}
         </button>
       </div>
-      {showDeliveryHint(disabled) ? <div className="my-sendbar__hint">{DELIVERY_HINT}</div> : null}
-      {props.notice ? <div className="my-sendbar__notice">{props.notice}</div> : null}
+      {showDeliveryHint(disabled) ? <div className={SENDBAR_CLASSES.hint}>{DELIVERY_HINT}</div> : null}
+      {props.notice ? <div className={SENDBAR_CLASSES.notice}>{props.notice}</div> : null}
     </div>
   );
 }
