@@ -191,11 +191,17 @@ export function InputBody(props: InputBodyProps) {
  * here would renumber the ids of every OTHER component in a consumer's tree — an invisible
  * regression for an input that asked for none of this.
  *
- * A module counter is enough because this id never leaves the component: its only job is to pair
- * this instance's own `<label for>` with its own `<input id>`, and both sides always come from
- * this one value, so they cannot disagree — not across a re-render, and not across a server
- * render and its hydration. It only has to be unique on the page, which the namespaced prefix
- * makes it. Pass `id` explicitly if you want a specific, stable one.
+ * A module counter is enough because this id never leaves the component. Its only job is to pair
+ * THIS instance's `<label for>` with THIS instance's `<input id>`, and both sides are the same
+ * value from the same render, so they cannot disagree with each other — which is the only
+ * property that has to hold.
+ *
+ * It follows that the counter's one give — a server render and its hydration draw from different
+ * counters, so the vdom's id and the hydrated DOM's id differ — is inert: preact does not rewrite
+ * attributes while hydrating, and any later patch moves both halves together. Reaching for
+ * `useId` to "fix" that would reintroduce a real, demonstrated regression (it renumbers every
+ * OTHER component's ids in the consumer's tree) in exchange for a mismatch nothing reads. Pass
+ * `id` yourself if you server-render and want a specific one.
  */
 let revealIdSeq = 0;
 
