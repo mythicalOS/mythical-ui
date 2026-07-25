@@ -9,7 +9,7 @@
 //     </TopBar.Right>
 //   </TopBar>
 //
-// Ported from design-export's mythical-ui/src/components/TopBar.jsx (JSX→TSX, typed props).
+// Ported from the design source's TopBar component (JSX→TSX, typed props).
 
 import type { ComponentChildren, JSX } from "preact";
 

@@ -1,7 +1,7 @@
 /** @jsxImportSource preact */
 // @mythicalos/shell — primary navigation tabs.
 //
-// Ported from design-export's mythical-ui/src/components/NavTabs.jsx (JSX→TSX, typed props).
+// Ported from the design source's NavTabs component (JSX→TSX, typed props).
 
 export interface NavTabItem {
   key: string;

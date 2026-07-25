@@ -1,4 +1,4 @@
-// packages/shell/use-theme.test.ts — useTheme render contract (Task 8): storageKey default and
+// packages/shell/use-theme.test.ts — useTheme render contract: storageKey default and
 // override.
 //
 // Depth note: this bun:test environment has no DOM globals at all — `typeof document`,

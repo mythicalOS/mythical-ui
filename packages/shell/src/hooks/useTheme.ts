@@ -2,8 +2,8 @@
 // <html data-theme="…">, which flips every design token (see mythical-design's tokens.css).
 // 'light' is the default; 'dark' is the heritage/terminal theme.
 //
-// Ported from design-export's mythical-ui/src/hooks/useTheme.js, EXTENDED with a `storageKey`
-// option (Task 8): the export hard-coded the localStorage key as `mythical:theme`, but BROKKR's
+// Ported from the design source's useTheme hook, EXTENDED with a `storageKey` option: the
+// export hard-coded the localStorage key as `mythical:theme`, but BROKKR's
 // existing production app already persists under `mythical.ui.theme` (see
 // BROKKR's internal ui/src/state/theme.ts's THEME_STORAGE_KEY) — a silent key rename on install
 // would reset every existing user's theme choice back to the default. `storageKey` defaults to

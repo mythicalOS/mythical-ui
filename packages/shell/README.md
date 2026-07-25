@@ -77,6 +77,31 @@ Three behaviors worth knowing:
 `PRODUCTS` hrefs are **placeholders** (`/brokkr`, `/skuld`, `/saga`). A product that knows where
 its siblings actually live should resolve the real target in `onNavigate` and ignore `href`.
 
+## Upgrading to 0.2.0
+
+Nothing was removed from the JS/TS export surface and no prop became required, so existing code
+still compiles. It is a minor (breaking-channel) bump because **what an unchanged call renders
+changes**:
+
+| | before | 0.2.0 |
+|---|---|---|
+| `<Logo>` mark | the generic family mark, at `size` 34 | the current product's glyph, at `size` 30 |
+| current product's role line | the bare registry role | role + `· this container` |
+| SAGA in the family menu | not-yet-built dot; click reported "isn't built yet" | online dot; click reaches `onNavigate` |
+| below the product rows | a prose footer note | a `command center` section label + an ASGARD row |
+| `<ProductSwitcher note>` | the footer note's text | the command-center row's secondary line |
+| `styles.css` | `.my-switcher__note`, `.my-switcher__note-glyph` | removed (nothing renders them); `.my-switcher__section` added |
+
+`FAMILY_NOTE` is still exported, now deprecated: the footer note it belongs to no longer exists,
+but removing a published export would break importers for no gain.
+
+If your product renders `<Logo>` outside the switcher and its display line differs from its
+registry key, pass `productKey` so the mark still resolves:
+
+```jsx
+<Logo productKey="saga" product="the chronicler" />
+```
+
 ## useTheme — storageKey
 
 `useTheme` persists the light/dark choice to `localStorage` and reflects it onto

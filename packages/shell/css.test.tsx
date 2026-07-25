@@ -1,5 +1,5 @@
 /** @jsxImportSource preact */
-// packages/shell/css.test.tsx — the package's stylesheet (Task 8), mirroring ui-core's
+// packages/shell/css.test.tsx — the package's stylesheet, mirroring ui-core's
 // test/css.test.ts. styles.css ships ONLY the shell class families (top bar, logo, product
 // switcher, nav tabs, icon button, overflow menu, workspace split/rail/rail-card, settings nav,
 // app/page frame) that this package's components render. This guards:
@@ -264,6 +264,23 @@ describe("styles.css — (f) the switcher's command-center section matches the d
     expect(r).toContain("text-transform: uppercase");
     expect(r).toContain("padding: 3px 10px 4px");
     expect(r).toContain("var(--my-muted)");
+  });
+
+  test("the mark tile the command-center row shares with the product rows is 32px on the design's hover surface", () => {
+    const rule = css.match(/\.my-switcher__mark\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    const r = rule![0];
+    expect(r).toContain("width: 32px");
+    expect(r).toContain("height: 32px");
+    expect(r).toContain("background: var(--my-surface-hover)");
+  });
+
+  test("the trailing dot is 7px, and the not-yet-built variant the command-center row uses exists", () => {
+    const dot = css.match(/\.my-switcher__dot\s*\{[^}]*\}/);
+    expect(dot).not.toBeNull();
+    expect(dot![0]).toContain("width: 7px");
+    expect(dot![0]).toContain("height: 7px");
+    expect(hasClassSelector(css, "my-switcher__dot--soon")).toBe(true);
   });
 
   test("the retired footer-note rules are gone — no component renders them any more", () => {

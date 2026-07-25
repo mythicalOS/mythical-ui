@@ -1,5 +1,5 @@
 /** @jsxImportSource preact */
-// packages/shell/workspace.test.tsx — WorkspaceSplit + Rail* render contract (Task 8): rail/detail
+// packages/shell/workspace.test.tsx — WorkspaceSplit + Rail* render contract: rail/detail
 // structure and RailCard state classes. RailCard and RailGroup/RailHead/RailList are all
 // hook-free, so onClick wiring is verified by invoking the real closure directly off the vnode
 // (same technique as nav-tabs.test.tsx), not a simulated DOM click.

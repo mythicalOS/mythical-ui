@@ -1,5 +1,5 @@
 /** @jsxImportSource preact */
-// packages/shell/nav-tabs.test.tsx — NavTabs render contract (Task 8): active class + onSelect
+// packages/shell/nav-tabs.test.tsx — NavTabs render contract: active class + onSelect
 // wiring. preact-render-to-string never dispatches DOM click events, but NavTabs is a plain,
 // hook-free function component — calling it directly (bypassing preact's render pipeline
 // entirely) returns the real vnode tree preact would otherwise build, so each button's actual

@@ -1,23 +1,23 @@
 /* @mythicalos/shell — component styles for the family shell.
-   Extracted from design-export's mythical-design/src/styles/{components,base}.css (Task 8): only
-   the SHELL class families (top bar, logo, product switcher, nav tabs, icon button, overflow
-   menu, workspace split/rail/rail-card, settings nav, app/page frame). The ATOM families
+   Extracted from the design source's component + base stylesheets: only the SHELL class
+   families (top bar, logo, product switcher, nav tabs, icon button, overflow menu, workspace
+   split/rail/rail-card, settings nav, app/page frame). The ATOM families
    (button/input/toggle/checkbox/chip/card/avatar/status/search/banner/gauge/toast/dialog/…)
    already ship from `@mythicalos/ui-core/styles.css` — none of that is duplicated here; see the
-   Task 8 report for the explicit overlap check against ui-core's own sheet (which itself
+   extraction notes for the explicit overlap check against ui-core's own sheet (which itself
    forbids every prefix owned by this file — test/css.test.ts (d) in ui-core, and this package's
    own css.test.ts (d) checks the mirror direction).
 
    Serve in order: @mythicalos/tokens/tokens.css → @mythicalos/ui-core/styles.css →
    @mythicalos/shell/styles.css.
 
-   Fidelity note (same "stale-token discipline" as ui-core's own extraction): design-export's own
-   tokens.css is v0.4-era and predates two v0.5 canonical distinctions (rule #11 — control
+   Fidelity note (same "stale-token discipline" as ui-core's own extraction): the design
+   source's own tokens.css is v0.4-era and predates two v0.5 canonical distinctions (rule #11 — control
    boundaries use --my-control-border, --my-border is dividers/cards/non-interactive only — and
    the --my-fs-micro token, v0.5.11). Two categories of rule were remapped against the CANONICAL
    tokens.css (mythical-design/tokens.css) rather than copied as-is; every instance is called out
    inline below and the full list (plus the borderline cases considered and left as literal) is
-   in the Task 8 report:
+   in the extraction notes:
      - Rule #11 (interactive control boundaries): `.my-iconbtn` and `.my-rail-card` are real
        clickable controls (a <button>, per the source components) whose resting border was
        `var(--my-border)` in the export; both are remapped to `var(--my-control-border)`, matching

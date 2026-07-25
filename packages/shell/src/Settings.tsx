@@ -3,7 +3,7 @@
 // the workspace split but tuned for settings sections.
 //   <SettingsLayout nav={<SettingsNav .../>}> …active section… </SettingsLayout>
 //
-// Ported from design-export's mythical-ui/src/components/Settings.jsx (JSX→TSX, typed props).
+// Ported from the design source's Settings component (JSX→TSX, typed props).
 
 import type { ComponentChildren } from "preact";
 

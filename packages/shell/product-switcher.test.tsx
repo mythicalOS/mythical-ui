@@ -1,6 +1,6 @@
 /** @jsxImportSource preact */
-// packages/shell/product-switcher.test.tsx — ProductSwitcher, the flagship central module
-// (Task 8). Render contract + the pure click-routing decision.
+// packages/shell/product-switcher.test.tsx — ProductSwitcher, the flagship central module.
+// Render contract + the pure click-routing decision.
 //
 // Depth note (documented per the task): preact-render-to-string never mounts effects or
 // dispatches DOM events, so a plain render of `<ProductSwitcher>` can only ever show the CLOSED
@@ -233,17 +233,23 @@ describe("SwitcherPanel — the command-center section (design source: divider +
     expect(custom).toContain("custom note copy");
   });
 
-  test("clicking it hands the ASGARD entry to onPick (which routes it to onUnbuilt, never a fake navigation)", () => {
-    let picked: Product | undefined;
-    renderToString(
-      <SwitcherPanel
-        current="brokkr"
-        products={PRODUCTS}
-        note={ASGARD.role}
-        onPick={(p) => (picked = p)}
-      />,
+  // Two halves, because render-to-string never fires the handler: (1) the row is really wired to
+  // hand ASGARD to onPick — a source scan, the same technique this file uses for the outside-click
+  // wiring; (2) what onPick then does with it — the pure routing decision.
+  test("the command-center row hands the ASGARD entry to onPick (not a hardcoded or missing arg)", () => {
+    const panelSrc = stripComments(
+      readFileSync(join(import.meta.dir, "src", "ProductSwitcher.tsx"), "utf8"),
     );
-    // render-to-string can't click; assert the routing contract the row's onPick feeds instead
+    const start = panelSrc.indexOf("export function SwitcherPanel");
+    expect(start).toBeGreaterThan(-1);
+    const body = panelSrc.slice(start);
+    // the row rendered with product={ASGARD} is the one whose onPick passes ASGARD along
+    const asgardRow = body.slice(body.indexOf("product={ASGARD}"));
+    expect(asgardRow).toContain("product={ASGARD}");
+    expect(asgardRow).toMatch(/onPick=\{\(\) => onPick\(ASGARD\)\}/);
+  });
+
+  test("onPick routes ASGARD to onUnbuilt — never a navigation, real or faked", () => {
     let unbuilt: Product | undefined;
     let navigated = false;
     const result = resolveSwitcherPick(ASGARD, "brokkr", {
@@ -253,7 +259,19 @@ describe("SwitcherPanel — the command-center section (design source: divider +
     expect(result.action).toBe("unbuilt");
     expect(unbuilt).toBe(ASGARD);
     expect(navigated).toBe(false);
-    expect(picked).toBeUndefined(); // no click happened — guards against a stray render-time call
+  });
+
+  test("the row is inert at render time — nothing fires onPick during a render", () => {
+    let picked: Product | undefined;
+    renderToString(
+      <SwitcherPanel
+        current="brokkr"
+        products={PRODUCTS}
+        note={ASGARD.role}
+        onPick={(p) => (picked = p)}
+      />,
+    );
+    expect(picked).toBeUndefined();
   });
 
   test("the panel no longer renders the retired prose footer note", () => {

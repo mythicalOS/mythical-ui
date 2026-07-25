@@ -1,5 +1,5 @@
 /** @jsxImportSource preact */
-// packages/shell/settings.test.tsx — SettingsLayout/SettingsNav render contract (Task 8): active
+// packages/shell/settings.test.tsx — SettingsLayout/SettingsNav render contract: active
 // item, footer slot, and onSelect wiring (real closure invocation, same technique as
 // nav-tabs.test.tsx — SettingsNav is hook-free).
 

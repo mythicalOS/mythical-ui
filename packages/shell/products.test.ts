@@ -1,4 +1,4 @@
-// packages/shell/products.test.ts — the family product registry (Task 8). PRODUCTS is the single
+// packages/shell/products.test.ts — the family product registry. PRODUCTS is the single
 // source of truth <ProductSwitcher> renders from; these assertions pin its exact content (keys,
 // names, states, hrefs) so an accidental edit — a typo'd key, a flipped state, a dropped product —
 // fails loudly rather than silently changing what every product's switcher shows.

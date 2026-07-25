@@ -6,11 +6,11 @@
 // component that makes every product in the family feel like one product — it lives here so all
 // of them render the exact same menu.
 //
-// Ported from design-export's mythical-ui/src/components/ProductSwitcher.jsx (JSX→TSX, typed
-// props), behavior preserved exactly: outside-click + Escape close the panel, and the panel is
-// role="menu" with role="menuitem" entries.
+// Ported from the design source's ProductSwitcher component (JSX→TSX, typed props), behavior
+// preserved exactly: outside-click + Escape close the panel, and the panel is role="menu" with
+// role="menuitem" entries.
 //
-// Task 8 testability note: preact-render-to-string never runs effects or dispatches DOM events,
+// Testability note: preact-render-to-string never runs effects or dispatches DOM events,
 // so the export's original shape (one stateful component owning both the open/close toggle AND
 // the click-routing decision in an inline closure) can't be exercised past its closed-trigger
 // render from a render-to-string test alone. Two pieces are pulled out as plain, hook-free
