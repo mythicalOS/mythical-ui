@@ -30,7 +30,7 @@ jobs:
         working-directory: mythical-ui
     steps:
       - name: Checkout mythical-ui
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           path: mythical-ui
 
@@ -38,18 +38,18 @@ jobs:
       # packages/shell/css.test.tsx, which read the canonical tokens.css from a
       # SIBLING mythical-design checkout — same reason/layout as ci.yml.
       - name: Checkout mythical-design (sibling — canonical tokens.css)
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: mythicalOS/mythical-design
           path: mythical-design
 
       - name: Set up bun (install, build, test)
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: ${{ env.BUN_VERSION }}
 
       - name: Set up Node + npm (publish)
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: "22"
           registry-url: "https://registry.npmjs.org"
