@@ -346,10 +346,16 @@ describe("SessionCard — the design card's warn/error states (spec states 2 and
     expect(html).not.toContain("context critical");
   });
 
-  test("INVARIANT 2: statusLabel cannot pin 'idle' on a session that never claimed it", () => {
-    const html = renderToString(<SessionCard name="J" status={{ lifecycle: "active" }} statusLabel="idle" />);
-    expect(html).toContain(">active<");
-    expect(html).not.toContain(">idle<");
+  test("INVARIANT 2: statusLabel cannot pin an activity on a session that never claimed one", () => {
+    for (const laundering of ["idle", "currently idle", "working now"]) {
+      const html = renderToString(<SessionCard name="J" status={{ lifecycle: "active" }} statusLabel={laundering} />);
+      expect(html).toContain(">active<");
+      expect(html).not.toContain(`>${laundering}<`);
+    }
+    // a session that DID claim it can word it freely
+    expect(
+      renderToString(<SessionCard name="J" status={{ activity: "idle" }} statusLabel="idle since 10:02" />),
+    ).toContain(">idle since 10:02<");
   });
 });
 

@@ -397,6 +397,19 @@ function normalizeStatusWord(word: string): string {
 }
 
 /**
+ * The ACTIVITY vocabulary invariant 2 is about, guarded more tightly than the rest of the reserved
+ * words: these two are refused ANYWHERE in an override ("currently idle", "working now"), not just
+ * as the whole of it, unless the derivation itself produced that activity. Every other reserved
+ * word is an exact-match refusal — the atom polices the vocabulary the invariant names, and does
+ * not try to police arbitrary prose (a product determined to editorialize can always find other
+ * words; what it cannot do is state the specific claim the wire never made).
+ */
+const ACTIVITY_WORD_PATTERNS: readonly { key: SessionStatusKey; re: RegExp }[] = [
+  { key: "idle", re: /\bidle\b/i },
+  { key: "working", re: /\bworking\b/i },
+];
+
+/**
  * The words beside the dot. A product may substitute its own honest phrasing for the derived
  * label — the tone, the pulse and the stale treatment still come from the derivation.
  *
@@ -405,16 +418,25 @@ function normalizeStatusWord(word: string): string {
  *     alone (token rule #7);
  *   · the `unknown` status ignores the override entirely. There is no alternative honest wording
  *     for "the product told us nothing" — nothing was claimed, so there is nothing to reword;
- *   · an override that IS another status's reserved word is ignored. `statusLabel="idle"` on a
- *     session whose activity was never reported would state a claim no wire made — invariant 2 is
- *     structural here, not a matter of trusting the caller. Rewording is still free: anything
- *     outside the reserved vocabulary (`"wake unavailable"`, `"stopped (exit 1)"`, …) passes.
+ *   · an override that states another status's claim is ignored. `statusLabel="idle"` — or
+ *     `"currently idle"` — on a session whose activity was never reported would state a claim no
+ *     wire made; invariant 2 is structural here, not a matter of trusting the caller. The two
+ *     ACTIVITY words are refused anywhere in the override; every other reserved word is refused
+ *     only as the whole of it. Rewording is still free: anything outside that vocabulary
+ *     (`"wake unavailable"`, `"stopped (exit 1)"`, …) passes.
+ *
+ * Documented limit: a status the context escalation has taken over (`context high` /
+ * `context critical`) can no longer use an activity word either, even if the wire did report one —
+ * the rendered status is the context claim, and the product can word it another way.
  */
 export function sessionStatusText(status: SessionStatus, override?: string | null): string {
   if (status.key === "unknown") return status.label;
   if (typeof override !== "string" || override.trim().length === 0) return status.label;
   const reserved = RESERVED_STATUS_WORDS.get(normalizeStatusWord(override));
   if (reserved !== undefined && reserved !== status.key) return status.label;
+  for (const { key, re } of ACTIVITY_WORD_PATTERNS) {
+    if (status.key !== key && re.test(override)) return status.label;
+  }
   return override;
 }
 

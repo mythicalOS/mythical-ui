@@ -814,3 +814,40 @@ describe("sessionStatusText — an override may reword, never borrow another sta
     expect(sessionStatusText(sessionStatus({ lifecycle: "failed" }), "failed (exit 1)")).toBe("failed (exit 1)");
   });
 });
+
+describe("sessionStatusText — the activity vocabulary is refused ANYWHERE, not just verbatim", () => {
+  const active = sessionStatus({ lifecycle: "active" });
+
+  test("INVARIANT 2: an unproven activity claim cannot ride inside a longer phrase", () => {
+    for (const laundering of [
+      "currently idle",
+      "working now",
+      "idle (queued)",
+      "probably WORKING",
+      "sitting Idle since 10:02",
+      "idle…",
+    ]) {
+      expect({ laundering, shown: sessionStatusText(active, laundering) }).toEqual({
+        laundering,
+        shown: "active",
+      });
+    }
+  });
+
+  test("a session that DID claim the activity may still word it freely", () => {
+    const idle = sessionStatus({ activity: "idle" });
+    expect(sessionStatusText(idle, "idle since 10:02")).toBe("idle since 10:02");
+    const working = sessionStatus({ lifecycle: "active", activity: "working" });
+    expect(sessionStatusText(working, "working · turn 3")).toBe("working · turn 3");
+  });
+
+  test("words that merely CONTAIN an activity word are not false positives", () => {
+    expect(sessionStatusText(active, "idled-out pool")).toBe("idled-out pool");
+    expect(sessionStatusText(active, "reworking the plan")).toBe("reworking the plan");
+  });
+
+  test("free wording is still free", () => {
+    expect(sessionStatusText(active, "wake unavailable")).toBe("wake unavailable");
+    expect(sessionStatusText(active, "awaiting review")).toBe("awaiting review");
+  });
+});
