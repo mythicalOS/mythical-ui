@@ -22,6 +22,7 @@ import {
   copyStatusLine,
   copyToClipboard,
   CopyCommandButton,
+  createCopyRunner,
   COPY_WORD,
   TokenGate,
   TokenGateCard,
@@ -495,6 +496,116 @@ describe("the copy control — state, naming, announcement", () => {
     );
     expect(out).toContain(`>${word}</button>`);
     expect(out).toContain(cls);
+  });
+});
+
+describe("createCopyRunner — the sequencing, with no DOM and no real clock", () => {
+  /** A runner wired to controllable writes and a hand-cranked clock. */
+  function harness() {
+    const published: (CopyFeedback | null)[] = [];
+    const pending: ((ok: boolean) => void)[] = [];
+    const timers = new Map<number, () => void>();
+    let nextHandle = 1;
+    const runner = createCopyRunner({
+      copy: () => new Promise<boolean>((resolve) => pending.push(resolve)),
+      setFeedback: (f) => published.push(f),
+      setTimer: (fn) => {
+        const h = nextHandle++;
+        timers.set(h, fn);
+        return h;
+      },
+      clearTimer: (h) => {
+        timers.delete(h as number);
+      },
+    });
+    return {
+      runner,
+      published,
+      /** Settles the Nth write still outstanding, then lets the microtask queue drain. */
+      settle: async (index: number, ok: boolean) => {
+        pending[index]!(ok);
+        await Promise.resolve();
+        await Promise.resolve();
+      },
+      fireTimers: () => {
+        for (const [h, fn] of [...timers]) {
+          timers.delete(h);
+          fn();
+        }
+      },
+      liveTimers: () => timers.size,
+      last: () => published[published.length - 1],
+    };
+  }
+
+  test("a resolved write publishes the outcome, and it reverts on its own", async () => {
+    const h = harness();
+    void h.runner.run("retrieve", RETRIEVE);
+    await h.settle(0, true);
+    expect(h.last()).toEqual({ target: "retrieve", ok: true });
+    expect(h.liveTimers()).toBe(1);
+    h.fireTimers();
+    expect(h.last()).toBeNull();
+    expect(h.liveTimers()).toBe(0);
+  });
+
+  test("a failed write publishes ok:false — the revert path is identical", async () => {
+    const h = harness();
+    void h.runner.run("rotate", ROTATE);
+    await h.settle(0, false);
+    expect(h.last()).toEqual({ target: "rotate", ok: false });
+    h.fireTimers();
+    expect(h.last()).toBeNull();
+  });
+
+  test("a superseded run never reports, even when it settles LAST", async () => {
+    // the older click rejects slowly, the newer one succeeds: the stale failure must not land on
+    // top of the fresh success
+    const h = harness();
+    void h.runner.run("retrieve", RETRIEVE);
+    void h.runner.run("rotate", ROTATE);
+    await h.settle(1, true);
+    expect(h.last()).toEqual({ target: "rotate", ok: true });
+    await h.settle(0, false);
+    expect(h.last()).toEqual({ target: "rotate", ok: true });
+  });
+
+  // REGRESSION (cross-model review, round 1): the previous outcome used to be left standing while
+  // a new write was in flight, guarded only by the OLD run's revert timer — which by then refused
+  // to fire. A second write that hung (a permission prompt left open never settles) therefore left
+  // a stale "Copied" on screen indefinitely, pointing at a clipboard that no longer matched it.
+  test("starting a new run retires the previous outcome AT ONCE, even if the new write hangs", async () => {
+    const h = harness();
+    void h.runner.run("retrieve", RETRIEVE);
+    await h.settle(0, true);
+    expect(h.last()).toEqual({ target: "retrieve", ok: true });
+
+    void h.runner.run("rotate", ROTATE); // never settles
+    expect(h.last()).toBeNull();
+    expect(h.liveTimers()).toBe(0); // the old run's timer is gone, not merely muzzled
+    h.fireTimers();
+    expect(h.last()).toBeNull();
+  });
+
+  test("dispose drops a pending revert timer (the unmount path)", async () => {
+    const h = harness();
+    void h.runner.run("retrieve", RETRIEVE);
+    await h.settle(0, true);
+    expect(h.liveTimers()).toBe(1);
+    h.runner.dispose();
+    expect(h.liveTimers()).toBe(0);
+  });
+
+  test("the runner reports the write's REAL result — it never assumes", async () => {
+    const seen: (CopyFeedback | null)[] = [];
+    const runner = createCopyRunner({
+      copy: async () => false,
+      setFeedback: (f) => seen.push(f),
+      setTimer: () => 1,
+      clearTimer: () => {},
+    });
+    await runner.run("retrieve", RETRIEVE);
+    expect(seen).toEqual([null, { target: "retrieve", ok: false }]);
   });
 });
 

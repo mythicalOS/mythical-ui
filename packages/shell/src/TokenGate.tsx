@@ -205,6 +205,65 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+/** The side effects one copy run needs. Injected — like `@mythicalos/ui-core`'s `PollTickIO` —
+ *  so the sequencing below is exercised for real in a test environment that has no DOM. */
+export interface CopyRunnerIO {
+  /** The write itself. Defaults to {@link copyToClipboard} in `TokenGate`. */
+  copy: (text: string) => Promise<boolean>;
+  /** Publishes the outcome, or `null` for "no outcome to show". */
+  setFeedback: (feedback: CopyFeedback | null) => void;
+  setTimer: (fn: () => void, ms: number) => unknown;
+  clearTimer: (handle: unknown) => void;
+}
+
+export interface CopyRunner {
+  /** Runs one copy attempt and publishes its REAL outcome. */
+  run(target: CopyTarget, command: string): Promise<void>;
+  /** Drops any pending revert timer — the unmount path. */
+  dispose(): void;
+}
+
+/**
+ * The copy sequencing, as a unit with no view and no hooks.
+ *
+ * Two orderings have to be right, and neither is reachable through the rendered card in a DOM-free
+ * test, which is why they live here:
+ *
+ *   • A stale attempt never reports. Two clicks in flight — the first rejecting slowly, the second
+ *     resolving fast — must not let the older outcome land on top of the newer one, which is how a
+ *     control ends up showing "Copy failed" for a write that succeeded.
+ *   • A new attempt retires the previous outcome AT ONCE, rather than leaning on that outcome's
+ *     own revert timer. That timer belongs to a run that is no longer current; if the new write
+ *     then takes longer than the revert window (or never settles at all — a permission prompt left
+ *     open does exactly that), a "Copied" from the previous run would sit there indefinitely,
+ *     pointing at a clipboard whose contents have since become a guess.
+ */
+export function createCopyRunner(io: CopyRunnerIO): CopyRunner {
+  let seq = 0;
+  let handle: unknown;
+  const clear = () => {
+    if (handle === undefined) return;
+    io.clearTimer(handle);
+    handle = undefined;
+  };
+  return {
+    async run(target: CopyTarget, command: string): Promise<void> {
+      const mine = ++seq;
+      clear();
+      io.setFeedback(null);
+      const ok = await io.copy(command);
+      if (mine !== seq) return; // superseded — the newer run owns the outcome
+      io.setFeedback({ target, ok });
+      // Only ever one timer alive: a later run clears this one before it can arm its own.
+      handle = io.setTimer(() => {
+        handle = undefined;
+        io.setFeedback(null);
+      }, COPY_FEEDBACK_MS);
+    },
+    dispose: clear,
+  };
+}
+
 export interface CopyCommandButtonProps {
   target: CopyTarget;
   /** The RUNNABLE command — never the rendered line. The hint's `$ ` is a prompt this card draws. */
@@ -335,28 +394,20 @@ export function TokenGateCard(props: TokenGateCardProps) {
 export function TokenGate(props: TokenGateProps) {
   const [value, setValue] = useState("");
   const [copy, setCopy] = useState<CopyFeedback | null>(null);
-  // Only the newest attempt may report. Two clicks in flight — the first rejecting slowly, the
-  // second resolving fast — must not let the stale outcome land on top of the fresh one, which is
-  // exactly how a control ends up showing "Copy failed" for a write that succeeded.
-  const seq = useRef(0);
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(
-    () => () => {
-      if (timer.current !== undefined) clearTimeout(timer.current);
-    },
-    [],
-  );
-  const onCopy = (target: CopyTarget, command: string) => {
-    const mine = ++seq.current;
-    void copyToClipboard(command).then((ok) => {
-      if (mine !== seq.current) return;
-      setCopy({ target, ok });
-      if (timer.current !== undefined) clearTimeout(timer.current);
-      timer.current = setTimeout(() => {
-        timer.current = undefined;
-        if (mine === seq.current) setCopy(null);
-      }, COPY_FEEDBACK_MS);
+  // All the sequencing lives in `createCopyRunner`; this only binds it to the real timers and to
+  // this component's state setter (whose identity is stable, so one runner outlives every render).
+  const runner = useRef<CopyRunner | undefined>(undefined);
+  if (!runner.current) {
+    runner.current = createCopyRunner({
+      copy: copyToClipboard,
+      setFeedback: setCopy,
+      setTimer: (fn, ms) => setTimeout(fn, ms),
+      clearTimer: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
     });
+  }
+  useEffect(() => () => runner.current?.dispose(), []);
+  const onCopy = (target: CopyTarget, command: string) => {
+    void runner.current?.run(target, command);
   };
   return (
     <TokenGateCard {...props} value={value} onValue={setValue} copy={copy} onCopy={onCopy} />
