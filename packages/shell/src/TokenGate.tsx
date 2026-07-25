@@ -133,8 +133,9 @@ const COPY_WHAT: Record<CopyTarget, string> = {
   rotate: "the token-rotation command",
 };
 
-/** The control's visible word, per state. The name below always CONTAINS it (WCAG 2.5.3
- *  label-in-name: a voice-control user says what they can see). */
+/** The word each state contributes to the control's accessible name. The control itself is an
+ *  icon, so this is never rendered as text — but the NAME has to move with the state, or a screen
+ *  reader is told "Copy the token-retrieval command" about a control that has already failed. */
 export const COPY_WORD: Record<CopyControlState, string> = {
   idle: "Copy",
   copied: "Copied",
@@ -147,7 +148,7 @@ export function copyControlState(target: CopyTarget, feedback?: CopyFeedback | n
   return feedback.ok ? "copied" : "failed";
 }
 
-/** The control's accessible name — always names which command, always contains its visible word. */
+/** The control's accessible name — always names WHICH command, always states the current state. */
 export function copyButtonLabel(target: CopyTarget, feedback?: CopyFeedback | null): string {
   const what = COPY_WHAT[target];
   switch (copyControlState(target, feedback)) {
@@ -163,7 +164,7 @@ export function copyButtonLabel(target: CopyTarget, feedback?: CopyFeedback | nu
 /**
  * The announcement for a copy outcome, or `""` at rest. Lives in a `role="status"` region that is
  * ALWAYS in the DOM: a live region inserted at the same moment it gains content is announced
- * unreliably. It is never on screen — the visible outcome is the control's own word and color.
+ * unreliably. It is never on screen — the visible outcome is the control's own icon and color.
  */
 export function copyStatusLine(feedback?: CopyFeedback | null): string {
   if (!feedback) return "";
@@ -271,6 +272,54 @@ export function createCopyRunner(io: CopyRunnerIO): CopyRunner {
   };
 }
 
+/**
+ * The control's mark, per state — SVG path data on a 16×16 grid, stroked in `currentColor`.
+ *
+ * Inline vector paths rather than a font glyph on purpose: the family's packaged mono face is
+ * SUBSETTED, so a character like ⧉ is not guaranteed to be in it and would render as tofu on the
+ * one screen an operator sees before they can get in. An inline `<svg>` carries its own outlines
+ * and cannot fall back to anything.
+ *
+ * The three marks are three different SHAPES — overlapping sheets, a check, a warning triangle —
+ * not one shape in three colors. Color alone does not separate states for a color-blind operator
+ * (WCAG 1.4.1), and "did that copy or not" is exactly the question the control exists to answer.
+ */
+export const COPY_ICON_PATHS: Record<CopyControlState, readonly string[]> = {
+  // two overlapping sheets — the conventional copy mark
+  idle: [
+    "M6.5 5.5h6a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-6a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1Z",
+    "M10.5 5.5v-2a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1h2",
+  ],
+  // a check
+  copied: ["M3.5 8.5 7 12l5.5-7.5"],
+  // a warning triangle with a bang — the same shape language as the card's ▲ failure note
+  failed: ["M8 2.5 14.5 13.5h-13Z", "M8 6.5v3.5", "M8 12.25h.01"],
+};
+
+/** The control's mark. `aria-hidden` without exception: the name lives on the button, and an
+ *  icon that leaks into the accessible name is how a control ends up called "img". */
+export function CopyIcon({ state }: { state: CopyControlState }) {
+  return (
+    <svg
+      class="token-entry__copy-icon"
+      viewBox="0 0 16 16"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="1.5"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+      focusable="false"
+    >
+      {COPY_ICON_PATHS[state].map((d) => (
+        <path key={d} d={d} />
+      ))}
+    </svg>
+  );
+}
+
 export interface CopyCommandButtonProps {
   target: CopyTarget;
   /** The RUNNABLE command — never the rendered line. The hint's `$ ` is a prompt this card draws. */
@@ -282,20 +331,26 @@ export interface CopyCommandButtonProps {
 
 /**
  * The copy control for one command line. A real `<button type="button">` — focusable in source
- * order, no tabindex games — named for the command it copies. Purely additive: the command stays
- * rendered next to it as ordinary selectable text, which is the fallback when the clipboard write
- * cannot happen at all.
+ * order, no tabindex games — carrying an icon, and named for the command it copies. Purely
+ * additive: the command stays rendered next to it as ordinary selectable text, which is the
+ * fallback when the clipboard write cannot happen at all.
  */
 export function CopyCommandButton(props: CopyCommandButtonProps) {
   const state = copyControlState(props.target, props.feedback);
+  const label = copyButtonLabel(props.target, props.feedback);
   return (
     <button
       type="button"
       class={state === "idle" ? "token-entry__copy" : `token-entry__copy is-${state}`}
-      aria-label={copyButtonLabel(props.target, props.feedback)}
+      // The name carries everything: which command, and what state the control is in. The icon is
+      // aria-hidden, so this is the only thing a reader has to go on.
+      aria-label={label}
+      // The tooltip is the SAME string, deliberately. An icon is not self-describing on hover, and
+      // a tooltip that says something the accessible name does not is a defect of its own.
+      title={label}
       onClick={() => props.onCopy?.(props.target, props.command)}
     >
-      {COPY_WORD[state]}
+      <CopyIcon state={state} />
     </button>
   );
 }

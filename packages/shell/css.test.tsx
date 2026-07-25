@@ -294,6 +294,7 @@ describe("styles.css — (g) TokenGate's card ships fully styled from the packag
       "token-entry__cmd",
       "token-entry__cmd-row",
       "token-entry__copy",
+      "token-entry__copy-icon",
       "token-entry__copy-status",
       "is-copied",
       "is-failed",
@@ -362,6 +363,18 @@ describe("styles.css — (g) TokenGate's card ships fully styled from the packag
     expect(css.match(/\.token-entry__copy:focus-visible\s*\{[^}]*\}/)?.[0]).toContain(
       "outline: 2px solid var(--my-accent)",
     );
+  });
+
+  test("the icon-only control keeps a comfortable hit area — never under 24px square", () => {
+    const rule = css.match(/\.token-entry__copy\s*\{[^}]*\}/)![0];
+    for (const axis of ["width", "height"]) {
+      const px = Number(rule.match(new RegExp(`(?<!min-|max-)${axis}:\\s*(\\d+)px`))?.[1]);
+      expect(px).toBeGreaterThanOrEqual(24);
+    }
+    // and the mark sits inside it rather than defining it
+    const icon = css.match(/\.token-entry__copy-icon\s*\{[^}]*\}/);
+    expect(icon).not.toBeNull();
+    expect(Number(icon![0].match(/width:\s*(\d+)px/)?.[1])).toBeLessThan(24);
   });
 
   test("both copy outcomes resolve through tokens that are redefined in BOTH themes", () => {

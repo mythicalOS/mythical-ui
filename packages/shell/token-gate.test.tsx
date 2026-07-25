@@ -22,7 +22,9 @@ import {
   copyStatusLine,
   copyToClipboard,
   CopyCommandButton,
+  CopyIcon,
   createCopyRunner,
+  COPY_ICON_PATHS,
   COPY_WORD,
   TokenGate,
   TokenGateCard,
@@ -460,10 +462,22 @@ describe("the copy control — state, naming, announcement", () => {
     ["rotate", undefined],
     ["rotate", { target: "rotate", ok: true }],
     ["rotate", { target: "rotate", ok: false }],
-  ])("%s/%o — the name contains the visible word (WCAG 2.5.3) and stays distinct", (target, feedback) => {
+  ])("%s/%o — the name states the current state and stays distinct per command", (target, feedback) => {
+    // the control is an icon, so the NAME is the only thing carrying the state to a reader
     const name = copyButtonLabel(target, feedback);
     expect(name).toContain(COPY_WORD[copyControlState(target, feedback)]);
     expect(name).not.toBe(copyButtonLabel(target === "retrieve" ? "rotate" : "retrieve", feedback));
+  });
+
+  test("the three states produce three DIFFERENT names, per command", () => {
+    for (const target of ["retrieve", "rotate"] as const) {
+      const names = [
+        copyButtonLabel(target),
+        copyButtonLabel(target, { target, ok: true }),
+        copyButtonLabel(target, { target, ok: false }),
+      ];
+      expect(new Set(names).size).toBe(3);
+    }
   });
 
   test("a failed control's name says what to do instead", () => {
@@ -487,15 +501,85 @@ describe("the copy control — state, naming, announcement", () => {
   });
 
   test.each<[string, CopyFeedback | undefined, string, string]>([
-    ["at rest", undefined, "Copy", 'class="token-entry__copy"'],
-    ["after a success", { target: "retrieve", ok: true }, "Copied", "token-entry__copy is-copied"],
-    ["after a failure", { target: "retrieve", ok: false }, "Copy failed", "token-entry__copy is-failed"],
-  ])("%s it renders %p with %p", (_name, feedback, word, cls) => {
+    ["at rest", undefined, "Copy the token-retrieval command", 'class="token-entry__copy"'],
+    [
+      "after a success",
+      { target: "retrieve", ok: true },
+      "Copied the token-retrieval command",
+      "token-entry__copy is-copied",
+    ],
+    [
+      "after a failure",
+      { target: "retrieve", ok: false },
+      "Copy failed for the token-retrieval command",
+      "token-entry__copy is-failed",
+    ],
+  ])("%s the control is named %p and carries %p", (_name, feedback, name, cls) => {
+    // the control is an icon: its STATE lives in the accessible name and the class, never in text
     const out = renderToString(
       <CopyCommandButton target="retrieve" command={RETRIEVE} feedback={feedback} />,
     );
-    expect(out).toContain(`>${word}</button>`);
+    expect(out).toContain(`aria-label="${name}`);
     expect(out).toContain(cls);
+    // no text node at all inside the button
+    expect(out).toMatch(/<button[^>]*><svg[\s\S]*<\/svg><\/button>/);
+  });
+
+  test("the tooltip says the same thing as the accessible name — never something else", () => {
+    for (const feedback of [undefined, { target: "retrieve" as const, ok: true }, { target: "retrieve" as const, ok: false }]) {
+      const out = renderToString(
+        <CopyCommandButton target="retrieve" command={RETRIEVE} feedback={feedback} />,
+      );
+      const label = out.match(/aria-label="([^"]*)"/)?.[1];
+      const title = out.match(/title="([^"]*)"/)?.[1];
+      expect(label).toBeTruthy();
+      expect(title).toBe(label!);
+    }
+  });
+});
+
+describe("the copy icon — an inline SVG, three distinct SHAPES", () => {
+  // An inline <svg> carries its own outlines, so unlike a font glyph (⧉ and friends) it cannot
+  // render as tofu against the family's SUBSETTED mono face.
+  test("it is inline vector paths, not a character", () => {
+    const out = renderToString(<CopyIcon state="idle" />);
+    expect(out).toContain("<svg");
+    expect(out).toContain('viewBox="0 0 16 16"');
+    expect((out.match(/<path /g) ?? []).length).toBe(COPY_ICON_PATHS.idle.length);
+    // no text node inside the mark — nothing that could depend on a font
+    expect(out).toMatch(/^<svg[^>]*>(<path[^>]*><\/path>)+<\/svg>$/);
+  });
+
+  test("the mark is hidden from readers — the NAME lives on the button", () => {
+    const out = renderToString(<CopyIcon state="idle" />);
+    expect(out).toContain('aria-hidden="true"');
+    expect(out).toContain('focusable="false"');
+    expect(out).not.toContain("aria-label");
+    expect(out).not.toContain("<title");
+  });
+
+  test("it takes its color from the control, so the state color needs no second rule", () => {
+    expect(renderToString(<CopyIcon state="idle" />)).toContain('stroke="currentColor"');
+  });
+
+  // WCAG 1.4.1: color is never the only difference. A color-blind operator has to be able to tell
+  // "copied" from "failed", and both from "not yet clicked".
+  test("the three states are three different shapes, not one shape in three colors", () => {
+    const shapes = (["idle", "copied", "failed"] as const).map((s) => COPY_ICON_PATHS[s].join("|"));
+    expect(new Set(shapes).size).toBe(3);
+    const pairs: [number, number][] = [[0, 1], [0, 2], [1, 2]];
+    for (const [a, b] of pairs) expect(shapes[a]).not.toBe(shapes[b]);
+  });
+
+  test("each state renders ITS OWN path data", () => {
+    for (const state of ["idle", "copied", "failed"] as const) {
+      const out = renderToString(<CopyIcon state={state} />);
+      for (const d of COPY_ICON_PATHS[state]) expect(out).toContain(`d="${d}"`);
+      for (const other of ["idle", "copied", "failed"] as const) {
+        if (other === state) continue;
+        for (const d of COPY_ICON_PATHS[other]) expect(out).not.toContain(`d="${d}"`);
+      }
+    }
   });
 });
 
@@ -700,8 +784,12 @@ describe("TokenGate — the copy control on each command line", () => {
   test("a success marks ONLY the control that was clicked", () => {
     const out = html({ copy: { target: "retrieve", ok: true } });
     expect(out).toContain("token-entry__copy is-copied");
-    expect((out.match(/>Copied</g) ?? []).length).toBe(1);
-    expect((out.match(/>Copy</g) ?? []).length).toBe(1); // the other one is untouched
+    expect((out.match(/class="token-entry__copy is-/g) ?? []).length).toBe(1);
+    const names = Array.from(out.matchAll(/aria-label="(Cop[^"]*)"/g)).map((m) => m[1]!);
+    expect(names).toEqual([
+      "Copied the token-retrieval command",
+      "Copy the token-rotation command", // the other one is untouched
+    ]);
     expect(out).toContain("Copied the token-retrieval command to the clipboard.");
   });
 
@@ -716,9 +804,12 @@ describe("TokenGate — the copy control on each command line", () => {
     expect(ok).toBe(false);
     const out = html({ copy: { target: "retrieve", ok } });
     expect(out).toContain("token-entry__copy is-failed");
-    expect(out).toContain(">Copy failed</button>");
+    expect(out).toContain('aria-label="Copy failed for the token-retrieval command');
+    // the failure mark is its own SHAPE, not the copy mark in another color (WCAG 1.4.1)
+    for (const d of COPY_ICON_PATHS.failed) expect(out).toContain(`d="${d}"`);
+    for (const d of COPY_ICON_PATHS.copied) expect(out).not.toContain(`d="${d}"`);
     expect(out).not.toContain("is-copied");
-    expect(out).not.toContain(">Copied<");
+    expect(out).not.toContain('aria-label="Copied');
     expect(out).not.toContain("Copied the token-retrieval command");
     expect(out).toContain("Could not copy the token-retrieval command.");
     // and the command is still there, in full, to be selected by hand
@@ -743,7 +834,17 @@ describe("TokenGate — the token never leaks into the markup", () => {
   test("no aria-* attribute and no title carries it", () => {
     const out = html({ value: SECRET });
     for (const m of out.matchAll(/aria-[a-z]+="([^"]*)"/g)) expect(m[1]).not.toContain(SECRET);
-    expect(out).not.toContain("title=");
+    // The copy controls' tooltips are the only title attributes on this card. The guard is that no
+    // title may carry the TOKEN — it was written as a blanket "no title= at all" back when the card
+    // had none, which is a proxy for the real rule, not the rule.
+    const titles = Array.from(out.matchAll(/title="([^"]*)"/g)).map((m) => m[1]!);
+    expect(titles.length).toBe(2);
+    for (const t of titles) {
+      expect(t).not.toContain(SECRET);
+      expect(t.startsWith("Copy")).toBe(true);
+    }
+    // and no <title> ELEMENT anywhere either — an SVG <title> would become an accessible name
+    expect(out).not.toContain("<title");
   });
 
   test("the field starts empty and hidden — the stateful wrapper never pre-fills it", () => {

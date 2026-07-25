@@ -560,16 +560,24 @@
 }
 .token-entry__copy {
   flex: none;
-  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* An icon-only control is smaller than a worded one and must not shrink below a comfortable
+     target: 26px square, i.e. never under the ~24px floor, with the mark itself at 14px inside. */
+  width: 26px;
+  height: 26px;
+  padding: 0;
   border: 1px solid var(--my-control-border);
   border-radius: var(--my-r-control);
   background: var(--my-surface);
   color: var(--my-muted);
-  font-family: inherit; /* the hint block's mono face — a <button> inherits neither by default */
-  font-size: var(--my-fs-micro);
-  line-height: 1.7;
   cursor: pointer;
   transition: background var(--my-t-fast), color var(--my-t-fast), border-color var(--my-t-fast);
+}
+.token-entry__copy-icon {
+  width: 14px;
+  height: 14px;
 }
 .token-entry__copy:hover {
   background: var(--my-surface-hover);
@@ -581,9 +589,11 @@
   outline: 2px solid var(--my-accent);
   outline-offset: 2px;
 }
-/* The two settled outcomes. Both resolve through tokens that are redefined per theme, so the
-   control stays legible on the light parchment and on the dark heritage surface with no
-   theme-specific rule: --my-ok is the deep green / heritage mint, --my-warn the amber pair. */
+/* The two settled outcomes. Color is the SECOND signal only — the mark itself is a different
+   shape per state (see COPY_ICON_PATHS), because color alone separates nothing for a color-blind
+   operator (WCAG 1.4.1). Both tokens are redefined per theme, so the control stays legible on the
+   light parchment and on the dark heritage surface with no theme-specific rule: --my-ok is the
+   deep green / heritage mint, --my-warn the amber pair. */
 .token-entry__copy.is-copied {
   border-color: var(--my-ok);
   color: var(--my-ok);
