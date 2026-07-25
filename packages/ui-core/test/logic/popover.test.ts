@@ -15,6 +15,7 @@ import {
   POPOVER_BREATHING_PX,
   POPOVER_CARET,
   POPOVER_CHECK,
+  POPOVER_CLASS,
   POPOVER_DEFAULT_POSITION,
   POPOVER_EMPTY_VALUE,
   POPOVER_GAP_PX,
@@ -352,7 +353,19 @@ describe("glyphs match the design card", () => {
 
 describe("styles.css ships a real selector for every class this logic emits", () => {
   const css = readFileSync(join(import.meta.dir, "..", "..", "styles.css"), "utf8");
-  const hasSelector = (cls: string) => new RegExp(`\\.${cls.replace(/[-_]/g, "[-_]")}(?![\\w-])`).test(css);
+  // Comments must go first: this file DOCUMENTS class names in prose (e.g. the flip modifiers and
+  // `.my-pop-anchor`), so scanning the raw text would let a DELETED rule keep passing on the
+  // strength of its own comment. The sanity test below proves the stripper isn't a no-op.
+  const cssRules = css.replace(/\/\*[\s\S]*?\*\//g, "");
+  const hasSelector = (cls: string) =>
+    new RegExp(`\\.${cls.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w-])`).test(cssRules);
+
+  test("sanity: comment stripping is real, and it does not eat the rules", () => {
+    expect(css).toContain("dropdown popover (ds/components-popover"); // present in the raw text …
+    expect(cssRules).not.toContain("dropdown popover (ds/components-popover"); // … gone from rules
+    expect(cssRules).toContain(".my-pop-trigger {");
+    expect(cssRules.length).toBeGreaterThan(3000);
+  });
 
   const emitted = new Set<string>();
   for (const s of [{}, { open: true }, { disabled: true }, { open: true, disabled: true }]) {
@@ -367,30 +380,27 @@ describe("styles.css ships a real selector for every class this logic emits", ()
     for (const c of popoverItemClass(s).split(" ")) emitted.add(c);
   }
 
-  test.each([...emitted])("styles.css defines .%s", (cls) => {
+  test("the emitted set actually covers every class in POPOVER_CLASS (no silently unstyled name)", () => {
+    const all = new Set<string>(Object.values(POPOVER_CLASS));
+    for (const c of emitted) all.delete(c);
+    // whatever the derivation functions don't emit is structural — the bindings render it directly
+    expect(all.size).toBeGreaterThan(0);
+    expect(emitted.size + all.size).toBe(Object.keys(POPOVER_CLASS).length);
+  });
+
+  test.each(Object.values(POPOVER_CLASS))("styles.css defines a rule reaching .%s", (cls) => {
     expect(hasSelector(cls)).toBe(true);
   });
 
-  test("the structural classes the bindings render are styled too", () => {
-    for (const cls of [
-      "my-pop-anchor",
-      "my-pop-trigger__label",
-      "my-pop-trigger__value",
-      "my-pop-trigger__caret",
-      "my-pop__head",
-      "my-pop__title",
-      "my-pop__caption",
-      "my-pop__label",
-      "my-pop__check",
-      "my-pop__div",
-      "my-pop__foot",
-    ]) {
-      expect(hasSelector(cls)).toBe(true);
-    }
+  test("the state modifiers are styled on the popover's OWN elements, not borrowed from another atom", () => {
+    expect(cssRules).toMatch(/\.my-pop-trigger\.is-open/);
+    expect(cssRules).toMatch(/\.my-pop-trigger\.is-disabled/);
+    expect(cssRules).toMatch(/\.my-pop__item\.is-selected/);
+    expect(cssRules).toMatch(/\.my-pop__item\.is-disabled/);
   });
 
   test("design rule 6 — the popover's interactive controls carry the shared focus ring", () => {
-    const ring = css.match(
+    const ring = cssRules.match(
       /\.my-pop-trigger:focus-visible,\s*\.my-pop__item:focus-visible\s*\{([^}]*)\}/,
     );
     expect(ring).not.toBeNull();
@@ -399,17 +409,29 @@ describe("styles.css ships a real selector for every class this logic emits", ()
   });
 
   test("shape rule 10 — every clickable surface here is SQUARED (--my-r-control), never the pill", () => {
-    for (const sel of [".my-pop-trigger", ".my-pop__item"]) {
-      const rule = css.match(new RegExp(`\\${sel}\\s*\\{([^}]*)\\}`));
+    for (const sel of ["my-pop-trigger", "my-pop__item"]) {
+      const rule = cssRules.match(new RegExp(`\\.${sel}\\s*\\{([^}]*)\\}`));
       expect(rule).not.toBeNull();
       expect(rule?.[1]).toContain("border-radius: var(--my-r-control)");
     }
-    const popoverBlock = css.slice(css.indexOf("dropdown popover (ds/components-popover"));
-    expect(popoverBlock).not.toContain("--my-r-pill");
+    // scan the popover's rules only, comments already stripped, so a prose mention can't trip it
+    const popoverRules = cssRules.slice(cssRules.indexOf(".my-pop-anchor"));
+    expect(popoverRules.length).toBeGreaterThan(500);
+    expect(popoverRules).not.toContain("--my-r-pill");
   });
 
   test("the flip modifiers actually re-anchor the panel (not just a cosmetic class)", () => {
-    expect(css).toMatch(/\.my-pop--above\s*\{[^}]*bottom:\s*calc\(100% \+ 6px\)/);
-    expect(css).toMatch(/\.my-pop--end\s*\{[^}]*right:\s*0/);
+    expect(cssRules).toMatch(/\.my-pop--above\s*\{[^}]*bottom:\s*calc\(100% \+ 6px\)/);
+    expect(cssRules).toMatch(/\.my-pop--end\s*\{[^}]*right:\s*0/);
+  });
+
+  test("panel fidelity — min-width only (no undocumented max-width cap), card z-index and shadow", () => {
+    const panel = cssRules.match(/\.my-pop\s*\{([^}]*)\}/);
+    expect(panel).not.toBeNull();
+    expect(panel?.[1]).toContain("min-width: 210px");
+    expect(panel?.[1]).not.toContain("max-width");
+    expect(panel?.[1]).toContain("z-index: 30");
+    expect(panel?.[1]).toContain("box-shadow: var(--my-shadow-modal)");
+    expect(panel?.[1]).toContain("top: calc(100% + 6px)");
   });
 });

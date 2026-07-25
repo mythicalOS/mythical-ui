@@ -235,15 +235,17 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
     ['"menu"', "panel role / haspopup belong to popoverPanelAria + popoverTriggerAria"],
     ['"aria-haspopup"', "trigger ARIA belongs to popoverTriggerAria"],
     ['"aria-checked"', "row ARIA belongs to popoverItemAria"],
-    ['"my-pop"', "panel class belongs to popoverPanelClass"],
-    ['"my-pop-trigger"', "trigger class belongs to popoverTriggerClass"],
-    ['"my-pop__item"', "row class belongs to popoverItemClass"],
     ["▾", "the caret glyph belongs to POPOVER_CARET"],
     ["✓", "the check glyph belongs to POPOVER_CHECK"],
     ["is-selected", "state modifiers belong to popoverItemClass"],
     ["getBoundingClientRect().bottom", "the flip arithmetic belongs to resolvePopoverPlacement"],
   ])("the binding source contains no %s (%s)", (needle) => {
     expect(code).not.toContain(needle);
+  });
+
+  test("NO class-name string literal is inlined at all — every class comes from POPOVER_CLASS", () => {
+    expect(code.match(/"my-[^"]*"/g)).toBeNull();
+    expect(code).toContain("POPOVER_CLASS.");
   });
 
   test("it imports the decisions it needs instead", () => {
@@ -264,6 +266,7 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
       "edgePopoverIndex",
       "popoverTriggerText",
       "popoverIds",
+      "POPOVER_CLASS",
     ]) {
       expect(code).toContain(symbol);
     }

@@ -29,6 +29,7 @@ import type { ComponentChildren, Ref } from "preact";
 import {
   POPOVER_CARET,
   POPOVER_CHECK,
+  POPOVER_CLASS,
   POPOVER_DEFAULT_POSITION,
   edgePopoverIndex,
   initialPopoverIndex,
@@ -54,6 +55,7 @@ import {
 export {
   POPOVER_CARET,
   POPOVER_CHECK,
+  POPOVER_CLASS,
   POPOVER_EMPTY_VALUE,
   popoverItemClass,
   popoverPanelClass,
@@ -112,9 +114,9 @@ export function PopoverPanel(props: PopoverPanelProps) {
   return (
     <div ref={props.panelRef} class={popoverPanelClass(props.pos)} tabIndex={-1} {...popoverPanelAria(props.ids)}>
       {props.title !== undefined || props.caption !== undefined ? (
-        <div class="my-pop__head">
-          {props.title !== undefined ? <span class="my-pop__title">{props.title}</span> : null}
-          {props.caption !== undefined ? <span class="my-pop__caption">{props.caption}</span> : null}
+        <div class={POPOVER_CLASS.head}>
+          {props.title !== undefined ? <span class={POPOVER_CLASS.title}>{props.title}</span> : null}
+          {props.caption !== undefined ? <span class={POPOVER_CLASS.caption}>{props.caption}</span> : null}
         </div>
       ) : null}
       {props.items.map((item) => (
@@ -130,16 +132,16 @@ export function PopoverPanel(props: PopoverPanelProps) {
             props.onPick(item);
           }}
         >
-          <span class="my-pop__label">{item.label}</span>
-          <span class="my-pop__check" aria-hidden="true">
+          <span class={POPOVER_CLASS.itemLabel}>{item.label}</span>
+          <span class={POPOVER_CLASS.itemCheck} aria-hidden="true">
             {item.selected ? POPOVER_CHECK : ""}
           </span>
         </button>
       ))}
       {props.footer !== undefined ? (
         <>
-          <div class="my-pop__div" role="separator" />
-          <div class="my-pop__foot">{props.footer}</div>
+          <div class={POPOVER_CLASS.divider} role="separator" />
+          <div class={POPOVER_CLASS.foot}>{props.footer}</div>
         </>
       ) : null}
     </div>
@@ -266,7 +268,7 @@ export function Popover(props: PopoverProps) {
   const text = popoverTriggerText(items, { label: props.label, placeholder: props.placeholder });
 
   return (
-    <div class="my-pop-anchor" ref={anchorRef} onKeyDown={onKeyDown}>
+    <div class={POPOVER_CLASS.anchor} ref={anchorRef} onKeyDown={onKeyDown}>
       <button
         ref={triggerRef}
         type="button"
@@ -276,9 +278,9 @@ export function Popover(props: PopoverProps) {
         {...popoverTriggerAria(open, ids)}
         onClick={() => (open ? closeToTrigger() : openAt(-1))}
       >
-        {text.label !== null ? <span class="my-pop-trigger__label">{text.label}</span> : null}
-        <span class="my-pop-trigger__value">{text.value}</span>
-        <span class="my-pop-trigger__caret" aria-hidden="true">
+        {text.label !== null ? <span class={POPOVER_CLASS.triggerLabel}>{text.label}</span> : null}
+        <span class={POPOVER_CLASS.triggerValue}>{text.value}</span>
+        <span class={POPOVER_CLASS.triggerCaret} aria-hidden="true">
           {POPOVER_CARET}
         </span>
       </button>

@@ -119,6 +119,35 @@ export function samePopoverPosition(a: PopoverPosition, b: PopoverPosition): boo
 
 /* ── class derivation ─────────────────────────────────────────────────── */
 
+/**
+ * EVERY class name this component family renders — the derived ones the functions below compose
+ * AND the purely structural ones a binding puts on a wrapper/span. One source, so a binding cannot
+ * invent, misspell, or quietly re-style a class, and the Preact and React siblings cannot drift on
+ * markup either. (The rest of this package's atoms inline their structural classes in both
+ * bindings; the popover has more of them than any other atom, so it earns the map.)
+ */
+export const POPOVER_CLASS = {
+  anchor: "my-pop-anchor",
+  trigger: "my-pop-trigger",
+  triggerLabel: "my-pop-trigger__label",
+  triggerValue: "my-pop-trigger__value",
+  triggerCaret: "my-pop-trigger__caret",
+  panel: "my-pop",
+  panelAbove: "my-pop--above",
+  panelEnd: "my-pop--end",
+  head: "my-pop__head",
+  title: "my-pop__title",
+  caption: "my-pop__caption",
+  item: "my-pop__item",
+  itemLabel: "my-pop__label",
+  itemCheck: "my-pop__check",
+  divider: "my-pop__div",
+  foot: "my-pop__foot",
+  isOpen: "is-open",
+  isSelected: "is-selected",
+  isDisabled: "is-disabled",
+} as const;
+
 export interface PopoverTriggerState {
   open?: boolean;
   disabled?: boolean;
@@ -127,25 +156,25 @@ export interface PopoverTriggerState {
 /** Trigger class list. Shape rule 10: the trigger is clickable, so styles.css gives it
  * `--my-r-control` — never the pill radius. */
 export function popoverTriggerClass(s: PopoverTriggerState = {}): string {
-  const cls = ["my-pop-trigger"];
-  if (s.open) cls.push("is-open");
-  if (s.disabled) cls.push("is-disabled");
+  const cls: string[] = [POPOVER_CLASS.trigger];
+  if (s.open) cls.push(POPOVER_CLASS.isOpen);
+  if (s.disabled) cls.push(POPOVER_CLASS.isDisabled);
   return cls.join(" ");
 }
 
 /** Panel class list; the flip/align modifiers are the only thing position changes. */
 export function popoverPanelClass(pos: PopoverPosition = POPOVER_DEFAULT_POSITION): string {
-  const cls = ["my-pop"];
-  if (pos.placement === "above") cls.push("my-pop--above");
-  if (pos.align === "end") cls.push("my-pop--end");
+  const cls: string[] = [POPOVER_CLASS.panel];
+  if (pos.placement === "above") cls.push(POPOVER_CLASS.panelAbove);
+  if (pos.align === "end") cls.push(POPOVER_CLASS.panelEnd);
   return cls.join(" ");
 }
 
 /** Menu-row class list. */
 export function popoverItemClass(item: Pick<PopoverItem, "selected" | "disabled"> = {}): string {
-  const cls = ["my-pop__item"];
-  if (item.selected) cls.push("is-selected");
-  if (item.disabled) cls.push("is-disabled");
+  const cls: string[] = [POPOVER_CLASS.item];
+  if (item.selected) cls.push(POPOVER_CLASS.isSelected);
+  if (item.disabled) cls.push(POPOVER_CLASS.isDisabled);
   return cls.join(" ");
 }
 

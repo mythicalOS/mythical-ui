@@ -465,7 +465,8 @@ a:focus-visible, .link:focus-visible, .is-focus {
 
 .my-pop {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
-  min-width: 210px; max-width: 320px; padding: var(--my-sp-1);
+  /* min-width only, per the card — the panel grows to its widest row rather than truncating it */
+  min-width: 210px; padding: var(--my-sp-1);
   background: var(--my-surface); border: 1px solid var(--my-border); /* panel edge = a card boundary, not a control one */
   border-radius: var(--my-r-card); box-shadow: var(--my-shadow-modal);
 }
@@ -487,6 +488,9 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-pop__item:hover:not(:disabled):not(.is-disabled) { background: var(--my-surface-hover); }
 .my-pop__item.is-selected { color: var(--my-accent-strong); font-weight: var(--my-fw-medium); }
 .my-pop__item:disabled, .my-pop__item.is-disabled { color: var(--my-disabled-ink); cursor: not-allowed; }
+/* The panel is min-width-only, so this truncation is INERT by default (the panel widens to fit).
+   It engages solely when a consumer constrains the panel's width themselves — then a long label
+   ellipsises instead of tearing the row's layout apart. */
 .my-pop__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .my-pop__check { flex: none; }
 

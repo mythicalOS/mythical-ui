@@ -25,6 +25,7 @@ export {
   POPOVER_BREATHING_PX,
   POPOVER_EMPTY_VALUE,
   POPOVER_DEFAULT_POSITION,
+  POPOVER_CLASS,
   resolvePopoverPlacement,
   resolvePopoverAlign,
   resolvePopoverPosition,
