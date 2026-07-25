@@ -67,13 +67,19 @@ function signed(n: number, body: string, zero: string): string {
 }
 
 /** Compact count: `500`, `12.8k`, `230k`, `1.5M`; negatives take the Unicode minus (`−212k`).
- *  Absent/non-finite ⇒ `STAT_TILE_EMPTY`. */
+ *  Absent/non-finite ⇒ `STAT_TILE_EMPTY`.
+ *
+ *  The unit is chosen from the ROUNDED value, not the raw one: rounding first and picking the unit
+ *  second would render `999.5` as `1000` and `999_999` as `1000k` — values that are noncanonical
+ *  for the scale and sit right in the middle of a normal token count. Each rung promotes to the
+ *  next when its own rounding carries it to 1000. `M` is the top rung — the design card defines no
+ *  unit above it, so a billion reads `1000M`, not `1B`. */
 export function formatStatCompact(n: number | null | undefined): string {
   if (!isNum(n)) return STAT_TILE_EMPTY;
   const abs = Math.abs(n);
   let body: string;
-  if (abs < 1000) body = String(Math.round(abs));
-  else if (abs < 1_000_000) body = `${stripZero((abs / 1000).toFixed(1))}k`;
+  if (Math.round(abs) < 1000) body = String(Math.round(abs));
+  else if (Number((abs / 1000).toFixed(1)) < 1000) body = `${stripZero((abs / 1000).toFixed(1))}k`;
   else body = `${stripZero((abs / 1_000_000).toFixed(1))}M`;
   return signed(n, body, "0");
 }

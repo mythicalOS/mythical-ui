@@ -67,6 +67,27 @@ describe("formatStatCompact", () => {
     expect(formatStatCompact(n)).toBe(expected);
   });
 
+  test("unit boundaries promote instead of emitting a noncanonical `1000` / `1000k`", () => {
+    expect(formatStatCompact(999.5)).toBe("1k");
+    expect(formatStatCompact(999_999)).toBe("1M");
+    expect(formatStatCompact(999_949)).toBe("999.9k");
+    expect(formatStatCompact(999_950)).toBe("1M");
+    expect(formatStatCompact(-999.5)).toBe("−1k");
+    expect(formatStatCompact(-999_999)).toBe("−1M");
+  });
+
+  test("no output below the top rung carries a four-digit mantissa before its unit", () => {
+    for (const n of [999.5, 999_999, 999_950, 1_000_000, 12_800, 230_000]) {
+      expect(formatStatCompact(n)).not.toStartWith("1000");
+    }
+  });
+
+  test("documented residual: M is the top rung, so a billion reads `1000M`, not `1B`", () => {
+    // The design card defines no unit above M; the value stays honest, just not further
+    // abbreviated. Pinned so the choice is deliberate rather than an accident.
+    expect(formatStatCompact(999_999_999)).toBe("1000M");
+  });
+
   test("the card's spine-savings value uses the UNICODE minus, not a hyphen", () => {
     expect(formatStatCompact(-212_000)).toBe("−212k");
     expect(formatStatCompact(-212_000)).toStartWith(STAT_TILE_MINUS);
