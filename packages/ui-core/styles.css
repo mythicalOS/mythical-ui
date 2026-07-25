@@ -806,3 +806,252 @@ button.my-session-card { cursor: pointer; }
   color: var(--my-ink); font-weight: var(--my-fw-medium);
 }
 .my-session-card.is-stale .my-session-card__spine-value { color: var(--my-disabled-ink); }
+
+   TERMINAL SET (ds/components-terminal, spec v2): .my-term · .my-qrow · .my-sendbar.
+
+   Token rule 3 — "Terminal surfaces always use the --my-term-* set, regardless of app theme" —
+   is the load-bearing one here. The --my-term-* tokens are declared ONLY in :root and are
+   deliberately NOT overridden by [data-theme="dark"], so they are already theme-invariant; the
+   `.my-term` block below additionally re-points every theme-flipping local (--my-bg/--my-surface/
+   --my-ink/--my-muted/--my-accent/--my-warn/…) onto that fixed palette for the WHOLE subtree. That
+   way an atom nested inside the terminal cannot inherit a light-theme surface either, and the
+   terminal stays heritage-dark in both themes without a single hard-coded color.
+
+   Deriving the two shades the palette does not name (a hairline border and the warn-soft fill for
+   the in-terminal banners) uses color-mix over the term tokens rather than a new hex, so the "zero
+   hard-coded hex" and "every var(--my-*) exists in canonical tokens.css" guards both still hold.
+
+   The send bar and the queue rows are APP CHROME, not terminal surface: the design card draws both
+   on the light surface, so they use the ordinary theme tokens and follow the app theme. Only the
+   pane is pinned dark.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── terminal pane ─────────────────────────────────────────────────────── */
+.my-term {
+  /* token rule 3 — the fixed heritage palette, both themes */
+  --my-bg: var(--my-term-bg);
+  --my-surface: var(--my-term-bg);
+  --my-surface-hover: color-mix(in oklab, var(--my-term-ink) 8%, var(--my-term-bg));
+  --my-border: color-mix(in oklab, var(--my-term-ink) 14%, var(--my-term-bg));
+  --my-control-border: color-mix(in oklab, var(--my-term-ink) 34%, var(--my-term-bg));
+  --my-ink: var(--my-term-ink);
+  --my-muted: var(--my-term-dim);
+  --my-accent: var(--my-term-assistant);
+  --my-accent-strong: var(--my-term-assistant);
+  --my-accent-soft: color-mix(in oklab, var(--my-term-assistant) 18%, var(--my-term-bg));
+  --my-warn: var(--my-term-user);
+  --my-warn-soft: color-mix(in oklab, var(--my-term-user) 18%, var(--my-term-bg));
+
+  display: flex; flex-direction: column;
+  background: var(--my-term-bg); color: var(--my-term-ink);
+  border: 1px solid var(--my-border); border-radius: var(--my-r-card);
+  font-family: var(--my-font-mono); font-size: var(--my-fs-mono); line-height: 1.7;
+  overflow: hidden;
+}
+
+/* title bar — traffic lights · `{name} · tail · noise {on|off}` · turn/stop cluster */
+.my-term__titlebar {
+  display: flex; align-items: center; gap: var(--my-sp-2);
+  padding: var(--my-sp-2) var(--my-sp-3);
+  border-bottom: 1px solid var(--my-border);
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  color: var(--my-term-dim);
+}
+.my-term__lights { display: inline-flex; gap: 5px; flex: none; }
+.my-term__light { width: 9px; height: 9px; border-radius: var(--my-r-pill); background: var(--my-term-dim); }
+.my-term__light--r { background: var(--my-error); }
+.my-term__light--a { background: var(--my-term-user); }
+.my-term__light--g { background: var(--my-term-assistant); }
+.my-term__noise {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; color: var(--my-term-dim); text-align: left;
+}
+.my-term__noise:hover { color: var(--my-term-ink); }
+.my-term__noise:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__tb-right { margin-left: auto; display: inline-flex; align-items: center; gap: var(--my-sp-2); }
+.my-term__turn, .my-term__idle { display: inline-flex; align-items: center; gap: 5px; color: var(--my-term-dim); }
+.my-term__turn-dot {
+  width: 7px; height: 7px; border-radius: var(--my-r-pill);
+  background: var(--my-term-assistant); animation: my-term-pulse 1s ease-in-out infinite;
+}
+.my-term__stop {
+  border: 1px solid var(--my-error); border-radius: var(--my-r-control);
+  background: none; color: var(--my-error);
+  padding: 2px 9px; font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-medium); cursor: pointer;
+}
+.my-term__stop:hover:not(:disabled) { background: var(--my-error-soft); }
+.my-term__stop:disabled { border-color: var(--my-disabled-ink); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-term__stop:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__stop.is-prominent { background: var(--my-error); color: var(--my-term-ink); }
+.my-term__stop-key { opacity: .7; }
+
+/* body */
+.my-term__body { padding: var(--my-sp-3) var(--my-sp-4); overflow: auto; flex: 1; }
+.my-term__body:focus-visible { outline: 2px solid var(--my-accent); outline-offset: -2px; }
+
+/* the two in-terminal banners (wake-unavailable · stale). Warn soft + a dot; never a spinner —
+   neither banner claims a retry is under way, so neither may look like one. */
+.my-term__banner {
+  display: flex; gap: var(--my-sp-2); align-items: center;
+  background: var(--my-warn-soft); color: var(--my-warn);
+  border-radius: var(--my-r-control); padding: 6px 10px; margin-bottom: 10px;
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+}
+.my-term__banner-dot {
+  width: 7px; height: 7px; border-radius: var(--my-r-pill); flex: none;
+  background: currentColor; animation: my-term-pulse 1s ease-in-out infinite;
+}
+
+/* state copy (loading · missing · unaddressable · failed · no events) */
+.my-term__state { color: var(--my-term-dim); }
+
+/* rows */
+.my-term__row { display: block; color: var(--my-term-ink); white-space: pre-wrap; word-break: break-word; }
+.my-term__row--assistant { color: var(--my-term-ink); }
+.my-term__row--user { color: var(--my-term-user); }
+.my-term__row--tool, .my-term__row--result, .my-term__row--system { color: var(--my-term-dim); }
+.my-term__row--boundary { color: var(--my-term-assistant); }
+.my-term__row--dim { color: var(--my-term-dim); }
+/* client-synthetic rows read as UI-originated, never as output from the far side */
+.my-term__row--local { color: var(--my-term-dim); font-style: italic; }
+.my-term__label { color: var(--my-term-assistant); font-weight: var(--my-fw-medium); }
+.my-term__row--user .my-term__label { color: var(--my-term-user); }
+.my-term__row--tool .my-term__label,
+.my-term__row--result .my-term__label,
+.my-term__row--system .my-term__label { color: var(--my-term-dim); }
+
+/* expandable rows — collapsed by default, highlight on hover (design card) */
+.my-term__head {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  border: 0; background: none; color: inherit; font: inherit;
+  border-radius: var(--my-r-control); padding: 0 6px; margin: 0 -6px;
+}
+.my-term__head:hover { background: var(--my-surface-hover); color: var(--my-term-ink); }
+.my-term__head:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__expand { text-decoration: underline; }
+.my-term__detail {
+  margin: var(--my-sp-1) 0 var(--my-sp-2); padding: var(--my-sp-2);
+  background: var(--my-surface-hover); border-radius: var(--my-r-control);
+  color: var(--my-term-ink); white-space: pre-wrap; word-break: break-word;
+  font-family: var(--my-font-mono);
+}
+
+/* foreign transcript segments — behind the toggle, captioned, visually separated */
+.my-term__more {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  color: var(--my-term-dim); display: block; margin-bottom: var(--my-sp-2);
+}
+.my-term__more:hover { color: var(--my-term-ink); }
+.my-term__more:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__hist { border-left: 2px solid var(--my-border); padding-left: var(--my-sp-3); margin-bottom: var(--my-sp-3); }
+.my-term__hist-cap {
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  color: var(--my-term-dim); margin-bottom: var(--my-sp-1);
+}
+
+/* streaming caret — blinks 1/s, paused under prefers-reduced-motion (design card) */
+.my-term__caret {
+  display: inline-block; width: 7px; height: 14px; vertical-align: -2px;
+  background: var(--my-term-assistant); animation: my-term-blink 1s steps(1) infinite;
+}
+@keyframes my-term-blink { 50% { opacity: 0; } }
+@keyframes my-term-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .my-term__caret, .my-term__banner-dot, .my-term__turn-dot { animation: none; }
+}
+
+/* ── queue (app chrome — follows the app theme) ────────────────────────── */
+.my-queue { display: block; }
+.my-queue__list { display: block; }
+.my-queue__state, .my-queue__stale { font-size: var(--my-fs-caption); color: var(--my-muted); margin-top: var(--my-sp-2); }
+.my-queue__stale { color: var(--my-warn); }
+.my-queue__empty {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--my-border); border-radius: var(--my-r-card);
+  padding: 9px 12px; margin-top: var(--my-sp-2);
+  font-size: var(--my-fs-caption); color: var(--my-muted); background: none;
+}
+
+/* ── queue row ─────────────────────────────────────────────────────────── */
+.my-qrow {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: 8px; padding: 9px 12px; margin-top: var(--my-sp-2);
+  font-size: var(--my-fs-mono); color: var(--my-ink);
+  transition: background var(--my-t-fast);
+}
+.my-qrow:hover { background: var(--my-surface-hover); }
+.my-qrow__body { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-qrow__status { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+/* per-status presentation. The status WORD is always rendered next to the row (queueStatusLabel),
+   so these tints reinforce it and never carry it alone (token rule 7). `queued` is the default
+   presentation — it takes no modifier styling. */
+.my-qrow--queued { }
+.my-qrow--leased .my-qrow__status { color: var(--my-accent-strong); }
+.my-qrow--delivered .my-qrow__body,
+.my-qrow--canceled .my-qrow__body { color: var(--my-muted); }
+.my-qrow--canceled .my-qrow__body { text-decoration: line-through; }
+.my-qrow__cancel {
+  margin-left: auto; flex: none; cursor: pointer;
+  border: 0; background: none; font: inherit; font-size: var(--my-fs-caption);
+  color: var(--my-muted); padding: 0;
+}
+.my-qrow__cancel:hover { color: var(--my-error); }
+.my-qrow__cancel:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+/* two-step confirm, inside the row — never a modal for a queue item (design card) */
+.my-qrow.is-confirm { background: var(--my-error-soft); border-color: var(--my-error); }
+.my-qrow__ask { color: var(--my-error); font-weight: var(--my-fw-medium); }
+.my-qrow__acts { margin-left: auto; display: flex; gap: 6px; flex: none; }
+.my-qmini {
+  border-radius: 5px; padding: 3px 10px; cursor: pointer;
+  font-family: inherit; font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  border: 1px solid transparent;
+}
+.my-qmini:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-qmini--yes { background: var(--my-error); color: var(--my-surface); }
+.my-qmini--no { background: var(--my-surface); border-color: var(--my-control-border); color: var(--my-ink); }
+.my-qbadge {
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  border-radius: 5px; padding: 2px 7px; letter-spacing: .4px; flex: none;
+}
+.my-qbadge--asap { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-qbadge--done { background: var(--my-disabled-bg); color: var(--my-muted); }
+
+/* ── send bar (app chrome — follows the app theme) ─────────────────────── */
+.my-sendbar-wrap { display: block; }
+.my-sendbar { display: flex; gap: var(--my-sp-2); align-items: flex-start; }
+.my-sendbar__seg { display: inline-flex; flex: none; }
+.my-sendbar__cls {
+  border: 1px solid var(--my-control-border); background: var(--my-surface);
+  color: var(--my-muted); cursor: pointer;
+  padding: 8px 10px; font-family: inherit; font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-bold); letter-spacing: .4px;
+}
+.my-sendbar__seg .my-sendbar__cls:first-child { border-radius: var(--my-r-control) 0 0 var(--my-r-control); }
+.my-sendbar__seg .my-sendbar__cls:last-child { border-radius: 0 var(--my-r-control) var(--my-r-control) 0; margin-left: -1px; }
+.my-sendbar__cls.is-on { background: var(--my-accent-soft); color: var(--my-accent-strong); border-color: var(--my-accent); z-index: 1; }
+.my-sendbar__cls:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; z-index: 1; }
+.my-sendbar__cls:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-sendbar__input {
+  flex: 1; min-width: 0; resize: vertical;
+  border: 1px solid var(--my-control-border); border-radius: var(--my-r-control);
+  padding: 8px 12px; font: inherit; font-size: var(--my-fs-body);
+  background: var(--my-surface); color: var(--my-ink);
+}
+.my-sendbar__input:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-sendbar__input:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-sendbar__send {
+  border: 0; border-radius: var(--my-r-control); cursor: pointer; flex: none;
+  padding: 8px 14px; font-family: inherit; font-size: var(--my-fs-body);
+  font-weight: var(--my-fw-medium); background: var(--my-ink); color: var(--my-bg);
+}
+.my-sendbar__send:hover:not(:disabled) { background: var(--my-ink-hover); }
+.my-sendbar__send:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-sendbar__send:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-sendbar__hint { font-size: var(--my-fs-micro); color: var(--my-muted); margin-top: 6px; }
+.my-sendbar__notice { font-size: var(--my-fs-micro); color: var(--my-warn); margin-top: 6px; }
+/* static title line — used instead of .my-term__noise when the pane has no noise toggle, so a
+   non-interactive caption never gets a pointer cursor it cannot honor */
+.my-term__title { color: var(--my-term-dim); }
