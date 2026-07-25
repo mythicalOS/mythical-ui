@@ -1,9 +1,9 @@
 # @mythicalos/shell
 
 The mythicalOS **Preact-only FAMILY SHELL** — the central, cross-product modules that must be
-identical across every product (BROKKR / SKULD / SAGA / EDDA). Its reason to exist is the
-**product selector**; it also owns the top bar, nav, the list+detail workspace, and the settings
-layout. Apache-2.0.
+identical across every product (BROKKR / SKULD / SAGA). Its reason to exist is the **product
+selector**; it also owns the top bar, nav, the list+detail workspace, and the settings layout.
+Apache-2.0.
 
 A future React product (**asgard**) gets its **own React shell** later — this package is
 deliberately Preact-only; no React, no `preact/compat`.
@@ -48,19 +48,34 @@ import { Button, Toast, ConfirmDialog } from "@mythicalos/preact-ui";
 
 ## The product selector (flagship)
 
-The one component that makes four products feel like one. The logo *is* the trigger; clicking it
-opens the family panel from the shared registry (`PRODUCTS`, in `src/products.ts`).
+The one component that makes the products feel like one. The logo *is* the trigger; clicking it
+opens the family panel from the shared registry (`PRODUCTS`, in `src/products.ts`), followed by a
+**command center** section holding `ASGARD`.
 
 ```jsx
 <ProductSwitcher
-  current="brokkr"                              // → "here" badge
+  current="brokkr"                              // → "here" badge + the logo's mark
   onNavigate={(p) => location.assign(p.href)}    // wire to hash routing
   onUnbuilt={(p) => toast(`${p.name} isn't built yet.`)}
 />
 ```
 
-Adding a product to the whole family is **one entry** in `PRODUCTS`. ASGARD is intentionally held
-out and shown as a footer note (`FAMILY_NOTE`) until it ships.
+Adding a product to the whole family is **one entry** in `PRODUCTS`.
+
+Three behaviors worth knowing:
+
+- **The mark is the product you are in.** `Logo` renders `current`'s product glyph — the same
+  rule in every logo slot (top bar, auth screen, wizard header). A key with no registered glyph
+  art falls back to the generic family mark (`LogoMark`), so the slot is never empty.
+- **The current row's role line gets a `· this container` suffix**, derived from `current` at
+  render time. Registry roles stay context-free, so the suffix is never false in another
+  product's menu.
+- **`ASGARD` is not in `PRODUCTS`** — it renders in its own command-center section. It is not
+  built, so it deliberately ships the *not-yet-built* dot and routes clicks to `onUnbuilt`
+  instead of navigating. This package never renders a state it has not proven.
+
+`PRODUCTS` hrefs are **placeholders** (`/brokkr`, `/skuld`, `/saga`). A product that knows where
+its siblings actually live should resolve the real target in `onNavigate` and ignore `href`.
 
 ## useTheme — storageKey
 
@@ -85,12 +100,14 @@ const { theme, toggle } = useTheme("light", { storageKey: "mythical.ui.theme" })
 | Export | Purpose |
 |---|---|
 | `ProductSwitcher` | the family product selector |
-| `Logo`, `LogoMark` | the mythical mark + two-line wordmark |
+| `Logo` | the current product's glyph + two-line wordmark |
+| `LogoMark` | the generic family mark — `Logo`'s fallback for a key with no glyph art |
 | `TopBar`, `TopBar.Right` | 56px sticky top-bar shell |
 | `NavTabs` | primary nav pills (accent-soft active) |
 | `WorkspaceSplit` + `RailHead`/`RailList`/`RailGroup`/`RailCard` | the 320px rail + detail pattern |
 | `SettingsLayout`, `SettingsNav` | 260px settings nav + detail |
-| `PRODUCTS`, `FAMILY_NOTE` | the shared family registry |
+| `PRODUCTS`, `ASGARD` | the shared family registry + the command-center entry |
+| `FAMILY_NOTE` | *deprecated* — the retired footer-note copy, still exported for compatibility |
 | `useTheme` | light/heritage-dark; persists (configurable key) + sets `<html data-theme>` |
 
 Generic components (`Chip`, `Card`, `Avatar`, `StatusLine`, `SearchInput`, `Banner`, `Gauge`, …)
@@ -107,11 +124,16 @@ top-of-file comment for the full token-fidelity/remap notes.
 
 ## Provenance
 
-Ports design-export's `mythical-ui` v0.1.0 (JSX → typed TSX), the repo the design-export README
-describes as "the layer you asked to create as a new, future-OSS repository." Content (the family
-registry, class names, behavior) is kept faithful to that export; `useTheme`'s `storageKey` option
-is the one deliberate addition, added so existing installs (BROKKR) don't lose a user's theme
-choice.
+Ports the design source's `mythical-ui` v0.1.0 (JSX → typed TSX), described there as "the layer
+you asked to create as a new, future-OSS repository." Content (the family registry, class names,
+behavior) is kept faithful to it, with three deliberate departures:
+
+- `useTheme`'s `storageKey` option, so an existing install doesn't lose a user's theme choice;
+- the `· this container` suffix and the registry `state` values are **derived**, not copied — the
+  design source is one product's page, so anything it states about "the product you're in" has to
+  follow `current` here, and any state has to follow what actually ships;
+- the command-center row copies the design source's *structure* but not its "online" dot or its
+  navigation target, because ASGARD is not built (see above).
 
 ## License
 

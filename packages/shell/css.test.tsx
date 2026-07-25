@@ -5,17 +5,18 @@
 // app/page frame) that this package's components render. This guards:
 //   (a) zero hard-coded hex colors outside CSS comments (everything visual is a --my-* token),
 //   (b) tokens-only discipline for font-size: every declaration uses a var(--my-fs-*) token,
-//       EXCEPT the two documented literal exceptions (see styles.css's top-of-file fidelity
-//       note): `.my-logo__product` (8px) and `.my-switcher__here` (9px), where the nearest scale
-//       step is a >20% jump judged too large to snap silently. Unlike ui-core's BASE/ADDITIONS
-//       split, this file has no inherited legacy section to exempt wholesale — it is all new
-//       extraction for this task — so the allowance here is a narrow, named allowlist of exactly
-//       those two declarations, not a whole-section carve-out.
+//       EXCEPT the documented literal exceptions (see styles.css's top-of-file fidelity note):
+//       `.my-logo__product` (8px), `.my-switcher__here` (9px) and `.my-switcher__section` (9px),
+//       where the nearest scale step is a >20% jump judged too large to snap silently. Unlike
+//       ui-core's BASE/ADDITIONS split, this file has no inherited legacy section to exempt
+//       wholesale — it is all new extraction — so the allowance here is a narrow, named allowlist
+//       of exactly those three declarations, not a whole-section carve-out.
 //   (c) every --my-* token *referenced* here actually exists in the canonical tokens.css,
 //   (d) none of ui-core's ATOM classes (button/input/toggle/checkbox/chip/card/avatar/status/
 //       search/banner/gauge/toast/dialog/empty/spine/…) are redefined here — the mirror image of
 //       ui-core's own test/css.test.ts (d), which forbids every prefix this file owns,
-//   (e) every class this package's components actually render has a real selector in this file.
+//   (e) every class this package's components actually render has a real selector in this file,
+//   (f) the switcher panel's command-center section matches the design source's metrics.
 
 import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
@@ -68,17 +69,18 @@ describe("styles.css — (a) zero hard-coded hex colors outside comments", () =>
 });
 
 describe("styles.css — (b) tokens-only discipline: font-size resolves through --my-fs-* tokens", () => {
-  const ALLOWED_LITERALS = new Set(["8px", "9px"]); // .my-logo__product, .my-switcher__here — see fidelity note
+  // .my-logo__product (8px); .my-switcher__here + .my-switcher__section (9px) — see fidelity note
+  const ALLOWED_LITERALS = new Set(["8px", "9px"]);
 
-  test("every raw px font-size declaration is one of the two documented, named exceptions", () => {
+  test("every raw px font-size declaration is one of the documented, named exceptions", () => {
     const rawPxFontSizes = Array.from(css.matchAll(/font-size:\s*([\d.]+px)/g)).map((m) => m[1]!);
     const unexpected = rawPxFontSizes.filter((v) => !ALLOWED_LITERALS.has(v));
     expect(unexpected).toEqual([]);
   });
 
-  test("both documented exceptions are still present (guards the allowlist from silently widening)", () => {
-    expect(css).toContain("font-size: 8px");
-    expect(css).toContain("font-size: 9px");
+  test("the documented exceptions are still present, and no more of them than documented", () => {
+    expect((css.match(/font-size: 8px/g) ?? []).length).toBe(1);
+    expect((css.match(/font-size: 9px/g) ?? []).length).toBe(2);
   });
 });
 
@@ -243,5 +245,29 @@ describe("styles.css — (e) every class this package's components render exists
 
   test("no export ever emits an inline style attribute (CSP style-src 'self')", () => {
     for (const html of renders) expect(html).not.toContain("style=");
+  });
+});
+
+describe("styles.css — (f) the switcher's command-center section matches the design source", () => {
+  test("the panel divider uses the design source's 7px 8px 4px margin", () => {
+    const rule = css.match(/\.my-switcher__divider\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    expect(rule?.[0]).toContain("margin: 7px 8px 4px");
+  });
+
+  test(".my-switcher__section carries the design source's label metrics", () => {
+    const rule = css.match(/\.my-switcher__section\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    const r = rule![0];
+    expect(r).toContain("font-size: 9px");
+    expect(r).toContain("letter-spacing: 1.4px");
+    expect(r).toContain("text-transform: uppercase");
+    expect(r).toContain("padding: 3px 10px 4px");
+    expect(r).toContain("var(--my-muted)");
+  });
+
+  test("the retired footer-note rules are gone — no component renders them any more", () => {
+    expect(hasClassSelector(css, "my-switcher__note")).toBe(false);
+    expect(hasClassSelector(css, "my-switcher__note-glyph")).toBe(false);
   });
 });

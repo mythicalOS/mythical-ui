@@ -1,6 +1,6 @@
-// @mythicalos/shell — barrel. Mirrors design-export's mythical-ui/src/index.js export surface:
-// the mythical FAMILY SHELL, the central modules that must be identical across every product
-// (BROKKR / SKULD / SAGA / EDDA), built on top of:
+// @mythicalos/shell — barrel. Mirrors the design source's export surface: the mythical FAMILY
+// SHELL, the central modules that must be identical across every product in the family, built on
+// top of:
 //   • tokens CSS              → import '@mythicalos/tokens/tokens.css' once
 //   • @mythicalos/preact-ui   → executable atoms (Button, Input, Toast, ConfirmDialog, Chip, …)
 //   • @mythicalos/ui-core/styles.css → the atoms' stylesheet
@@ -37,7 +37,7 @@ export {
   type SettingsNavProps,
   type SettingsNavItem,
 } from "./Settings.js";
-export { PRODUCTS, FAMILY_NOTE, type Product, type ProductState } from "./products.js";
+export { PRODUCTS, ASGARD, FAMILY_NOTE, type Product, type ProductState } from "./products.js";
 export {
   useTheme,
   DEFAULT_THEME_STORAGE_KEY,

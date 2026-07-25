@@ -33,10 +33,11 @@
        to leave untouched, unlike ui-core's inherited sheet), so every font-size resolves through
        a --my-fs-* token — snapped to the nearest scale step, mirroring the normalization
        ui-core's own ADDITIONS section applied (e.g. its 12.5px→--my-fs-caption,
-       10px→--my-fs-micro). Two literals were evaluated and deliberately left un-mapped because
-       the nearest token is a large (>1.5px / ~20%+) jump that would visibly change the design:
-       `.my-logo__product` (8px — below the --my-fs-micro floor of 11px) and
-       `.my-switcher__here` (9px — nearest step is 11px, +22%). Both are marked below. */
+       10px→--my-fs-micro). Two literal VALUES (across three declarations) were evaluated and
+       deliberately left un-mapped because the nearest token is a large (>1.5px / ~20%+) jump
+       that would visibly change the design: 8px (`.my-logo__product` — below the --my-fs-micro
+       floor of 11px) and 9px (`.my-switcher__here` and `.my-switcher__section` — nearest step is
+       11px, +22%). All three are marked below. */
 
 /* @section: shell */
 
@@ -232,20 +233,18 @@
 .my-switcher__dot--here { background: var(--my-accent); }
 .my-switcher__dot--online { background: var(--my-ok); }
 .my-switcher__dot--soon { background: var(--my-border); }
-.my-switcher__divider { height: 1px; background: var(--my-border); margin: 6px 8px; }
-.my-switcher__note {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  padding: 6px 10px 8px;
-  font-size: var(--my-fs-micro); /* export: literal 11px — exact match, lossless */
+.my-switcher__divider { height: 1px; background: var(--my-border); margin: 7px 8px 4px; }
+/* Section label above the panel's command-center row ("command center"), the sibling of
+   `.my-switcher__heading` above the product rows. */
+.my-switcher__section {
+  /* export: literal 9px — left as literal (see fidelity note above): nearest step is
+     --my-fs-micro at 11px, a +22% jump. Same call, same value, as `.my-switcher__here`. */
+  font-size: 9px;
+  font-weight: var(--my-fw-bold); /* export: literal 650 — exact match, lossless */
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
   color: var(--my-muted);
-  line-height: 1.45;
-}
-.my-switcher__note-glyph {
-  flex: none;
-  display: flex;
-  align-items: center; /* the asgard glyph mark (was a text ✦ before the glyph pass) */
+  padding: 3px 10px 4px;
 }
 
 /* ═══ Nav tabs ═════════════════════════════════════════════════════════════ */

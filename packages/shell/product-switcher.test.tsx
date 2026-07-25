@@ -25,8 +25,10 @@ import { describe, expect, test } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToString } from "preact-render-to-string";
-import { PRODUCTS, ProductSwitcher, type Product } from "./src/index.ts";
+import { ASGARD, PRODUCTS, ProductSwitcher, type Product } from "./src/index.ts";
 import {
+  COMMAND_CENTER_LABEL,
+  CURRENT_ROLE_SUFFIX,
   resolveSwitcherPick,
   SwitcherPanel,
   type ResolveSwitcherPickHandlers,
@@ -63,6 +65,32 @@ describe("ProductSwitcher — closed render (the only state reachable without a 
     const html = renderToString(<ProductSwitcher current="nonexistent" />);
     expect(html).toContain("my-switcher__trigger");
   });
+
+  // ── the mark is the product you are in (design source: every logo slot renders the current
+  //    product's glyph) ──────────────────────────────────────────────────────────────────────
+  test("the trigger's mark is the CURRENT product's glyph, not a generic family mark", () => {
+    const brokkr = renderToString(<ProductSwitcher current="brokkr" />);
+    const skuld = renderToString(<ProductSwitcher current="skuld" />);
+    const saga = renderToString(<ProductSwitcher current="saga" />);
+    // each product's own glyph art, taken from ProductGlyph's registry
+    expect(brokkr).toContain('x="28" y="24" width="34" height="17"'); // brokkr's hammer head
+    expect(skuld).toContain("M10 24c26 0 34 20 46 23"); // skuld's spun thread
+    expect(saga).toContain('cx="44" cy="22"'); // saga's scroll/volume ellipse
+    // and never each other's
+    expect(brokkr).not.toContain("M10 24c26 0 34 20 46 23");
+    expect(skuld).not.toContain('x="28" y="24" width="34" height="17"');
+  });
+
+  test("the trigger's mark renders at the design source's 30px logo-slot size", () => {
+    const html = renderToString(<ProductSwitcher current="brokkr" />);
+    expect(html).toContain('width="30" height="30"');
+  });
+
+  test("a current key with no registered glyph art still renders a mark — never a hole in the top bar", () => {
+    const html = renderToString(<ProductSwitcher current="nonexistent" />);
+    expect(html).toContain("my-logo__mark");
+    expect(html).toContain("M48 204V72L128 152L208 72V168"); // the generic family mark, as fallback
+  });
 });
 
 describe("SwitcherPanel — the open panel's markup, exercised directly (see depth note above)", () => {
@@ -83,7 +111,7 @@ describe("SwitcherPanel — the open panel's markup, exercised directly (see dep
     );
     expect(html).toContain('role="menu"');
     const menuitemCount = (html.match(/role="menuitem"/g) ?? []).length;
-    expect(menuitemCount).toBe(PRODUCTS.length);
+    expect(menuitemCount).toBe(PRODUCTS.length + 1); // + the command-center (ASGARD) row
   });
 
   test("the current product gets the here badge, is-current class, and the accent dot", () => {
@@ -104,18 +132,46 @@ describe("SwitcherPanel — the open panel's markup, exercised directly (see dep
     expect(html).toContain("my-switcher__dot--online");
   });
 
-  test("a 'soon' product gets the soon dot", () => {
+  test("every shipped product gets the online dot — none of them is dressed as unbuilt", () => {
     const html = renderToString(
       <SwitcherPanel current="brokkr" products={PRODUCTS} note="note text" onPick={noop} />,
     );
-    expect(html).toContain("my-switcher__dot--soon");
+    const online = (html.match(/my-switcher__dot--online/g) ?? []).length;
+    expect(online).toBe(PRODUCTS.length - 1); // all but the current one, which is "here"
   });
 
-  test("renders the footer note", () => {
+  // ── the current row's role carries the "this container" suffix; no other row does ──────────
+  test("the current product's role line gets the ' · this container' suffix", () => {
     const html = renderToString(
-      <SwitcherPanel current="brokkr" products={PRODUCTS} note="ASGARD note text" onPick={noop} />,
+      <SwitcherPanel current="skuld" products={PRODUCTS} note="n" onPick={noop} />,
     );
-    expect(html).toContain("ASGARD note text");
+    const skuld = PRODUCTS.find((p) => p.key === "skuld")!;
+    expect(html).toContain(
+      `${skuld.role.replace(/&/g, "&amp;")}${CURRENT_ROLE_SUFFIX}</span>`,
+    );
+  });
+
+  test("the suffix follows `current` — every other row keeps its bare registry role", () => {
+    const html = renderToString(
+      <SwitcherPanel current="skuld" products={PRODUCTS} note="n" onPick={noop} />,
+    );
+    // exactly one row is suffixed, no matter which product is current
+    expect((html.match(/ · this container/g) ?? []).length).toBe(1);
+    for (const p of PRODUCTS) {
+      if (p.key === "skuld") continue;
+      expect(html).toContain(`${p.role.replace(/&/g, "&amp;")}</span>`);
+    }
+  });
+
+  test("the suffix moves with `current` rather than being pinned to one product", () => {
+    for (const cur of PRODUCTS) {
+      const html = renderToString(
+        <SwitcherPanel current={cur.key} products={PRODUCTS} note="n" onPick={noop} />,
+      );
+      expect(html).toContain(
+        `${cur.role.replace(/&/g, "&amp;")}${CURRENT_ROLE_SUFFIX}</span>`,
+      );
+    }
   });
 
   test("a custom products list is honored (adding a product is one registry entry)", () => {
@@ -128,9 +184,87 @@ describe("SwitcherPanel — the open panel's markup, exercised directly (see dep
   });
 });
 
+describe("SwitcherPanel — the command-center section (design source: divider + label + ASGARD row)", () => {
+  const html = renderToString(
+    <SwitcherPanel current="brokkr" products={PRODUCTS} note={ASGARD.role} onPick={noop} />,
+  );
+
+  test("renders the divider, then the 'command center' section label", () => {
+    expect(html).toContain("my-switcher__divider");
+    expect(html).toContain(`<div class="my-switcher__section">${COMMAND_CENTER_LABEL}</div>`);
+    expect(html.indexOf("my-switcher__divider")).toBeLessThan(html.indexOf("my-switcher__section"));
+  });
+
+  test("the ASGARD row uses the same markup shape as a product row, below the label", () => {
+    const at = html.indexOf("my-switcher__section");
+    const tail = html.slice(at);
+    expect(tail).toContain("my-switcher__item");
+    expect(tail).toContain("my-switcher__mark");
+    expect(tail).toContain("my-switcher__body");
+    expect(tail).toContain("ASGARD");
+    expect(tail).toContain("Cross-family command center");
+    expect(tail).toContain("my-switcher__dot");
+  });
+
+  test("the row is a menuitem — the panel's menuitem count is products + the command-center row", () => {
+    expect((html.match(/role="menuitem"/g) ?? []).length).toBe(PRODUCTS.length + 1);
+  });
+
+  test("no 'here' badge on the command-center row (the design source has none)", () => {
+    const tail = html.slice(html.indexOf("my-switcher__section"));
+    expect(tail).not.toContain("my-switcher__here");
+    expect(tail).not.toContain("is-current");
+  });
+
+  test("honesty deviation: the row ships the NOT-BUILT dot, never the design source's online dot", () => {
+    const tail = html.slice(html.indexOf("my-switcher__section"));
+    expect(tail).toContain("my-switcher__dot--soon");
+    expect(tail).not.toContain("my-switcher__dot--online");
+  });
+
+  test("the section label is the only soon dot in the panel — no shipped product wears one", () => {
+    expect((html.match(/my-switcher__dot--soon/g) ?? []).length).toBe(1);
+  });
+
+  test("the row's secondary line is the `note` prop, so a caller's value is never silently dropped", () => {
+    const custom = renderToString(
+      <SwitcherPanel current="brokkr" products={PRODUCTS} note="custom note copy" onPick={noop} />,
+    );
+    expect(custom).toContain("custom note copy");
+  });
+
+  test("clicking it hands the ASGARD entry to onPick (which routes it to onUnbuilt, never a fake navigation)", () => {
+    let picked: Product | undefined;
+    renderToString(
+      <SwitcherPanel
+        current="brokkr"
+        products={PRODUCTS}
+        note={ASGARD.role}
+        onPick={(p) => (picked = p)}
+      />,
+    );
+    // render-to-string can't click; assert the routing contract the row's onPick feeds instead
+    let unbuilt: Product | undefined;
+    let navigated = false;
+    const result = resolveSwitcherPick(ASGARD, "brokkr", {
+      onNavigate: () => (navigated = true),
+      onUnbuilt: (p) => (unbuilt = p),
+    });
+    expect(result.action).toBe("unbuilt");
+    expect(unbuilt).toBe(ASGARD);
+    expect(navigated).toBe(false);
+    expect(picked).toBeUndefined(); // no click happened — guards against a stray render-time call
+  });
+
+  test("the panel no longer renders the retired prose footer note", () => {
+    expect(html).not.toContain("my-switcher__note");
+    expect(html).not.toContain("arrives later");
+  });
+});
+
 describe("resolveSwitcherPick — the pure click-routing decision (no DOM required)", () => {
   const brokkr = PRODUCTS.find((p) => p.key === "brokkr")!;
-  const saga = PRODUCTS.find((p) => p.key === "saga")!; // state: 'soon', href: null
+  const saga = PRODUCTS.find((p) => p.key === "saga")!; // ships and runs: online, navigable
 
   test("clicking the current product is a no-op — neither handler fires", () => {
     let navigated = false;
@@ -144,16 +278,45 @@ describe("resolveSwitcherPick — the pure click-routing decision (no DOM requir
     expect(unbuilt).toBe(false);
   });
 
-  test("a 'soon' / href-less product calls onUnbuilt, never onNavigate", () => {
+  test("a 'soon' / href-less entry calls onUnbuilt, never onNavigate", () => {
     let navigated = false;
     let unbuiltProduct: Product | undefined;
-    const result = resolveSwitcherPick(saga, "brokkr", {
+    const result = resolveSwitcherPick(ASGARD, "brokkr", {
       onNavigate: () => (navigated = true),
       onUnbuilt: (p) => (unbuiltProduct = p),
     });
     expect(result.action).toBe("unbuilt");
     expect(navigated).toBe(false);
-    expect(unbuiltProduct).toBe(saga);
+    expect(unbuiltProduct).toBe(ASGARD);
+  });
+
+  // ── saga ships: a click must reach the consumer's onNavigate (where its live probe runs),
+  //    not be short-circuited into "isn't built yet" ────────────────────────────────────────
+  test("saga routes to onNavigate — the consumer's live resolver gets to run", () => {
+    let unbuilt = false;
+    let navigatedTo: Product | undefined;
+    const result = resolveSwitcherPick(saga, "brokkr", {
+      onNavigate: (p) => (navigatedTo = p),
+      onUnbuilt: () => (unbuilt = true),
+    });
+    expect(result.action).toBe("navigate-handled");
+    expect(navigatedTo).toBe(saga);
+    expect(unbuilt).toBe(false);
+  });
+
+  test("every registry product routes to onNavigate from every other product's menu", () => {
+    for (const from of PRODUCTS) {
+      for (const to of PRODUCTS) {
+        if (to.key === from.key) continue;
+        let unbuilt = false;
+        const result = resolveSwitcherPick(to, from.key, {
+          onNavigate: () => {},
+          onUnbuilt: () => (unbuilt = true),
+        });
+        expect(result.action).toBe("navigate-handled");
+        expect(unbuilt).toBe(false);
+      }
+    }
   });
 
   test("an 'online' non-current product with a caller-supplied onNavigate calls it, not onUnbuilt", () => {
@@ -220,7 +383,7 @@ describe("product glyphs — the navigation marks (product-navigation reference)
     const html = renderToString(
       <SwitcherPanel current="brokkr" products={PRODUCTS} note="n" onPick={noop} />,
     );
-    // one glyph per product row + one for the asgard footer note
+    // one glyph per product row + one for the command-center (ASGARD) row
     const glyphCount = (html.match(/class="my-glyph"/g) ?? []).length;
     expect(glyphCount).toBe(PRODUCTS.length + 1);
     for (const p of PRODUCTS) expect(html).not.toContain(`>${p.initial}</span>`);
@@ -235,12 +398,22 @@ describe("product glyphs — the navigation marks (product-navigation reference)
     expect(html).not.toMatch(/#(16181D|0F6B66|ECE7DE|3FB8AE)/i);
   });
 
-  test("the footer note carries the asgard glyph (the arch), not a text glyph", () => {
+  test("the command-center row carries the asgard glyph (the arch), not a text glyph", () => {
     const html = renderToString(
       <SwitcherPanel current="brokkr" products={PRODUCTS} note="n" onPick={noop} />,
     );
     expect(html).toContain("M12 53C12 17 84 17 84 53"); // the bifröst arch path
     expect(html).not.toContain("✦");
+  });
+
+  test("the command-center row's mark is a 32px tile holding the glyph at the row size (20px), same as a product row", () => {
+    const html = renderToString(
+      <SwitcherPanel current="brokkr" products={PRODUCTS} note="n" onPick={noop} />,
+    );
+    const tail = html.slice(html.indexOf("my-switcher__section"));
+    expect(tail).toContain('class="my-switcher__mark"');
+    expect(tail).toContain('width="20" height="20"'); // the tile itself is 32px, in styles.css
+    expect((html.match(/width="20" height="20"/g) ?? []).length).toBe(PRODUCTS.length + 1);
   });
 
   test("a custom product key without registered art falls back to the initial letter", () => {

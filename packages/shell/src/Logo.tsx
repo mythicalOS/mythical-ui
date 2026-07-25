@@ -1,15 +1,27 @@
 /** @jsxImportSource preact */
-// @mythicalos/shell — the mythical family mark + two-line wordmark. Shared by every product;
-// only the wordmark's product line changes. Colors come from tokens (var(--my-*)), so it themes
-// automatically.
+// @mythicalos/shell — the family mark + two-line wordmark. Shared by every product; the mark is
+// the product you are in, the wordmark's second line names it. Colors come from tokens
+// (var(--my-*)), so it themes automatically.
 //
-// Ported from design-export's mythical-ui/src/components/Logo.jsx (JSX→TSX, typed props).
+// Mark: the design source renders the CURRENT PRODUCT's glyph in every logo slot (top bar, auth
+// screen, setup-wizard header) at 30×30 — the family convention is "the mark is the product you
+// are in", and the product glyphs already live in ProductGlyph.tsx. `Logo` therefore renders
+// <ProductGlyph> for the resolved product key. A key with no registered art falls back to
+// `LogoMark` (the generic family mark) so the slot is never empty — a hole in the top bar is
+// worse than a generic mark.
+
+import { ProductGlyph, hasProductGlyph } from "./ProductGlyph.js";
 
 export interface LogoMarkProps {
   size?: number;
 }
 
-/** The branching "M" with petrol nodes. */
+/**
+ * The generic family mark (the branching "M" with petrol nodes). No longer the default mark —
+ * `Logo` renders the current product's glyph — but kept exported: it is the fallback for a
+ * product key without registered art, and removing a public export of a published package would
+ * break any consumer that renders it directly.
+ */
 export function LogoMark({ size = 34 }: LogoMarkProps) {
   return (
     <span class="my-logo__mark" aria-hidden="true">
@@ -33,16 +45,32 @@ export function LogoMark({ size = 34 }: LogoMarkProps) {
 }
 
 export interface LogoProps {
-  /** The per-product line rendered under "mythical" (e.g. "brokkr", "skuld", …). */
+  /** The per-product line rendered under "mythical" (e.g. "brokkr", "skuld", …). Also selects the
+   *  mark's glyph unless `productKey` is given. */
   product?: string;
+  /** Registry key of the product whose glyph the mark shows (e.g. 'brokkr'). Defaults to
+   *  `product` — which is already the product key for every family product, whose wordmark line
+   *  is its lowercased name. Pass it explicitly when a product's display line and its registry
+   *  key differ. */
+  productKey?: string;
+  /** Mark size in px. 30 is the design source's logo-slot size. */
   size?: number;
 }
 
-/** The two-line wordmark: "mythical●" over the product name. */
-export function Logo({ product, size = 34 }: LogoProps) {
+/** The two-line wordmark: "mythical●" over the product name, marked by the product's glyph. */
+export function Logo({ product, productKey, size = 30 }: LogoProps) {
+  // Case-folded so a display-cased product line ("BROKKR") still resolves its glyph; every
+  // registered key is lowercase.
+  const key = (productKey ?? product ?? "").toLowerCase();
   return (
     <span class="my-logo">
-      <LogoMark size={size} />
+      {hasProductGlyph(key) ? (
+        <span class="my-logo__mark" aria-hidden="true">
+          <ProductGlyph productKey={key} size={size} />
+        </span>
+      ) : (
+        <LogoMark size={size} />
+      )}
       <span class="my-logo__word">
         <span class="my-logo__family">mythical</span>
         <span class="my-logo__product">{product}</span>
