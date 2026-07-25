@@ -517,4 +517,180 @@ a:focus-visible, .link:focus-visible, .is-focus {
    here (restated locally for the same reason the input-reveal rules above are) */
 .my-pop-trigger:focus-visible, .my-pop__item:focus-visible {
   outline: 2px solid var(--my-accent); outline-offset: 2px;
+
+/* ── file explorer & markdown preview (ds/components-file-explorer) ────────
+   A READ-ONLY two-pane explorer: the rail (header + scope picker + tree) and the preview pane
+   (breadcrumb + size/mtime header + rendered body). Every class here is derived by
+   src/logic/file-explorer.ts — this sheet only gives those class strings their look.
+
+   Two tree modes share these rules and differ only in which rows classify as what:
+   a bind MOUNT root is mono + muted (⌂); a REPO is accent-strong (⎇). See the logic module.
+
+   The four honest states (unavailable · empty · too-large · binary) each get their own modifier
+   so they are distinctly styleable, but ALL of them inherit the neutral muted note tone: none is
+   painted as a failure, because none of them is one. */
+
+.my-files__rail {
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: var(--my-r-card); overflow: hidden;
+}
+.my-files__hd { padding: var(--my-sp-3); border-bottom: 1px solid var(--my-border); flex: none; }
+.my-files__ti {
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  color: var(--my-muted); text-transform: uppercase; letter-spacing: .4px;
+}
+.my-files__count { font-weight: var(--my-fw-regular); text-transform: none; letter-spacing: 0; }
+.my-files__branch {
+  margin-left: auto; display: flex; align-items: center; gap: 5px;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-regular); color: var(--my-muted);
+  text-transform: none; letter-spacing: 0;
+}
+.my-files__branch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--my-ok); flex: none; }
+
+/* scope picker — a plain disclosure of buttons (no ARIA menu claim) */
+.my-files__scope { position: relative; margin-top: 9px; }
+.my-files__scope-btn, .my-files__scope-static {
+  width: 100%; display: flex; align-items: center; gap: var(--my-sp-2);
+  border: 1px solid var(--my-border); border-radius: 7px; padding: 6px 10px;
+  background: var(--my-bg); color: var(--my-ink);
+  font: inherit; font-size: var(--my-fs-caption); text-align: left;
+}
+.my-files__scope-btn { cursor: pointer; transition: border-color var(--my-t-fast); }
+.my-files__scope-btn:hover { border-color: var(--my-control-border); }
+.my-files__scope-btn:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-files__scope-glyph { color: var(--my-accent); font-size: var(--my-fs-micro); flex: none; }
+.my-files__scope-label {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; font-weight: var(--my-fw-bold);
+}
+.my-files__scope-caret { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+.my-files__scope-menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 5px); z-index: 10;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: 9px; box-shadow: var(--my-shadow-modal); padding: 5px;
+}
+.my-files__scope-it {
+  width: 100%; display: flex; align-items: center; gap: var(--my-sp-2);
+  border: 0; border-radius: var(--my-r-control); padding: 7px 9px;
+  background: none; color: var(--my-ink);
+  font: inherit; font-size: var(--my-fs-caption); text-align: left; cursor: pointer;
+}
+.my-files__scope-it:hover { background: var(--my-surface-hover); }
+.my-files__scope-it:focus-visible { outline: 2px solid var(--my-accent); outline-offset: -2px; }
+.my-files__scope-it--on {
+  background: var(--my-accent-soft); color: var(--my-accent-strong); font-weight: var(--my-fw-bold);
+}
+.my-files__scope-it-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-files__scope-it-count { margin-left: auto; font-family: var(--my-font-mono); font-size: var(--my-fs-micro); color: var(--my-muted); }
+.my-files__scope-it--on .my-files__scope-it-count { color: var(--my-accent-strong); }
+.my-files__scope-divider { height: 1px; background: var(--my-border); margin: var(--my-sp-1) 6px; }
+
+/* tree + rows — the WHOLE ROW is the hit target */
+.my-files__tree { flex: 1; min-height: 0; overflow: auto; padding: 7px 7px var(--my-sp-3); }
+.my-files__row {
+  width: 100%; display: flex; align-items: center; gap: 7px;
+  border: 0; border-radius: var(--my-r-control); padding: 5px var(--my-sp-2);
+  background: none; color: var(--my-ink);
+  font: inherit; font-size: var(--my-fs-caption); text-align: left;
+  cursor: pointer; margin-bottom: 1px;
+}
+.my-files__row:hover { background: var(--my-surface-hover); }
+.my-files__row:focus-visible { outline: 2px solid var(--my-accent); outline-offset: -2px; }
+.my-files__row--sel { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-files__row--sel .my-files__fname { font-weight: var(--my-fw-bold); }
+.my-files__chev { color: var(--my-muted); font-size: var(--my-fs-micro); width: 10px; flex: none; }
+.my-files__glyph { color: var(--my-accent); width: 12px; flex: none; text-align: center; }
+.my-files__spacer { width: 14px; flex: none; }
+.my-files__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a bind MOUNT reads as a path: mono + muted. A REPO reads as a repo: accent-strong. */
+.my-files__row--mount .my-files__name { font-family: var(--my-font-mono); color: var(--my-muted); }
+.my-files__row--repo .my-files__name { font-weight: var(--my-fw-bold); color: var(--my-accent-strong); }
+.my-files__row--dir .my-files__name { font-weight: var(--my-fw-medium); }
+/* a file row is the leaf: no structural emphasis, the mono name carries it */
+.my-files__row--file { font-weight: var(--my-fw-regular); }
+.my-files__fglyph {
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro);
+  color: var(--my-muted); width: 15px; flex: none; text-align: center;
+}
+.my-files__fname {
+  min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-caption);
+}
+.my-files__badge {
+  margin-left: auto; flex: none; border-radius: var(--my-r-pill); padding: 1.5px 7px;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); white-space: nowrap;
+}
+.my-files__badge--accent { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-files__badge--muted { background: var(--my-disabled-bg); color: var(--my-muted); }
+.my-files__mark { font-family: var(--my-font-mono); font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); flex: none; }
+.my-files__mark--warn { color: var(--my-warn); }
+.my-files__mark--ok { color: var(--my-ok); }
+.my-files__mark--muted { color: var(--my-muted); }
+
+/* notes — the honest states and the two informational rows. ONE neutral tone for all of them. */
+.my-files__note { display: block; padding: 5px var(--my-sp-2); font-size: var(--my-fs-micro); color: var(--my-muted); }
+.my-files__note--loading, .my-files__note--truncated,
+.my-files__note--unavailable, .my-files__note--empty,
+.my-files__note--too-large, .my-files__note--binary { color: var(--my-muted); }
+
+/* indent steps — depth-capped by indentClass(); deeper rows share the last step */
+.my-files__d0 { padding-left: var(--my-sp-2); }
+.my-files__d1 { padding-left: 22px; }
+.my-files__d2 { padding-left: 36px; }
+.my-files__d3 { padding-left: 50px; }
+.my-files__d4 { padding-left: 64px; }
+.my-files__d5 { padding-left: 78px; }
+.my-files__d6 { padding-left: 92px; }
+.my-files__d7 { padding-left: 106px; }
+.my-files__d8 { padding-left: 120px; }
+.my-files__d9 { padding-left: 134px; }
+.my-files__d10 { padding-left: 148px; }
+
+/* preview pane */
+.my-files__prev {
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: var(--my-r-card); overflow: hidden;
+}
+.my-files__prev-hd {
+  padding: 13px 18px; border-bottom: 1px solid var(--my-border);
+  display: flex; align-items: center; gap: 14px;
+}
+.my-files__prev-main { min-width: 0; }
+.my-files__crumb {
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro); color: var(--my-muted);
+  overflow-wrap: anywhere;
+}
+.my-files__name-row { display: flex; align-items: center; gap: 9px; margin-top: 3px; }
+.my-files__prev-name { font-family: var(--my-font-mono); font-size: var(--my-fs-body-lg); overflow-wrap: anywhere; }
+.my-files__pill {
+  border-radius: var(--my-r-pill); padding: 2px 9px; flex: none;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+}
+.my-files__pill--warn { background: var(--my-warn-soft); color: var(--my-warn); }
+.my-files__pill--ok { background: var(--my-ok-soft); color: var(--my-ok); }
+.my-files__pill--muted { background: var(--my-disabled-bg); color: var(--my-muted); }
+.my-files__meta {
+  margin-left: auto; display: flex; gap: 14px; flex: none;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro); color: var(--my-muted);
+}
+.my-files__prev-bd { padding: var(--my-sp-4) 18px; font-size: var(--my-fs-body); }
+.my-files__md { max-width: 720px; }
+.my-files__md h1 { font-size: var(--my-fs-h3); font-weight: var(--my-fw-bold); letter-spacing: -.3px; margin-bottom: 6px; }
+.my-files__md p { color: var(--my-ink); margin: var(--my-sp-2) 0; }
+.my-files__md code {
+  font-family: var(--my-font-mono); font-size: .88em;
+  background: var(--my-surface-hover); border: 1px solid var(--my-border);
+  border-radius: var(--my-sp-1); padding: 1px 5px;
+}
+.my-files__md blockquote {
+  margin: 10px 0; padding: 7px 13px;
+  border-left: 3px solid var(--my-accent); background: var(--my-accent-soft);
+  border-radius: 0 var(--my-sp-2) var(--my-sp-2) 0;
+}
+.my-files__pre {
+  max-width: 720px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-mono); color: var(--my-ink);
 }

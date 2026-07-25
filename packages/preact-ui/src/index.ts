@@ -130,3 +130,29 @@ export {
   type PopoverItem,
   type PopoverPosition,
 } from "./Popover.js";
+
+// ── file explorer & markdown preview (ds/components-file-explorer) ──
+export {
+  FileTree,
+  FilePreview,
+  FileScopePicker,
+  deriveFileTreeRows,
+  countLoadedFiles,
+  previewMeta,
+  previewBodyMode,
+  buildBreadcrumb,
+  breadcrumbSegments,
+  formatFileSize,
+  formatRelativeTime,
+  type FileTreeProps,
+  type FilePreviewProps,
+  type FileScopePickerProps,
+  type FileTreeMode,
+  type FileTreeRootSpec,
+  type FileTreeRow,
+  type FileScopeOption,
+  type DirState,
+  type FilePreviewState,
+  type PreviewBadgeState,
+  type GitMark,
+} from "./FileExplorer.js";
