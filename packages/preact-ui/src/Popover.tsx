@@ -37,6 +37,7 @@ import {
   popoverItemAria,
   popoverItemClass,
   popoverKeyHandled,
+  popoverMenuAria,
   popoverPanelAria,
   popoverPanelClass,
   popoverPanelKeyAction,
@@ -115,29 +116,35 @@ export function PopoverPanel(props: PopoverPanelProps) {
     <div ref={props.panelRef} class={popoverPanelClass(props.pos)} tabIndex={-1} {...popoverPanelAria(props.ids)}>
       {props.title !== undefined || props.caption !== undefined ? (
         <div class={POPOVER_CLASS.head}>
-          {props.title !== undefined ? <span class={POPOVER_CLASS.title}>{props.title}</span> : null}
+          {props.title !== undefined ? (
+            <span id={props.ids.title} class={POPOVER_CLASS.title}>
+              {props.title}
+            </span>
+          ) : null}
           {props.caption !== undefined ? <span class={POPOVER_CLASS.caption}>{props.caption}</span> : null}
         </div>
       ) : null}
-      {props.items.map((item) => (
-        <button
-          key={item.key}
-          type="button"
-          data-pop-item=""
-          class={popoverItemClass(item)}
-          disabled={item.disabled}
-          {...popoverItemAria(item)}
-          onClick={() => {
-            if (item.disabled) return; // belt-and-braces: a native disabled button fires no click
-            props.onPick(item);
-          }}
-        >
-          <span class={POPOVER_CLASS.itemLabel}>{item.label}</span>
-          <span class={POPOVER_CLASS.itemCheck} aria-hidden="true">
-            {item.selected ? POPOVER_CHECK : ""}
-          </span>
-        </button>
-      ))}
+      <div class={POPOVER_CLASS.menu} {...popoverMenuAria(props.ids, props.title !== undefined)}>
+        {props.items.map((item) => (
+          <button
+            key={item.key}
+            type="button"
+            data-pop-item=""
+            class={popoverItemClass(item)}
+            disabled={item.disabled}
+            {...popoverItemAria(item)}
+            onClick={() => {
+              if (item.disabled) return; // belt-and-braces: a native disabled button fires no click
+              props.onPick(item);
+            }}
+          >
+            <span class={POPOVER_CLASS.itemLabel}>{item.label}</span>
+            <span class={POPOVER_CLASS.itemCheck} aria-hidden="true">
+              {item.selected ? POPOVER_CHECK : ""}
+            </span>
+          </button>
+        ))}
+      </div>
       {props.footer !== undefined ? (
         <>
           <div class={POPOVER_CLASS.divider} role="separator" />

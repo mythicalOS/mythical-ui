@@ -101,10 +101,41 @@ describe("PopoverPanel — open panel render contract", () => {
     <PopoverPanel ids={ids} pos={{ placement: "below", align: "start" }} items={LANES} onPick={noop} />,
   );
 
-  test("is a menu, named by its trigger, with the id the trigger's aria-controls points at", () => {
-    expect(html).toContain('role="menu"');
+  test("the visual panel carries no role — the menu is NESTED inside it", () => {
     expect(html).toContain(`id="${ids.panel}"`);
+    // the panel's own opening tag, up to its first child, must not claim a role
+    const panelTag = html.slice(html.indexOf("<div"), html.indexOf(">") + 1);
+    expect(panelTag).toContain(`id="${ids.panel}"`);
+    expect(panelTag).not.toContain("role=");
+  });
+
+  test("the nested menu owns ONLY the rows, is named by the trigger, and is what aria-controls targets", () => {
+    expect(html).toContain('role="menu"');
+    expect(html).toContain(`id="${ids.menu}"`);
     expect(html).toContain(`aria-labelledby="${ids.trigger}"`);
+    const menu = html.slice(html.indexOf(`id="${ids.menu}"`));
+    // rows render no nested <div>, so the FIRST </div> after the menu's tag is the menu's own close
+    const menuBody = menu.slice(0, menu.indexOf("</div>"));
+    // nothing but menuitemradio buttons between the menu's tags
+    expect(menuBody.match(/<button/g)).toHaveLength(LANES.length);
+    expect(menuBody.match(/role="menuitemradio"/g)).toHaveLength(LANES.length);
+  });
+
+  test("a heading names the menu in place of the trigger, and stays OUTSIDE it", () => {
+    const titled = renderToString(
+      <PopoverPanel
+        ids={ids}
+        pos={{ placement: "below", align: "start" }}
+        items={LANES}
+        title="Switch review lane"
+        onPick={noop}
+      />,
+    );
+    expect(titled).toContain(`id="${ids.title}"`);
+    expect(titled).toContain(`aria-labelledby="${ids.title}"`);
+    expect(titled).not.toContain(`aria-labelledby="${ids.trigger}"`);
+    // the heading precedes the menu element, so the menu never owns it
+    expect(titled.indexOf(`id="${ids.title}"`)).toBeLessThan(titled.indexOf(`id="${ids.menu}"`));
   });
 
   test("panel class comes verbatim from popoverPanelClass", () => {
@@ -170,6 +201,10 @@ describe("PopoverPanel — open panel render contract", () => {
     expect(full).toContain("applies to the next run only");
     expect(full).toContain('role="separator"');
     expect(full).toContain("Manage lanes →");
+    // a menu may not own arbitrary content: the footer button comes AFTER the menu closes
+    expect(full.indexOf("Manage lanes →")).toBeGreaterThan(full.indexOf(`id="${ids.menu}"`));
+    const menu = full.slice(full.indexOf(`id="${ids.menu}"`));
+    expect(menu.slice(0, menu.indexOf("</div>"))).not.toContain("Manage lanes →");
   });
 
   test("the panel itself is programmatically focusable — the fallback when no row can take focus", () => {
@@ -182,10 +217,12 @@ describe("PopoverPanel — open panel render contract", () => {
 });
 
 describe("PopoverPanel — the REAL onPick closure (invoked off the vnode tree, no DOM needed)", () => {
-  function rowsOf(vnode: ReturnType<typeof PopoverPanel>): any[] {
-    // children: [head?, ...rows, footer?] — the rows are the mapped array child.
-    const children = (vnode as any).props.children as any[];
-    return (children.find((c) => Array.isArray(c)) ?? []) as any[];
+  function rowsOf(tree: ReturnType<typeof PopoverPanel>): any[] {
+    // panel children: [head?, menu, footer?] — the rows are the menu element's children.
+    const children = (tree as any).props.children as any[];
+    const menu = children.find((c) => c && c.props && c.props.role === "menu");
+    expect(menu).toBeDefined();
+    return menu.props.children as any[];
   }
 
   test("picking an enabled row hands back its key and the item itself", () => {
@@ -243,8 +280,18 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
     expect(code).not.toContain(needle);
   });
 
+  // every quote form, not just double — a single-quoted or templated class must fail too
+  const CLASS_LITERAL = /["'`]my-[^"'`]*["'`]/g;
+
+  test("the class-literal guard itself catches EVERY quote form (negative fixtures)", () => {
+    for (const bad of ['class="my-pop__item"', "class='my-pop__item'", "class={`my-pop__item`}"]) {
+      expect(bad.match(CLASS_LITERAL)).not.toBeNull();
+    }
+    expect('class={POPOVER_CLASS.item}'.match(CLASS_LITERAL)).toBeNull();
+  });
+
   test("NO class-name string literal is inlined at all — every class comes from POPOVER_CLASS", () => {
-    expect(code.match(/"my-[^"]*"/g)).toBeNull();
+    expect(code.match(CLASS_LITERAL)).toBeNull();
     expect(code).toContain("POPOVER_CLASS.");
   });
 
@@ -255,6 +302,7 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
       "popoverItemClass",
       "popoverTriggerAria",
       "popoverPanelAria",
+      "popoverMenuAria",
       "popoverItemAria",
       "popoverTriggerKeyAction",
       "popoverPanelKeyAction",

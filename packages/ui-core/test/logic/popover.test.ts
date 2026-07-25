@@ -25,6 +25,7 @@ import {
   popoverItemAria,
   popoverItemClass,
   popoverKeyHandled,
+  popoverMenuAria,
   popoverPanelAria,
   popoverPanelClass,
   popoverPanelKeyAction,
@@ -99,7 +100,8 @@ describe("resolvePopoverAlign — start-aligned unless that overflows the right 
   });
 
   test("would overflow right AND end-aligning fits ⇒ end", () => {
-    expect(resolvePopoverAlign(rect(40, 700), 210, VIEWPORT)).toBe("end");
+    // left 660, right 770: 660 + 210 = 870 overflows, but 770 and 770 - 210 = 560 both fit.
+    expect(resolvePopoverAlign(rect(40, 660), 210, VIEWPORT)).toBe("end");
   });
 
   test("wider than the anchor's distance to BOTH edges ⇒ stays start (no overflow-swap)", () => {
@@ -114,14 +116,22 @@ describe("resolvePopoverAlign — start-aligned unless that overflows the right 
   });
 
   test("end-aligning is allowed when it lands exactly on the left edge (>= 0)", () => {
-    // left 700, right 810 (past the viewport), panel 810 wide ⇒ right - width === 0 ⇒ end.
-    expect(resolvePopoverAlign({ top: 40, bottom: 70, left: 700, right: 810 }, 810, VIEWPORT)).toBe("end");
+    // right 800 (flush), panel 800 wide ⇒ right - width === 0, and right <= viewport.width ⇒ end.
+    expect(resolvePopoverAlign({ top: 40, bottom: 70, left: 690, right: 800 }, 800, VIEWPORT)).toBe("end");
+  });
+
+  test("an anchor hanging off the RIGHT edge must not end-align — that would clip the panel too", () => {
+    // right 810 is already past the 800px viewport; end-aligning pins the panel's right edge THERE.
+    // Checking only `right - panelWidth >= 0` (810 - 210 = 600) would wrongly call this a fit.
+    const offscreen = { top: 40, bottom: 70, left: 700, right: 810 };
+    expect(offscreen.right - 210).toBeGreaterThanOrEqual(0); // the left-edge-only test would pass …
+    expect(resolvePopoverAlign(offscreen, 210, VIEWPORT)).toBe("start"); // … but both edges must fit
   });
 });
 
 describe("resolvePopoverPosition / samePopoverPosition", () => {
   test("composes both axes", () => {
-    expect(resolvePopoverPosition(rect(500, 700), { width: 210, height: 200 }, VIEWPORT)).toEqual({
+    expect(resolvePopoverPosition(rect(500, 660), { width: 210, height: 200 }, VIEWPORT)).toEqual({
       placement: "above",
       align: "end",
     });
@@ -167,27 +177,38 @@ describe("class derivation", () => {
 describe("ARIA derivation", () => {
   const ids = popoverIds("pop1");
 
-  test("popoverIds derives a collision-free pair from one base", () => {
-    expect(ids).toEqual({ trigger: "pop1-trigger", panel: "pop1-panel" });
-    expect(ids.trigger).not.toBe(ids.panel);
+  test("popoverIds derives a collision-free id set from one base", () => {
+    expect(ids).toEqual({
+      trigger: "pop1-trigger",
+      panel: "pop1-panel",
+      menu: "pop1-menu",
+      title: "pop1-title",
+    });
+    expect(new Set(Object.values(ids)).size).toBe(4);
   });
 
-  test("the trigger advertises a menu and only points at the panel while it EXISTS", () => {
+  test("the trigger advertises a menu and only points at the MENU while it EXISTS", () => {
     expect(popoverTriggerAria(false, ids)).toEqual({
       id: "pop1-trigger",
       "aria-haspopup": "menu",
       "aria-expanded": "false",
       "aria-controls": undefined,
     });
-    expect(popoverTriggerAria(true, ids)["aria-controls"]).toBe("pop1-panel");
+    expect(popoverTriggerAria(true, ids)["aria-controls"]).toBe("pop1-menu");
   });
 
-  test("the panel is a menu named by its trigger (no duplicated label string)", () => {
-    expect(popoverPanelAria(ids)).toEqual({
-      id: "pop1-panel",
+  test("the visual panel carries NO role — a menu may not own a heading or arbitrary footer", () => {
+    expect(popoverPanelAria(ids)).toEqual({ id: "pop1-panel" });
+    expect(popoverPanelAria(ids)).not.toHaveProperty("role");
+  });
+
+  test("the nested menu is named by its heading when there is one, else by the trigger", () => {
+    expect(popoverMenuAria(ids, false)).toEqual({
+      id: "pop1-menu",
       role: "menu",
       "aria-labelledby": "pop1-trigger",
     });
+    expect(popoverMenuAria(ids, true)["aria-labelledby"]).toBe("pop1-title");
   });
 
   test("rows are single-select radios; aria-checked is always present, aria-disabled only when true", () => {

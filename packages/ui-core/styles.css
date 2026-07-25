@@ -478,6 +478,11 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-pop__title { font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); color: var(--my-ink); }
 .my-pop__caption { font-size: var(--my-fs-micro); color: var(--my-muted); }
 
+/* The role="menu" element NESTED in the panel: it owns ONLY the rows, so the head and the
+   caller's footer stay siblings of it (a menu may not own arbitrary content). Purely structural —
+   it adds no box of its own. */
+.my-pop__menu { display: flex; flex-direction: column; }
+
 .my-pop__item {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
   width: 100%; padding: 7px 10px; border: 0; background: none;

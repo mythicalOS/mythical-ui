@@ -87,15 +87,22 @@ export function resolvePopoverPlacement(
 /**
  * Viewport-aware horizontal alignment. The panel is start-aligned (design card: `left: 0`); it
  * switches to end-aligned only when start-aligning would overflow the right edge AND end-aligning
- * actually fits. A panel wider than the anchor's distance to BOTH edges stays `start` — flipping
- * would only trade a right-edge overflow for a left-edge one.
+ * puts BOTH panel edges inside the viewport.
+ *
+ * Both edges matter, not just the left one: end-aligning pins the panel's RIGHT edge to the
+ * anchor's right edge, so an anchor that is itself partly off-screen to the right would drag the
+ * panel off-screen with it. Checking only `right - panelWidth >= 0` would call that a fit and
+ * produce a clipped panel. A panel that fits neither way stays `start` — flipping would only trade
+ * a right-edge overflow for a left-edge one.
  */
 export function resolvePopoverAlign(
   anchor: PopoverRect,
   panelWidth: number,
   viewport: PopoverViewport,
 ): PopoverAlign {
-  return anchor.left + panelWidth > viewport.width && anchor.right - panelWidth >= 0 ? "end" : "start";
+  const startOverflows = anchor.left + panelWidth > viewport.width;
+  const endFits = anchor.right <= viewport.width && anchor.right - panelWidth >= 0;
+  return startOverflows && endFits ? "end" : "start";
 }
 
 /** Both axes at once — what a binding calls from its post-open measurement effect. */
@@ -138,6 +145,7 @@ export const POPOVER_CLASS = {
   head: "my-pop__head",
   title: "my-pop__title",
   caption: "my-pop__caption",
+  menu: "my-pop__menu",
   item: "my-pop__item",
   itemLabel: "my-pop__label",
   itemCheck: "my-pop__check",
@@ -182,20 +190,33 @@ export function popoverItemClass(item: Pick<PopoverItem, "selected" | "disabled"
 
 export interface PopoverIds {
   trigger: string;
+  /** The visual panel — the surface that carries the border/shadow and the optional head/footer. */
   panel: string;
+  /** The `role="menu"` element NESTED in the panel. A menu may only own menuitem-family, group and
+   * separator children, so the heading and the caller's footer are siblings of this element, not
+   * children of it — putting them inside would make the menu's owned content invalid and let
+   * assistive tech drop or mis-announce them. */
+  menu: string;
+  /** The heading, when there is one — it names the menu in place of the trigger. */
+  title: string;
 }
 
-/** Stable, collision-free id pair derived from one caller-supplied base id. */
+/** Stable, collision-free id set derived from one caller-supplied base id. */
 export function popoverIds(baseId: string): PopoverIds {
-  return { trigger: `${baseId}-trigger`, panel: `${baseId}-panel` };
+  return {
+    trigger: `${baseId}-trigger`,
+    panel: `${baseId}-panel`,
+    menu: `${baseId}-menu`,
+    title: `${baseId}-title`,
+  };
 }
 
 export interface PopoverTriggerAria {
   id: string;
   "aria-haspopup": "menu";
   "aria-expanded": "true" | "false";
-  /** Only while open — the panel element does not exist when closed, and pointing at a missing id
-   * is an authoring error assistive tech reports. */
+  /** The MENU (not the panel wrapper) it controls, and only while open — the element does not
+   * exist when closed, and pointing at a missing id is an authoring error assistive tech reports. */
   "aria-controls": string | undefined;
 }
 
@@ -204,18 +225,30 @@ export function popoverTriggerAria(open: boolean, ids: PopoverIds): PopoverTrigg
     id: ids.trigger,
     "aria-haspopup": "menu",
     "aria-expanded": open ? "true" : "false",
-    "aria-controls": open ? ids.panel : undefined,
+    "aria-controls": open ? ids.menu : undefined,
   };
 }
 
 export interface PopoverPanelAria {
   id: string;
+}
+
+/** The visual panel: the surface, deliberately WITHOUT a role. It holds the optional heading and
+ * the caller's footer, which a `menu` may not own. */
+export function popoverPanelAria(ids: PopoverIds): PopoverPanelAria {
+  return { id: ids.panel };
+}
+
+export interface PopoverMenuAria {
+  id: string;
   role: "menu";
   "aria-labelledby": string;
 }
 
-export function popoverPanelAria(ids: PopoverIds): PopoverPanelAria {
-  return { id: ids.panel, role: "menu", "aria-labelledby": ids.trigger };
+/** The nested menu, which owns ONLY the `menuitemradio` rows. Named by the heading when there is
+ * one (the more specific label), otherwise by the trigger. */
+export function popoverMenuAria(ids: PopoverIds, titled: boolean): PopoverMenuAria {
+  return { id: ids.menu, role: "menu", "aria-labelledby": titled ? ids.title : ids.trigger };
 }
 
 export interface PopoverItemAria {
