@@ -273,6 +273,16 @@ describe("the four honest states are first-class, not errors", () => {
     expect(previewBodyMode("a.txt", text)).toBe("plain");
   });
 
+  test("previewBodyMode owns the renderer question too — no renderer means honest plain text", () => {
+    const text: FilePreviewState = { status: "text", text: "# hi" };
+    expect(previewBodyMode("a.md", text, true)).toBe("markdown");
+    expect(previewBodyMode("a.md", text, false)).toBe("plain");
+    expect(previewBodyMode("a.txt", text, true)).toBe("plain");
+    // a non-text state is a note whatever the renderer situation
+    expect(previewBodyMode("a.md", { status: "binary", bytes: 1 }, true)).toBe("note");
+    expect(previewBodyMode("a.md", { status: "binary", bytes: 1 }, false)).toBe("note");
+  });
+
   test("an honest-state sentence never leaks a raw `undefined` for an unknown size", () => {
     for (const s of HONEST_STATUSES) {
       expect(honestNoteText(s, "file", undefined)).not.toContain("undefined");
@@ -462,6 +472,37 @@ describe("deriveFileTreeRows", () => {
     });
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ rootKey: "ok" });
+  });
+
+  test("DUPLICATE root keys are dropped — colliding ids would act on the wrong root", () => {
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [
+        { key: "core", label: "first", primary: true },
+        { key: "core", label: "second" },
+        { key: "other", label: "other" },
+      ],
+      dirs: {},
+      expanded: new Set(),
+    });
+    expect(rows).toHaveLength(2);
+    // the FIRST occurrence wins — a stable, order-defined choice
+    expect(rows[0]).toMatchObject({ rootKey: "core", name: "first" });
+    expect(rows[1]).toMatchObject({ rootKey: "other" });
+    expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
+  });
+
+  test("duplicate roots cannot make one root's subtree render under another's identity", () => {
+    const id = nodeId("core", "");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: "core", label: "first" }, { key: "core", label: "second" }],
+      dirs: { [id]: loaded([{ name: "a.md", kind: "file" }]) },
+      expanded: new Set([id]),
+    });
+    // exactly one root + one file, not a duplicated subtree
+    expect(rows.filter((r) => r.type === "file")).toHaveLength(1);
+    expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
   });
 
   test("every id the walk emits round-trips exactly — the nodeId invariant is enforced, not assumed", () => {

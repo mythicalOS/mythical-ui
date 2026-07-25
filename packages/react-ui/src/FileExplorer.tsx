@@ -27,7 +27,6 @@ import {
   formatRelativeTime,
   gitMarkClass,
   gitMarkLabel,
-  isMarkdownName,
   previewBadge,
   previewBadgeClass,
   previewBodyMode,
@@ -280,12 +279,11 @@ function previewBody(
   state: FilePreviewState,
   renderMarkdown: FilePreviewProps["renderMarkdown"],
 ): ReactNode {
-  const note = previewNoteText(state);
-  if (note !== null) return <div className={previewNoteClass(state) ?? ""}>{note}</div>;
-  // narrowed by previewNoteText returning null
+  // ONE decision, made in ui-core — this binding never re-derives it.
+  const mode = previewBodyMode(name, state, renderMarkdown !== undefined);
+  if (mode === "note") return <div className={previewNoteClass(state) ?? ""}>{previewNoteText(state)}</div>;
+  // "note" covers every non-text state, so the text branch is what remains
   const text = (state as Extract<FilePreviewState, { status: "text" }>).text;
-  if (isMarkdownName(name) && renderMarkdown !== undefined) {
-    return <div className="my-files__md">{renderMarkdown(text)}</div>;
-  }
+  if (mode === "markdown") return <div className="my-files__md">{renderMarkdown!(text)}</div>;
   return <pre className="my-files__pre">{text}</pre>;
 }

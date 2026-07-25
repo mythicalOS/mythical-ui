@@ -448,11 +448,24 @@ export function previewMeta(
   return { bytes: fallback.bytes, mtime: fallback.mtime };
 }
 
-/** How the preview should render `text`: as markdown (the card's rendered body) or as plain mono
- *  text. Only ever consulted for the `text` branch. */
-export function previewBodyMode(name: string, state: FilePreviewState): "markdown" | "plain" | "note" {
+/**
+ * How the preview should render the body — the SINGLE decision both bindings follow, so neither
+ * re-derives it and the two cannot drift:
+ *   · "note"     — there is no content to show (loading, or any of the honest states);
+ *   · "markdown" — a markdown name AND a renderer to hand it to;
+ *   · "plain"    — everything else, including a markdown file with NO renderer supplied.
+ *
+ * `hasMarkdownRenderer` is part of the decision rather than a binding-side afterthought: markdown
+ * rendering is the caller's to provide, and without it the honest outcome is plain text — never the
+ * component inventing a renderer or injecting raw HTML.
+ */
+export function previewBodyMode(
+  name: string,
+  state: FilePreviewState,
+  hasMarkdownRenderer = true,
+): "markdown" | "plain" | "note" {
   if (state.status !== "text") return "note";
-  return isMarkdownName(name) ? "markdown" : "plain";
+  return isMarkdownName(name) && hasMarkdownRenderer ? "markdown" : "plain";
 }
 
 // ── row derivation ────────────────────────────────────────────────────────────
@@ -692,8 +705,15 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
 
   // A root whose key cannot round-trip through `nodeId` is dropped rather than rendered under a
   // corrupted identity — the same policy applied to malformed entry names below.
+  //
+  // DUPLICATE keys are dropped for the same reason: two roots sharing a key produce the SAME node id
+  // for themselves and for every descendant, so they would collide in `dirs` / `marks`, render under
+  // duplicate framework keys, and make expanding or selecting one silently act on the other. Only
+  // the first occurrence is kept — a stable, order-defined choice.
+  const seenRootKeys = new Set<string>();
   for (const root of roots) {
-    if (!isUsableRootKey(root.key)) continue;
+    if (!isUsableRootKey(root.key) || seenRootKeys.has(root.key)) continue;
+    seenRootKeys.add(root.key);
     walk(root.key, "", root.label, 0, undefined, root);
   }
   return rows;
