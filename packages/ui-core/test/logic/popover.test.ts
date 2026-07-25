@@ -459,6 +459,21 @@ describe("styles.css ships a real selector for every class this logic emits", ()
     expect(cssRules).toMatch(/\.my-pop--end\s*\{[^}]*right:\s*0/);
   });
 
+  test("a full-width row is border-box, so its fill and focus ring stay inside the panel's padding", () => {
+    const item = cssRules.match(/\.my-pop__item\s*\{([^}]*)\}/);
+    expect(item?.[1]).toContain("width: 100%");
+    expect(item?.[1]).toContain("box-sizing: border-box");
+  });
+
+  test("the open trigger matches <mythical-select>'s own open state, token for token", () => {
+    const selectCss = readFileSync(
+      join(import.meta.dir, "..", "..", "src", "select", "mythical-select.js"),
+      "utf8",
+    );
+    expect(selectCss).toContain(":host([data-open]) button{border-color:var(--my-accent");
+    expect(cssRules).toMatch(/\.my-pop-trigger\.is-open\s*\{[^}]*border-color:\s*var\(--my-accent\)/);
+  });
+
   test("panel fidelity — min-width only (no undocumented max-width cap), card z-index and shadow", () => {
     const panel = cssRules.match(/\.my-pop\s*\{([^}]*)\}/);
     expect(panel).not.toBeNull();

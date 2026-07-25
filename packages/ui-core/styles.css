@@ -450,6 +450,11 @@ a:focus-visible, .link:focus-visible, .is-focus {
   transition: background var(--my-t-fast), border-color var(--my-t-fast);
 }
 .my-pop-trigger:hover:not(:disabled):not(.is-disabled) { background: var(--my-surface-hover); }
+/* Open state — NOT on the design card (which draws a single, already-open popover and so has no
+   closed/open pair to distinguish). It is not an invention either: this is verbatim what the
+   package's other floating control does, `:host([data-open]) button{border-color:var(--my-accent)}`
+   in src/select/mythical-select.js. Two anchored dropdowns in one package must not disagree about
+   what an open trigger looks like, so the popover follows the select. */
 .my-pop-trigger.is-open { border-color: var(--my-accent); }
 .my-pop-trigger:disabled, .my-pop-trigger.is-disabled {
   background: var(--my-disabled-bg); color: var(--my-disabled-ink);
@@ -485,7 +490,10 @@ a:focus-visible, .link:focus-visible, .is-focus {
 
 .my-pop__item {
   display: flex; align-items: center; justify-content: space-between; gap: 14px;
-  width: 100%; padding: 7px 10px; border: 0; background: none;
+  /* border-box explicitly: this sheet declares no global reset (same reason the .input-reveal rules
+     above restate it), so a full-width row's padding must not be left to the UA's or a consumer's
+     box model — otherwise the row, its hover fill and its focus ring overhang the panel's padding. */
+  width: 100%; box-sizing: border-box; padding: 7px 10px; border: 0; background: none;
   border-radius: var(--my-r-control); /* shape rule 10 — a row is clickable, so squared */
   font-family: inherit; font-size: var(--my-fs-caption); color: var(--my-ink);
   text-align: left; cursor: pointer;
