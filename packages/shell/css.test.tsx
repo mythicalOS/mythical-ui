@@ -39,6 +39,7 @@ import {
   PRODUCTS,
 } from "./src/index.ts";
 import { SwitcherPanel } from "./src/ProductSwitcher.tsx";
+import { TokenGateCard } from "./src/TokenGate.tsx";
 
 const stylesPath = join(import.meta.dir, "styles.css");
 const tokensPath = join(import.meta.dir, "..", "..", "..", "mythical-design", "tokens.css");
@@ -259,9 +260,26 @@ describe("styles.css — (g) TokenGate's card ships fully styled from the packag
   const rendered = renderToString(
     <TokenGate product="brokkr" container="mythical" onSubmit={() => {}} invalid status={401} reason="bad token" />,
   );
+  // The copy controls' two settled states are state-driven, so they are unreachable through
+  // `TokenGate` without a DOM (see token-gate.test.tsx's depth note) — rendered here off the
+  // hook-free card directly, so their classes are held to the same "must resolve" rule.
+  const withCopyStates = ["copied", "failed"].map((_s, i) =>
+    renderToString(
+      <TokenGateCard
+        product="brokkr"
+        container="mythical"
+        onSubmit={() => {}}
+        value=""
+        onValue={() => {}}
+        copy={{ target: "retrieve", ok: i === 0 }}
+      />,
+    ),
+  );
   const emitted = new Set<string>();
-  for (const m of rendered.matchAll(/class="([^"]*)"/g)) {
-    for (const c of m[1]!.split(/\s+/)) if (c.length > 0) emitted.add(c);
+  for (const html of [rendered, ...withCopyStates]) {
+    for (const m of html.matchAll(/class="([^"]*)"/g)) {
+      for (const c of m[1]!.split(/\s+/)) if (c.length > 0) emitted.add(c);
+    }
   }
 
   test("the card renders its own class family", () => {
@@ -274,6 +292,11 @@ describe("styles.css — (g) TokenGate's card ships fully styled from the packag
       "token-entry__cta",
       "token-entry__hint",
       "token-entry__cmd",
+      "token-entry__cmd-row",
+      "token-entry__copy",
+      "token-entry__copy-status",
+      "is-copied",
+      "is-failed",
     ]) {
       expect(emitted.has(c)).toBe(true);
       expect(hasClassSelector(css, c)).toBe(true);
@@ -317,6 +340,47 @@ describe("styles.css — (g) TokenGate's card ships fully styled from the packag
     expect(rule).not.toBeNull();
     expect(rule![0]).toContain("border-top: 1px solid var(--my-border)");
     expect(rule![0]).toContain("font-family: var(--my-font-mono)");
+  });
+
+  test("the command still takes the row, so the copy control never squeezes it out", () => {
+    const row = css.match(/\.token-entry__cmd-row\s*\{[^}]*\}/);
+    expect(row?.[0]).toContain("display: flex");
+    const cmd = css.match(/\.token-entry__cmd\s*\{[^}]*\}/);
+    expect(cmd?.[0]).toContain("flex: 1 1 auto");
+    expect(cmd?.[0]).toContain("min-width: 0");
+    // the line is still ordinary selectable text — nothing here may turn selection off
+    expect(cmd?.[0]).not.toContain("user-select");
+  });
+
+  test("the copy control is a bordered control with the family's focus ring", () => {
+    const rule = css.match(/\.token-entry__copy\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    // rule #11 — it is a real interactive control, so its boundary is --my-control-border
+    expect(rule![0]).toContain("border: 1px solid var(--my-control-border)");
+    expect(rule![0]).toContain("cursor: pointer");
+    expect(css).toContain(".token-entry__copy:focus-visible");
+    expect(css.match(/\.token-entry__copy:focus-visible\s*\{[^}]*\}/)?.[0]).toContain(
+      "outline: 2px solid var(--my-accent)",
+    );
+  });
+
+  test("both copy outcomes resolve through tokens that are redefined in BOTH themes", () => {
+    // --my-ok / --my-warn each have a light AND a dark value in the canonical sheet, which is what
+    // makes the control legible in either theme with no theme-specific rule here.
+    expect(css.match(/\.token-entry__copy\.is-copied\s*\{[^}]*\}/)?.[0]).toContain("var(--my-ok)");
+    expect(css.match(/\.token-entry__copy\.is-failed\s*\{[^}]*\}/)?.[0]).toContain("var(--my-warn)");
+    for (const token of ["--my-ok", "--my-warn"]) {
+      expect((tokensCss.match(new RegExp(`${token}\\s*:`, "g")) ?? []).length).toBeGreaterThan(1);
+    }
+  });
+
+  test("the copy announcement is off-screen but never display:none — it must stay announceable", () => {
+    const rule = css.match(/\.token-entry__copy-status\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    expect(rule![0]).toContain("position: absolute");
+    expect(rule![0]).toContain("clip-path: inset(50%)");
+    expect(rule![0]).not.toContain("display: none");
+    expect(rule![0]).not.toContain("visibility: hidden");
   });
 });
 

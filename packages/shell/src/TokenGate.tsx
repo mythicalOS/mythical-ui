@@ -6,15 +6,18 @@
 // the first thing an operator ever sees is identical across the family: same mark, same copy, same
 // affordances, same failure line.
 //
-// Two honesty rules are baked in and are not negotiable:
+// Three honesty rules are baked in and are not negotiable:
 //   • The failure line is printed from the REAL status + reason of the rejected response. If the
 //     product doesn't have both, no line is shown at all — this card never invents an HTTP status
 //     or a reason to fill the space (`authErrorLine` is the whole decision, exported so a consumer
 //     can test its own wiring against it).
 //   • The placeholder never states a length or an alphabet. The products mint different token
 //     formats and one of them is mid-migration, so any concrete hint would be wrong somewhere.
+//   • "Copied" is only ever shown for a clipboard write that actually resolved. The write is not
+//     reliably available here (see `copyToClipboard`), so the outcome is always the real one — a
+//     control that claims success for a clipboard that stayed empty is worse than no control.
 
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 import { Button, Input } from "@mythicalos/preact-ui";
 import { Logo } from "./Logo.js";
 import { PRODUCTS, type Product } from "./products.js";
@@ -100,10 +103,144 @@ function displayName(key: string): string {
   return PRODUCTS.find((p) => p.key === k)?.name ?? key;
 }
 
+// ─── Copy-to-clipboard for the two hint commands ────────────────────────────────────────────────
+//
+// The `$ ` the hint draws in front of each command is a SHELL PROMPT — a display convention, not
+// part of what the operator has to run. Everything below therefore carries the bare, runnable
+// command; only the JSX adds the prompt. Copying `$ docker exec …` hands the operator something
+// that fails the moment they paste it.
+
+/** Which of the two hint commands a copy control acts on. */
+export type CopyTarget = "retrieve" | "rotate";
+
+/** The outcome of the most recent copy attempt, or `null` when there has not been one (or it has
+ *  aged out). `ok` is the REAL result of the clipboard write — never an assumption. */
+export interface CopyFeedback {
+  target: CopyTarget;
+  ok: boolean;
+}
+
+/** How long a copy outcome stays on the control before it returns to rest. */
+export const COPY_FEEDBACK_MS = 2000;
+
+/** The resting/settled state of one copy control. */
+export type CopyControlState = "idle" | "copied" | "failed";
+
+/** What each control acts on, in words — the tail of its accessible name. Two controls both named
+ *  "Copy" are useless to anyone who is not looking at the screen, so the name states WHICH one. */
+const COPY_WHAT: Record<CopyTarget, string> = {
+  retrieve: "the token-retrieval command",
+  rotate: "the token-rotation command",
+};
+
+/** The control's visible word, per state. The name below always CONTAINS it (WCAG 2.5.3
+ *  label-in-name: a voice-control user says what they can see). */
+export const COPY_WORD: Record<CopyControlState, string> = {
+  idle: "Copy",
+  copied: "Copied",
+  failed: "Copy failed",
+};
+
+/** One control's state: only the control that was actually clicked shows an outcome. */
+export function copyControlState(target: CopyTarget, feedback?: CopyFeedback | null): CopyControlState {
+  if (!feedback || feedback.target !== target) return "idle";
+  return feedback.ok ? "copied" : "failed";
+}
+
+/** The control's accessible name — always names which command, always contains its visible word. */
+export function copyButtonLabel(target: CopyTarget, feedback?: CopyFeedback | null): string {
+  const what = COPY_WHAT[target];
+  switch (copyControlState(target, feedback)) {
+    case "copied":
+      return `Copied ${what}`;
+    case "failed":
+      return `Copy failed for ${what} — select the command and copy it manually`;
+    default:
+      return `Copy ${what}`;
+  }
+}
+
+/**
+ * The announcement for a copy outcome, or `""` at rest. Lives in a `role="status"` region that is
+ * ALWAYS in the DOM: a live region inserted at the same moment it gains content is announced
+ * unreliably. It is never on screen — the visible outcome is the control's own word and color.
+ */
+export function copyStatusLine(feedback?: CopyFeedback | null): string {
+  if (!feedback) return "";
+  const what = COPY_WHAT[feedback.target];
+  return feedback.ok
+    ? `Copied ${what} to the clipboard.`
+    : `Could not copy ${what}. Select the command and copy it manually.`;
+}
+
+/** The shape of the clipboard this card is willing to use — anything less is treated as absent. */
+interface ClipboardHost {
+  navigator?: { clipboard?: { writeText?: (text: string) => unknown } };
+}
+
+/**
+ * Writes `text` to the system clipboard, resolving to whether the write ACTUALLY happened.
+ *
+ * `navigator.clipboard` is not a given here. It exists only in a secure context, and every product
+ * in this family is reachable over plain http on a LAN address as well as on `localhost` — so on
+ * the LAN URL the API is simply absent, and the whole `navigator.clipboard` object is `undefined`.
+ * It also rejects when the document is not focused, and a permissions policy can deny it outright.
+ * Every one of those paths resolves `false` here, so the caller renders a real failure instead of
+ * a "Copied" the operator would then paste nothing from.
+ *
+ * `text` is the runnable command; the hint's `$ ` prompt is never part of it.
+ */
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    const clipboard = (globalThis as ClipboardHost).navigator?.clipboard;
+    if (typeof clipboard?.writeText !== "function") return false;
+    // Invoked ON the clipboard object on purpose: `writeText` is a native method and throws if it
+    // is torn off its receiver.
+    await clipboard.writeText(text);
+    return true;
+  } catch {
+    // A rejected write, a synchronous throw, a hostile `navigator` shim — all the same outcome:
+    // nothing reached the clipboard, and this must not be reported as success.
+    return false;
+  }
+}
+
+export interface CopyCommandButtonProps {
+  target: CopyTarget;
+  /** The RUNNABLE command — never the rendered line. The hint's `$ ` is a prompt this card draws. */
+  command: string;
+  /** The card's current copy outcome; only the matching `target` renders it. */
+  feedback?: CopyFeedback | null;
+  onCopy?: (target: CopyTarget, command: string) => void;
+}
+
+/**
+ * The copy control for one command line. A real `<button type="button">` — focusable in source
+ * order, no tabindex games — named for the command it copies. Purely additive: the command stays
+ * rendered next to it as ordinary selectable text, which is the fallback when the clipboard write
+ * cannot happen at all.
+ */
+export function CopyCommandButton(props: CopyCommandButtonProps) {
+  const state = copyControlState(props.target, props.feedback);
+  return (
+    <button
+      type="button"
+      class={state === "idle" ? "token-entry__copy" : `token-entry__copy is-${state}`}
+      aria-label={copyButtonLabel(props.target, props.feedback)}
+      onClick={() => props.onCopy?.(props.target, props.command)}
+    >
+      {COPY_WORD[state]}
+    </button>
+  );
+}
+
 export interface TokenGateCardProps extends TokenGateProps {
   /** The field's current value, lifted out of `TokenGate`. */
   value: string;
   onValue: (next: string) => void;
+  /** The last copy outcome, lifted out of `TokenGate` for the same reason `value` is. */
+  copy?: CopyFeedback | null;
+  onCopy?: (target: CopyTarget, command: string) => void;
 }
 
 /**
@@ -163,9 +300,31 @@ export function TokenGateCard(props: TokenGateCardProps) {
         </div>
         <div class="token-entry__hint">
           <span>Lost it? From a terminal on the host:</span>
-          <code class="token-entry__cmd">$ {retrieveCmd}</code>
-          <code class="token-entry__cmd">$ {rotateCmd}</code>
+          {/* The `$ ` is drawn here and ONLY here. What the button hands the clipboard is the bare
+              command — a copied "$ docker exec …" is a line that fails when it is pasted. */}
+          <div class="token-entry__cmd-row">
+            <code class="token-entry__cmd">$ {retrieveCmd}</code>
+            <CopyCommandButton
+              target="retrieve"
+              command={retrieveCmd}
+              feedback={props.copy}
+              onCopy={props.onCopy}
+            />
+          </div>
+          <div class="token-entry__cmd-row">
+            <code class="token-entry__cmd">$ {rotateCmd}</code>
+            <CopyCommandButton
+              target="rotate"
+              command={rotateCmd}
+              feedback={props.copy}
+              onCopy={props.onCopy}
+            />
+          </div>
           <span>Rotating prints a new token and signs out every browser holding the old one.</span>
+          {/* Always present, never visible — see `copyStatusLine`. */}
+          <span class="token-entry__copy-status" role="status">
+            {copyStatusLine(props.copy)}
+          </span>
         </div>
       </div>
     </div>
@@ -175,5 +334,31 @@ export function TokenGateCard(props: TokenGateCardProps) {
 /** The unlock card. `onSubmit` receives the trimmed token; the field itself is never lifted out. */
 export function TokenGate(props: TokenGateProps) {
   const [value, setValue] = useState("");
-  return <TokenGateCard {...props} value={value} onValue={setValue} />;
+  const [copy, setCopy] = useState<CopyFeedback | null>(null);
+  // Only the newest attempt may report. Two clicks in flight — the first rejecting slowly, the
+  // second resolving fast — must not let the stale outcome land on top of the fresh one, which is
+  // exactly how a control ends up showing "Copy failed" for a write that succeeded.
+  const seq = useRef(0);
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  useEffect(
+    () => () => {
+      if (timer.current !== undefined) clearTimeout(timer.current);
+    },
+    [],
+  );
+  const onCopy = (target: CopyTarget, command: string) => {
+    const mine = ++seq.current;
+    void copyToClipboard(command).then((ok) => {
+      if (mine !== seq.current) return;
+      setCopy({ target, ok });
+      if (timer.current !== undefined) clearTimeout(timer.current);
+      timer.current = setTimeout(() => {
+        timer.current = undefined;
+        if (mine === seq.current) setCopy(null);
+      }, COPY_FEEDBACK_MS);
+    });
+  };
+  return (
+    <TokenGateCard {...props} value={value} onValue={setValue} copy={copy} onCopy={onCopy} />
+  );
 }

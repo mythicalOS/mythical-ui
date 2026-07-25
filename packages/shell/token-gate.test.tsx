@@ -17,10 +17,18 @@ import { Button, Input } from "@mythicalos/preact-ui";
 import { PRODUCTS } from "./src/index.ts";
 import {
   authErrorLine,
+  copyButtonLabel,
+  copyControlState,
+  copyStatusLine,
+  copyToClipboard,
+  CopyCommandButton,
+  COPY_WORD,
   TokenGate,
   TokenGateCard,
   TOKEN_GATE_BODY,
   TOKEN_GATE_INVALID_BODY,
+  type CopyFeedback,
+  type CopyTarget,
   type TokenGateCardProps,
 } from "./src/TokenGate.tsx";
 
@@ -56,8 +64,12 @@ function collect(node: unknown, out: VNode<Record<string, unknown>>[] = []): VNo
   return out;
 }
 
+function findAll(props: Partial<TokenGateCardProps>, type: unknown): VNode<Record<string, unknown>>[] {
+  return collect(callCard(props)).filter((v) => v.type === type);
+}
+
 function findOne(props: Partial<TokenGateCardProps>, type: unknown): VNode<Record<string, unknown>> {
-  const hits = collect(callCard(props)).filter((v) => v.type === type);
+  const hits = findAll(props, type);
   expect(hits.length).toBe(1);
   return hits[0]!;
 }
@@ -339,6 +351,259 @@ describe("TokenGate — the retrieval hint", () => {
     const out = html({ container: "mythical", retrieveCommand: "custom-read" });
     expect(out).toContain("$ custom-read");
     expect(out).toContain("$ docker exec mythical bun run token -- --rotate");
+  });
+});
+
+// ─── Copy to clipboard ──────────────────────────────────────────────────────────────────────────
+
+const RETRIEVE = "docker exec mythical bun run token";
+const ROTATE = "docker exec mythical bun run token -- --rotate";
+
+/** Swaps `globalThis.navigator` for the duration of `fn`, restoring the real one after. Passing
+ *  `undefined` removes it entirely — the shape a hardened/embedded host can genuinely present. */
+async function withNavigator(stub: unknown, fn: () => Promise<void> | void): Promise<void> {
+  const original = Object.getOwnPropertyDescriptor(globalThis, "navigator");
+  if (stub === undefined) delete (globalThis as { navigator?: unknown }).navigator;
+  else Object.defineProperty(globalThis, "navigator", { value: stub, configurable: true, writable: true });
+  try {
+    await fn();
+  } finally {
+    if (original) Object.defineProperty(globalThis, "navigator", original);
+    else delete (globalThis as { navigator?: unknown }).navigator;
+  }
+}
+
+/** A clipboard whose `writeText` records what it was given and how it was called. */
+function recordingClipboard(behavior: "resolve" | "reject" | "throw" = "resolve") {
+  const wrote: string[] = [];
+  const clipboard = {
+    marker: "the real clipboard object",
+    writeText(this: { marker?: string } | undefined, text: string) {
+      // A native `writeText` is illegal torn off its receiver, so this pins that the shipped call
+      // keeps it: a `const { writeText } = navigator.clipboard` refactor fails here, not in a
+      // browser where it would silently become an "Illegal invocation" the user sees as nothing.
+      expect(this?.marker).toBe("the real clipboard object");
+      wrote.push(text);
+      if (behavior === "throw") throw new Error("sync boom");
+      if (behavior === "reject") return Promise.reject(new DOMException("Document is not focused."));
+      return Promise.resolve();
+    },
+  };
+  return { wrote, navigator: { clipboard } };
+}
+
+describe("copyToClipboard — the write is real, or it is a failure", () => {
+  test("a resolved write ⇒ true, and the clipboard got the text VERBATIM", async () => {
+    const stub = recordingClipboard("resolve");
+    await withNavigator(stub.navigator, async () => {
+      expect(await copyToClipboard(RETRIEVE)).toBe(true);
+    });
+    expect(stub.wrote).toEqual([RETRIEVE]);
+  });
+
+  test("a REJECTED write ⇒ false — never a success the operator cannot paste from", async () => {
+    // the honest case this whole feature turns on: navigator.clipboard rejects when the document
+    // is not focused, and is denied outright by a permissions policy.
+    const stub = recordingClipboard("reject");
+    await withNavigator(stub.navigator, async () => {
+      expect(await copyToClipboard(RETRIEVE)).toBe(false);
+    });
+  });
+
+  test("a write that throws SYNCHRONOUSLY ⇒ false, and does not escape", async () => {
+    const stub = recordingClipboard("throw");
+    await withNavigator(stub.navigator, async () => {
+      expect(await copyToClipboard(RETRIEVE)).toBe(false);
+    });
+  });
+
+  test.each([
+    ["no clipboard at all — an http:// LAN address is not a secure context", { navigator: {} }],
+    ["a clipboard object with no writeText", { navigator: { clipboard: {} } }],
+    ["a writeText that is not callable", { navigator: { clipboard: { writeText: "nope" } } }],
+    ["no navigator at all", undefined],
+  ])("%s ⇒ false", async (_name, stub) => {
+    await withNavigator(stub === undefined ? undefined : (stub as { navigator: unknown }).navigator, async () => {
+      expect(await copyToClipboard(RETRIEVE)).toBe(false);
+    });
+  });
+});
+
+describe("the copy control — state, naming, announcement", () => {
+  const copied: CopyFeedback = { target: "retrieve", ok: true };
+  const failed: CopyFeedback = { target: "retrieve", ok: false };
+
+  test("only the control that was clicked shows an outcome", () => {
+    expect(copyControlState("retrieve", copied)).toBe("copied");
+    expect(copyControlState("rotate", copied)).toBe("idle");
+    expect(copyControlState("retrieve", failed)).toBe("failed");
+    expect(copyControlState("rotate", failed)).toBe("idle");
+  });
+
+  test.each([undefined, null])("no feedback (%p) ⇒ idle", (feedback) => {
+    expect(copyControlState("retrieve", feedback)).toBe("idle");
+  });
+
+  test("each control names WHICH command it copies — two buttons called 'Copy' name nothing", () => {
+    const retrieve = copyButtonLabel("retrieve");
+    const rotate = copyButtonLabel("rotate");
+    expect(retrieve).not.toBe(rotate);
+    expect(retrieve).toContain("retrieval");
+    expect(rotate).toContain("rotation");
+  });
+
+  test.each<[CopyTarget, CopyFeedback | undefined]>([
+    ["retrieve", undefined],
+    ["retrieve", { target: "retrieve", ok: true }],
+    ["retrieve", { target: "retrieve", ok: false }],
+    ["rotate", undefined],
+    ["rotate", { target: "rotate", ok: true }],
+    ["rotate", { target: "rotate", ok: false }],
+  ])("%s/%o — the name contains the visible word (WCAG 2.5.3) and stays distinct", (target, feedback) => {
+    const name = copyButtonLabel(target, feedback);
+    expect(name).toContain(COPY_WORD[copyControlState(target, feedback)]);
+    expect(name).not.toBe(copyButtonLabel(target === "retrieve" ? "rotate" : "retrieve", feedback));
+  });
+
+  test("a failed control's name says what to do instead", () => {
+    expect(copyButtonLabel("retrieve", failed)).toContain("copy it manually");
+  });
+
+  test("the announcement is empty at rest, and never claims a copy that did not happen", () => {
+    expect(copyStatusLine()).toBe("");
+    expect(copyStatusLine(null)).toBe("");
+    expect(copyStatusLine(copied)).toBe("Copied the token-retrieval command to the clipboard.");
+    const line = copyStatusLine(failed);
+    expect(line).toContain("Could not copy");
+    expect(line).toContain("copy it manually");
+    expect(line).not.toContain("Copied");
+  });
+
+  test("the button is a real <button type=button>, not a div with a click handler", () => {
+    const out = renderToString(<CopyCommandButton target="retrieve" command={RETRIEVE} />);
+    expect(out).toContain("<button");
+    expect(out).toContain('type="button"');
+  });
+
+  test.each<[string, CopyFeedback | undefined, string, string]>([
+    ["at rest", undefined, "Copy", 'class="token-entry__copy"'],
+    ["after a success", { target: "retrieve", ok: true }, "Copied", "token-entry__copy is-copied"],
+    ["after a failure", { target: "retrieve", ok: false }, "Copy failed", "token-entry__copy is-failed"],
+  ])("%s it renders %p with %p", (_name, feedback, word, cls) => {
+    const out = renderToString(
+      <CopyCommandButton target="retrieve" command={RETRIEVE} feedback={feedback} />,
+    );
+    expect(out).toContain(`>${word}</button>`);
+    expect(out).toContain(cls);
+  });
+});
+
+describe("TokenGate — the copy control on each command line", () => {
+  test("both commands get their own control, and the command line is still rendered in full", () => {
+    const out = html();
+    expect((out.match(/class="token-entry__cmd-row"/g) ?? []).length).toBe(2);
+    expect((out.match(/class="token-entry__copy"/g) ?? []).length).toBe(2);
+    // additive, never a replacement: the text stays there to be read and hand-selected
+    expect(out).toContain(`<code class="token-entry__cmd">$ ${RETRIEVE}</code>`);
+    expect(out).toContain(`<code class="token-entry__cmd">$ ${ROTATE}</code>`);
+  });
+
+  test("the two controls are distinguishably labelled", () => {
+    const labels = Array.from(html().matchAll(/aria-label="([^"]*)"/g)).map((m) => m[1]!);
+    const copyLabels = labels.filter((l) => l.toLowerCase().startsWith("copy"));
+    expect(copyLabels).toEqual([
+      "Copy the token-retrieval command",
+      "Copy the token-rotation command",
+    ]);
+  });
+
+  // THE trap. `$ ` is a shell prompt this card draws; it is not part of the command. A clipboard
+  // holding "$ docker exec …" hands the operator a line that fails the moment they paste it.
+  test("what is handed to the clipboard is the RUNNABLE command — no `$ ` prompt", () => {
+    const got: [CopyTarget, string][] = [];
+    const buttons = findAll({ onCopy: (t, c) => got.push([t, c]) }, CopyCommandButton);
+    expect(buttons.length).toBe(2);
+    // The command the card hands each control is already prompt-free…
+    expect(buttons.map((b) => b.props.command)).toEqual([RETRIEVE, ROTATE]);
+    // …and so is what the control's own, shipped click closure passes on. The component vnode
+    // carries no onClick (CopyCommandButton renders it), so call it as a plain function — it uses
+    // no hooks — and drive the real handler off the <button> it returns.
+    for (const b of buttons) {
+      const inner = collect(
+        (CopyCommandButton as unknown as (p: Record<string, unknown>) => VNode<Record<string, unknown>>)(
+          b.props as Record<string, unknown>,
+        ),
+      ).filter((v) => v.type === "button");
+      expect(inner.length).toBe(1);
+      (inner[0]!.props.onClick as () => void)();
+    }
+    expect(got).toEqual([
+      ["retrieve", RETRIEVE],
+      ["rotate", ROTATE],
+    ]);
+    for (const [, command] of got) {
+      expect(command.startsWith("$")).toBe(false);
+      expect(command).toBe(command.trim());
+    }
+  });
+
+  test("a product's OVERRIDDEN command is what gets copied, verbatim", () => {
+    const retrieve = "docker exec -u svc box sh -c 'cd /opt/app && bun run token'";
+    const got: string[] = [];
+    const buttons = findAll(
+      { retrieveCommand: retrieve, onCopy: (_t, c) => got.push(c) },
+      CopyCommandButton,
+    );
+    const inner = collect(
+      (CopyCommandButton as unknown as (p: Record<string, unknown>) => VNode<Record<string, unknown>>)(
+        buttons[0]!.props as Record<string, unknown>,
+      ),
+    ).filter((v) => v.type === "button");
+    (inner[0]!.props.onClick as () => void)();
+    expect(got).toEqual([retrieve]);
+  });
+
+  test("clicking with no owner wired up is a no-op, not a crash", () => {
+    const buttons = findAll({}, CopyCommandButton);
+    const inner = collect(
+      (CopyCommandButton as unknown as (p: Record<string, unknown>) => VNode<Record<string, unknown>>)(
+        buttons[0]!.props as Record<string, unknown>,
+      ),
+    ).filter((v) => v.type === "button");
+    expect(() => (inner[0]!.props.onClick as () => void)()).not.toThrow();
+  });
+
+  test("a success marks ONLY the control that was clicked", () => {
+    const out = html({ copy: { target: "retrieve", ok: true } });
+    expect(out).toContain("token-entry__copy is-copied");
+    expect((out.match(/>Copied</g) ?? []).length).toBe(1);
+    expect((out.match(/>Copy</g) ?? []).length).toBe(1); // the other one is untouched
+    expect(out).toContain("Copied the token-retrieval command to the clipboard.");
+  });
+
+  // The honesty rule, end to end: a clipboard that REJECTS must not produce a success state
+  // anywhere in the rendered card.
+  test("a rejected clipboard write renders a failure — never 'Copied'", async () => {
+    const stub = recordingClipboard("reject");
+    let ok = true;
+    await withNavigator(stub.navigator, async () => {
+      ok = await copyToClipboard(RETRIEVE);
+    });
+    expect(ok).toBe(false);
+    const out = html({ copy: { target: "retrieve", ok } });
+    expect(out).toContain("token-entry__copy is-failed");
+    expect(out).toContain(">Copy failed</button>");
+    expect(out).not.toContain("is-copied");
+    expect(out).not.toContain(">Copied<");
+    expect(out).not.toContain("Copied the token-retrieval command");
+    expect(out).toContain("Could not copy the token-retrieval command.");
+    // and the command is still there, in full, to be selected by hand
+    expect(out).toContain(`<code class="token-entry__cmd">$ ${RETRIEVE}</code>`);
+  });
+
+  test("the announcement region is ALWAYS in the DOM, and empty at rest", () => {
+    // a live region inserted at the moment it gains content is announced unreliably
+    expect(html()).toContain('<span class="token-entry__copy-status" role="status"></span>');
   });
 });
 

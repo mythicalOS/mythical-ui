@@ -542,7 +542,67 @@
   line-height: 1.6;
   color: var(--my-muted);
 }
+/* A command line and its copy control. The control is ADDITIVE and never a replacement: the
+   command stays rendered as ordinary, selectable text, because the clipboard write is not
+   guaranteed to be available (navigator.clipboard needs a secure context, and these products are
+   reached over plain http on a LAN address as well as on localhost). When it is not, selecting the
+   line by hand is the only way through — so the line has to still be there. */
+.token-entry__cmd-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--my-sp-2);
+}
 .token-entry__cmd {
+  flex: 1 1 auto;
+  min-width: 0;
   color: var(--my-ink);
   overflow-wrap: anywhere;
+}
+.token-entry__copy {
+  flex: none;
+  padding: 0 6px;
+  border: 1px solid var(--my-control-border);
+  border-radius: var(--my-r-control);
+  background: var(--my-surface);
+  color: var(--my-muted);
+  font-family: inherit; /* the hint block's mono face — a <button> inherits neither by default */
+  font-size: var(--my-fs-micro);
+  line-height: 1.7;
+  cursor: pointer;
+  transition: background var(--my-t-fast), color var(--my-t-fast), border-color var(--my-t-fast);
+}
+.token-entry__copy:hover {
+  background: var(--my-surface-hover);
+  color: var(--my-ink);
+}
+/* design rule 6 — the shared focus ring, restated rather than added to ui-core's selector list:
+   that list lives in ui-core's sheet and covers only ui-core's own atom classes. */
+.token-entry__copy:focus-visible {
+  outline: 2px solid var(--my-accent);
+  outline-offset: 2px;
+}
+/* The two settled outcomes. Both resolve through tokens that are redefined per theme, so the
+   control stays legible on the light parchment and on the dark heritage surface with no
+   theme-specific rule: --my-ok is the deep green / heritage mint, --my-warn the amber pair. */
+.token-entry__copy.is-copied {
+  border-color: var(--my-ok);
+  color: var(--my-ok);
+}
+.token-entry__copy.is-failed {
+  border-color: var(--my-warn);
+  color: var(--my-warn);
+}
+/* The copy outcome's announcement. Always in the DOM (a live region inserted at the moment it
+   gains content is announced unreliably) and never on screen — the visible outcome is the
+   control's own word + color. Taken out of flow so it is not a flex item of the hint block and
+   contributes no gap; no offsets, so it stays at its static position and can never scroll. */
+.token-entry__copy-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

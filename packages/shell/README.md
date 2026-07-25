@@ -98,7 +98,14 @@ Requires `@mythicalos/preact-ui` **≥ 0.3.0** (the field uses its `revealable` 
 package stylesheet — the card is fully styled by `@mythicalos/shell/styles.css`; no product copies
 any CSS for it.
 
-Four things it will not do:
+Each of the two hint commands carries its own **copy control** (0.3.3). It is purely additive —
+no prop changed, nothing is required of the product — and the command stays rendered next to it as
+ordinary, selectable text, because the copy can genuinely fail: `navigator.clipboard` exists only
+in a secure context, and these products are reached over plain `http` on a LAN address as well as
+on `localhost`. What lands on the clipboard is the **runnable command**; the `$ ` in front of it is
+a shell prompt the card draws, never part of what you paste.
+
+Five things it will not do:
 
 - **It never invents a failure.** The `status · reason` line renders only when the product hands
   over *both*, and they must be what actually came back. Miss either and the line is simply not
@@ -112,6 +119,9 @@ Four things it will not do:
   host terminal, mentions `docker exec`.
 - **It never lifts the token out.** The field's value stays inside the component until you are
   handed the trimmed string on submit; the value is never copied into any other node or attribute.
+- **It never claims a copy that did not happen.** A copy control shows "Copied" only for a
+  clipboard write that actually resolved. A rejected or unavailable write shows "Copy failed" and
+  points the operator at the command, which is still there to be selected by hand.
 
 `onSubmit` fires from the CTA and from Enter (both no-ops while the trimmed value is empty).
 
