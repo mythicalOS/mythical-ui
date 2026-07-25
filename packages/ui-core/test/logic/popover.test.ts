@@ -485,8 +485,14 @@ describe("styles.css ships a real selector for every class this logic emits", ()
       expect(rule).not.toBeNull();
       expect(rule?.[1]).toContain("border-radius: var(--my-r-control)");
     }
-    // scan the popover's rules only, comments already stripped, so a prose mention can't trip it
-    const popoverRules = cssRules.slice(cssRules.indexOf(".my-pop-anchor"));
+    // Scan the popover's OWN rules — selected by selector, not by position. Slicing from
+    // `.my-pop-anchor` to the end of the file read every section that happens to sit below
+    // this one, so an unrelated component's legitimate pill (a non-interactive badge, which
+    // is precisely what rule 10 reserves the pill FOR) failed the popover's assertion.
+    const popoverRules = [...cssRules.matchAll(/([^{}]+)\{([^}]*)\}/g)]
+      .filter(([, selector]) => (selector ?? "").includes(".my-pop"))
+      .map(([whole]) => whole)
+      .join("\n");
     expect(popoverRules.length).toBeGreaterThan(500);
     expect(popoverRules).not.toContain("--my-r-pill");
   });
