@@ -71,7 +71,7 @@ jobs:
       - name: Typecheck (all packages)
         run: bun run typecheck
 
-      - name: Unit tests (455)
+      - name: Unit tests (460)
         run: bun test
 
       # npm cannot resolve `workspace:` — rewrite to concrete versions first.

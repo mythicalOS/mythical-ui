@@ -177,6 +177,59 @@ describe("Input — revealable password field: the hidden (default) state", () =
     expect(out).not.toContain("token");
   });
 
+  test.each([
+    ["both blank", { show: "   ", hide: "" }],
+    ["only one supplied", { show: "Show API key" }],
+    ["not strings at all", { show: null, hide: 7 }],
+    ["an empty object", {}],
+  ])("an unusable revealLabels override (%s) falls back per state, never to no name", (_n, labels) => {
+    const shown = renderToString(
+      <Input label="K" type="password" value="v" revealable revealLabels={labels as never} />,
+    );
+    const hidden = renderToString(
+      <InputBody
+        label="K"
+        type="password"
+        value="v"
+        revealable
+        revealed
+        autoId="X1"
+        onToggleReveal={noop}
+        revealLabels={labels as never}
+      />,
+    );
+    const nameOf = (h: string) => h.match(/aria-label="([^"]*)"/)?.[1];
+    expect(nameOf(shown)?.trim().length ?? 0).toBeGreaterThan(0);
+    expect(nameOf(hidden)?.trim().length ?? 0).toBeGreaterThan(0);
+    expect(nameOf(shown)).not.toBe(nameOf(hidden));
+  });
+
+  test("a usable half of an override is kept, the unusable half falls back", () => {
+    const out = renderToString(
+      <Input
+        label="K"
+        type="password"
+        value="v"
+        revealable
+        revealLabels={{ show: "Show API key", hide: "  " } as never}
+      />,
+    );
+    expect(out).toContain('aria-label="Show API key"');
+    const revealed = renderToString(
+      <InputBody
+        label="K"
+        type="password"
+        value="v"
+        revealable
+        revealed
+        autoId="X1"
+        onToggleReveal={noop}
+        revealLabels={{ show: "Show API key", hide: "  " } as never}
+      />,
+    );
+    expect(revealed).toContain(`aria-label="${REVEAL_HIDE_LABEL}"`);
+  });
+
   test("the generated id is namespaced, so it cannot collide with a consumer's own", () => {
     const id = html.match(/<label class="field-label" for="([^"]+)">/)?.[1];
     expect(id).toMatch(/^mythicalos-input-\d+$/);

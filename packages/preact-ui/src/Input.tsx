@@ -65,8 +65,18 @@ export interface RevealToggleProps {
  * state on `aria-pressed` and the action in its `aria-label`. It never receives, holds or
  * renders the field's value.
  */
+/** A caller-supplied name, or the default when it is not a usable one. Runtime-checked: this is a
+ *  public prop of a published package, and a blank or missing override would leave the toggle
+ *  named only by its two-letter visible text — or not at all. */
+function revealName(supplied: unknown, fallback: string): string {
+  return typeof supplied === "string" && supplied.trim().length > 0 ? supplied : fallback;
+}
+
 export function RevealToggle({ revealed, disabled, labels, onToggle }: RevealToggleProps) {
-  const names = labels ?? REVEAL_LABELS;
+  const names = {
+    show: revealName(labels?.show, REVEAL_SHOW_LABEL),
+    hide: revealName(labels?.hide, REVEAL_HIDE_LABEL),
+  };
   return (
     <button
       type="button"
