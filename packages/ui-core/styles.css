@@ -807,6 +807,7 @@ button.my-session-card { cursor: pointer; }
 }
 .my-session-card.is-stale .my-session-card__spine-value { color: var(--my-disabled-ink); }
 
+/* ══════════════════════════════════════════════════════════════════════════════════════════
    TERMINAL SET (ds/components-terminal, spec v2): .my-term · .my-qrow · .my-sendbar.
 
    Token rule 3 — "Terminal surfaces always use the --my-term-* set, regardless of app theme" —
