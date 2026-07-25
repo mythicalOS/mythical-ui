@@ -425,3 +425,76 @@ a:focus-visible, .link:focus-visible, .is-focus {
 /* a retained (not current) status — flagged on BOTH arms */
 .my-gitchip--stale { border-color: var(--my-warn); }
 .my-gitchip__stale { color: var(--my-warn); font-size: var(--my-fs-micro); }
+
+/* ── dropdown popover (ds/components-popover — registry row `popover` v1) ──
+   The design card: a chip trigger over a panel anchored 6px below it, --my-shadow-modal, high
+   z-index, ✓ marking the current row. Two card values are normalized onto the canonical scale the
+   way the additions section above already does: the card's 12.5px/10px body text → --my-fs-caption
+   (12px) / --my-fs-micro (11px), and its literal 6px item radius → --my-r-control (6px, the same
+   number — now expressed as the token shape rule 10 demands for anything clickable).
+   Placement is state-driven, never inline-styled: the bindings toggle .my-pop--above /
+   .my-pop--end from @mythicalos/ui-core's resolvePopoverPosition, mirroring <mythical-select>'s
+   [data-flip].
+   CONSUMER CONTRACT (design card, verbatim): "Ancestors must never clip it." The panel is
+   position:absolute inside .my-pop-anchor, so any ancestor with overflow:hidden/auto or its own
+   stacking context will crop or bury it — give that ancestor room, not this component a portal. */
+.my-pop-anchor { position: relative; display: inline-block; }
+
+.my-pop-trigger {
+  display: inline-flex; align-items: center; gap: var(--my-sp-2);
+  /* shape rule 10 — the trigger is clickable, so it is SQUARED (--my-r-control); the pill radius
+     is reserved for non-interactive status tags */
+  border: 1px solid var(--my-control-border); border-radius: var(--my-r-control);
+  padding: 5px 12px; font-family: inherit; font-size: var(--my-fs-caption);
+  background: var(--my-surface); color: var(--my-ink); cursor: pointer;
+  transition: background var(--my-t-fast), border-color var(--my-t-fast);
+}
+.my-pop-trigger:hover:not(:disabled):not(.is-disabled) { background: var(--my-surface-hover); }
+.my-pop-trigger.is-open { border-color: var(--my-accent); }
+.my-pop-trigger:disabled, .my-pop-trigger.is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+  border-color: transparent; cursor: not-allowed;
+}
+.my-pop-trigger__label { color: var(--my-muted); }
+.my-pop-trigger__value { font-weight: var(--my-fw-medium); }
+.my-pop-trigger__caret { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+.my-pop-trigger:disabled .my-pop-trigger__label,
+.my-pop-trigger.is-disabled .my-pop-trigger__label,
+.my-pop-trigger:disabled .my-pop-trigger__caret,
+.my-pop-trigger.is-disabled .my-pop-trigger__caret { color: var(--my-disabled-ink); }
+
+.my-pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  min-width: 210px; max-width: 320px; padding: var(--my-sp-1);
+  background: var(--my-surface); border: 1px solid var(--my-border); /* panel edge = a card boundary, not a control one */
+  border-radius: var(--my-r-card); box-shadow: var(--my-shadow-modal);
+}
+/* viewport-aware flip — same rule as <mythical-select>'s :host([data-flip]) #pop */
+.my-pop--above { top: auto; bottom: calc(100% + 6px); }
+.my-pop--end { left: auto; right: 0; }
+
+.my-pop__head { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px 8px; }
+.my-pop__title { font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); color: var(--my-ink); }
+.my-pop__caption { font-size: var(--my-fs-micro); color: var(--my-muted); }
+
+.my-pop__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  width: 100%; padding: 7px 10px; border: 0; background: none;
+  border-radius: var(--my-r-control); /* shape rule 10 — a row is clickable, so squared */
+  font-family: inherit; font-size: var(--my-fs-caption); color: var(--my-ink);
+  text-align: left; cursor: pointer;
+}
+.my-pop__item:hover:not(:disabled):not(.is-disabled) { background: var(--my-surface-hover); }
+.my-pop__item.is-selected { color: var(--my-accent-strong); font-weight: var(--my-fw-medium); }
+.my-pop__item:disabled, .my-pop__item.is-disabled { color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-pop__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-pop__check { flex: none; }
+
+.my-pop__div { height: 1px; margin: var(--my-sp-1) 0; background: var(--my-border); }
+.my-pop__foot { display: block; }
+
+/* design rule 6 — the shared focus ring, identical in both themes, on every interactive control
+   here (restated locally for the same reason the input-reveal rules above are) */
+.my-pop-trigger:focus-visible, .my-pop__item:focus-visible {
+  outline: 2px solid var(--my-accent); outline-offset: 2px;
+}

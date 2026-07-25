@@ -104,3 +104,19 @@ export {
   type GitFlag,
   type GitFlagTone,
 } from "./GitChip.js";
+
+// ── dropdown popover (ds/components-popover — registry row `popover` v1) ──
+export {
+  Popover,
+  POPOVER_CARET,
+  POPOVER_CHECK,
+  POPOVER_EMPTY_VALUE,
+  popoverTriggerClass,
+  popoverPanelClass,
+  popoverItemClass,
+  popoverTriggerText,
+  resolvePopoverPosition,
+  type PopoverProps,
+  type PopoverItem,
+  type PopoverPosition,
+} from "./Popover.js";
