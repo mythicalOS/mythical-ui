@@ -331,6 +331,14 @@ describe("SendBar — the honest delivery hint (invariant 2)", () => {
     expect(renderToString(<SendBar onSend={sent} />)).toContain(sendPlaceholder(false));
   });
 
+  test("a busy bar cannot send — the control is inert while a delivery is in flight", () => {
+    const html = renderToString(<SendBar busy onSend={sent} />);
+    expect(html).toMatch(/<button[^>]*my-sendbar__send[^>]*disabled/);
+    // the bar is still ENABLED (the field stays editable mid-send), so the honest hint stays
+    expect(html).toContain(DELIVERY_HINT);
+    expect(html).not.toContain("my-sendbar is-disabled");
+  });
+
   test("both delivery classes are offered, with the default pressed", () => {
     const html = renderToString(<SendBar defaultClass="on-done" onSend={sent} />);
     expect(html).toContain("ASAP");

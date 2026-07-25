@@ -280,11 +280,13 @@ export {
   deliveryClassButtonClass,
   deliveryClassLabel,
   keyAction,
+  makeSendGate,
   sendBarClass,
   sendPlaceholder,
   showDeliveryHint,
   type DeliveryClass,
   type KeyAction,
+  type SendGate,
 } from "./logic/sendbar.js";
 
 export {

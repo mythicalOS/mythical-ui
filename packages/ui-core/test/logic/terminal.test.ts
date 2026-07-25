@@ -41,6 +41,7 @@ import {
   isExpandable,
   keyAction,
   lastBoundaryIndex,
+  makeSendGate,
   noiseShow,
   queueBadgeClass,
   queueBadgeLabel,
@@ -508,6 +509,30 @@ describe("send bar composition", () => {
     expect(canSend("   \n ", false, false)).toBe(false);
     expect(canSend("hi", true, false)).toBe(false);
     expect(canSend("hi", false, true)).toBe(false);
+  });
+
+  test("the send gate is single-flight — a second attempt in the same tick is refused", () => {
+    // `canSend`'s `busy` covers a caller that tracks the request; the gate covers the window a
+    // caller that flips `busy` a tick late (or never) would leave open, in which two clicks — or a
+    // click racing an Enter — both call onSend and deliver the same message twice
+    const gate = makeSendGate();
+    expect(gate.inFlight()).toBe(false);
+    expect(gate.tryAcquire()).toBe(true);
+    expect(gate.inFlight()).toBe(true);
+    expect(gate.tryAcquire()).toBe(false); // the duplicate delivery, refused
+    expect(gate.tryAcquire()).toBe(false);
+    gate.release();
+    expect(gate.inFlight()).toBe(false);
+    expect(gate.tryAcquire()).toBe(true); // reusable for the NEXT send
+  });
+
+  test("releasing an unheld gate is safe, and gates are independent", () => {
+    const gate = makeSendGate();
+    gate.release();
+    expect(gate.inFlight()).toBe(false);
+    const other = makeSendGate();
+    expect(gate.tryAcquire()).toBe(true);
+    expect(other.tryAcquire()).toBe(true); // one bar's in-flight send never blocks another's
   });
 
   test("the draft clears only on success AND only if it is still the submitted text", () => {

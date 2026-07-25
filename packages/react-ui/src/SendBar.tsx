@@ -13,7 +13,7 @@
 //
 // Keyboard: Enter=send, Shift/Alt-Enter=newline, IME composition suppressed (`keyAction`).
 
-import { useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
+import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
   DELIVERY_CLASSES,
   DELIVERY_HINT,
@@ -24,6 +24,7 @@ import {
   deliveryClassButtonClass,
   deliveryClassLabel,
   keyAction,
+  makeSendGate,
   sendBarClass,
   sendPlaceholder,
   showDeliveryHint,
@@ -66,14 +67,30 @@ export function SendBar(props: SendBarProps) {
   const busy = !!props.busy;
   const [cls, setCls] = useState<DeliveryClass>(props.defaultClass ?? "asap");
   const [text, setText] = useState("");
+  // Single-flight: `busy` covers a caller that tracks the request itself, but `onSend` may be async
+  // and a caller that flips `busy` a tick later (or never) would let two clicks — or a click racing
+  // an Enter — deliver the same message twice. The gate is synchronous, so the second attempt is
+  // refused before any state update lands; `sending` only exists to re-render the disabled button.
+  const gate = useRef(makeSendGate());
+  const [sending, setSending] = useState(false);
+  const locked = busy || sending;
 
   const doSend = async () => {
-    if (!canSend(text, disabled, busy)) return;
+    if (!canSend(text, disabled, locked)) return;
+    if (!gate.current.tryAcquire()) return;
+    setSending(true);
     const submitted = text;
-    const sent = await props.onSend(cls, submitted);
-    // Functional update: compared against the LIVE draft at resolve time, not this closure's
-    // snapshot, so text typed while the request was in flight is never erased.
-    if (sent) setText((current) => (clearDraftOnSend(sent, submitted, current) ? "" : current));
+    try {
+      const sent = await props.onSend(cls, submitted);
+      // Functional update: compared against the LIVE draft at resolve time, not this closure's
+      // snapshot, so text typed while the request was in flight is never erased.
+      if (sent) setText((current) => (clearDraftOnSend(sent, submitted, current) ? "" : current));
+    } finally {
+      // released even if `onSend` rejects — a rejection is a contract violation, but it must not
+      // wedge the bar shut. The draft survives either way (it clears only on `sent === true`).
+      gate.current.release();
+      setSending(false);
+    }
   };
 
   const onKeyDown = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
@@ -113,7 +130,7 @@ export function SendBar(props: SendBarProps) {
         <button
           type="button"
           className={SENDBAR_CLASSES.send}
-          disabled={!canSend(text, disabled, busy)}
+          disabled={!canSend(text, disabled, locked)}
           onClick={doSend}
         >
           {SEND_BUTTON_LABEL}

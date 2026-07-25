@@ -54,6 +54,42 @@ export function showDeliveryHint(disabled: boolean): boolean {
 }
 
 /**
+ * Single-flight gate for the send action. `canSend`'s `busy` argument covers the case where the
+ * CALLER tracks the in-flight state, but `onSend` may be async and a caller that flips `busy` in a
+ * later tick (or not at all) leaves a window in which two clicks — or a click racing an Enter —
+ * both call `onSend` and deliver the same message twice. The gate closes that window inside the
+ * component: it is synchronous, so the second attempt in the same tick is refused before any state
+ * update can land.
+ *
+ * Lives here rather than in a binding so both bindings get identical semantics, and so the race is
+ * testable without a DOM.
+ */
+export interface SendGate {
+  /** Takes the lock and returns true; returns false when a send is already in flight. */
+  tryAcquire(): boolean;
+  /** Releases the lock. Safe to call when not held. */
+  release(): void;
+  inFlight(): boolean;
+}
+
+export function makeSendGate(): SendGate {
+  let held = false;
+  return {
+    tryAcquire() {
+      if (held) return false;
+      held = true;
+      return true;
+    },
+    release() {
+      held = false;
+    },
+    inFlight() {
+      return held;
+    },
+  };
+}
+
+/**
  * The draft clears ONLY on a delivered/queued success AND only when the field still holds exactly
  * the submitted body — the field stays editable while the request is in flight, so text typed
  * meanwhile is a NEWER draft a completing send must not erase. A failed send keeps the text either
