@@ -218,6 +218,8 @@ export type SessionStatusTone = "ok" | "warn" | "error" | "info" | "muted" | "un
 export type SessionStatusKey =
   | "working"
   | "idle"
+  | "context-high"
+  | "context-critical"
   | "spawning"
   | "active"
   | "stopping"
@@ -245,6 +247,18 @@ export interface SessionStatusInput {
   /** The session's link/wake readiness. `false` ⇒ down; `undefined` ⇒ not reported. */
   connected?: boolean;
 }
+
+/** The design card's context escalation: at warn/error the status line stops restating the
+ *  lifecycle and names the thing that actually needs acting on. */
+const CONTEXT_ESCALATION: Record<"warn" | "error", { key: SessionStatusKey; label: string; tone: SessionStatusTone }> = {
+  warn: { key: "context-high", label: "context high", tone: "warn" },
+  error: { key: "context-critical", label: "context critical", tone: "error" },
+};
+
+/** Statuses the context escalation may speak over: a live session, or one whose lifecycle was
+ *  never reported. A TERMINAL or TRANSIENT lifecycle claim (stopped/failed/spawning/stopping/
+ *  paused) and a DOWN LINK are all more important than a hot context and keep the line. */
+const ESCALATABLE_KEYS = new Set<SessionStatusKey>(["working", "idle", "active", "unknown"]);
 
 const LIFECYCLE_STATUS: Record<SessionLifecycle, Omit<SessionStatus, "key">> = {
   spawning: { label: "spawning…", tone: "info", pulse: true },
@@ -279,7 +293,24 @@ export const SESSION_STATUS_UNKNOWN: SessionStatus = {
  *     never a fabricated `"idle"` or `"working"` (invariant 2).
  *  4. Nothing reported at all ⇒ `"unknown"` (invariant 2).
  */
-export function sessionStatus(input?: SessionStatusInput | null): SessionStatus {
+export function sessionStatus(
+  input?: SessionStatusInput | null,
+  contextBand?: CtxBand | null,
+): SessionStatus {
+  const base = baseSessionStatus(input);
+  // The design card's warn/error states replace the status line with the context claim ("context
+  // high" / "context critical", in the band's hue). It is a claim about a REAL MEASUREMENT, so it
+  // never fabricates anything — and `unknown` is not a band, so an unmeasured session is never
+  // escalated (invariant 1). The underlying pulse rides along: a working session that goes hot is
+  // still working.
+  if ((contextBand === "warn" || contextBand === "error") && ESCALATABLE_KEYS.has(base.key)) {
+    const esc = CONTEXT_ESCALATION[contextBand];
+    return { key: esc.key, label: esc.label, tone: esc.tone, pulse: base.pulse };
+  }
+  return base;
+}
+
+function baseSessionStatus(input?: SessionStatusInput | null): SessionStatus {
   const { lifecycle, activity, connected } = isObject(input) ? input : {};
 
   if (connected === false && (lifecycle === "active" || lifecycle === undefined)) {
@@ -324,21 +355,49 @@ export function sessionCardStale(status: SessionStatus, productClaim?: boolean):
   return sessionCardIsStale(status) || productClaim === true;
 }
 
+/** Every word the derivation reserves, mapped to the status key that earns it. An override may
+ *  not borrow another key's word — that is how a product would launder a claim it never made. */
+const RESERVED_STATUS_WORDS: ReadonlyMap<string, SessionStatusKey> = new Map<string, SessionStatusKey>([
+  ["working", "working"],
+  ["idle", "idle"],
+  ["active", "active"],
+  ["spawning", "spawning"],
+  ["stopping", "stopping"],
+  ["stopped", "stopped"],
+  ["failed", "failed"],
+  ["paused", "paused"],
+  ["disconnected", "disconnected"],
+  ["unknown", "unknown"],
+  ["context high", "context-high"],
+  ["context critical", "context-critical"],
+]);
+
+/** Fold a candidate word to the form the reserved map is keyed by (the derived labels carry a
+ *  trailing ellipsis on the transient states). */
+function normalizeStatusWord(word: string): string {
+  return word.trim().toLowerCase().replace(/(…|\.{3})$/, "").trim();
+}
+
 /**
  * The words beside the dot. A product may substitute its own honest phrasing for the derived
  * label — the tone, the pulse and the stale treatment still come from the derivation.
  *
- * Two refusals:
+ * Three refusals:
  *   · a BLANK override falls back to the derived label, rather than leaving the status as colour
  *     alone (token rule #7);
  *   · the `unknown` status ignores the override entirely. There is no alternative honest wording
- *     for "the product told us nothing" — nothing was claimed, so there is nothing to reword —
- *     and accepting one would let `statusLabel="idle"` launder an absent signal into a positive
- *     claim, which is exactly what invariant 2 forbids.
+ *     for "the product told us nothing" — nothing was claimed, so there is nothing to reword;
+ *   · an override that IS another status's reserved word is ignored. `statusLabel="idle"` on a
+ *     session whose activity was never reported would state a claim no wire made — invariant 2 is
+ *     structural here, not a matter of trusting the caller. Rewording is still free: anything
+ *     outside the reserved vocabulary (`"wake unavailable"`, `"stopped (exit 1)"`, …) passes.
  */
 export function sessionStatusText(status: SessionStatus, override?: string | null): string {
   if (status.key === "unknown") return status.label;
-  return typeof override === "string" && override.trim().length > 0 ? override : status.label;
+  if (typeof override !== "string" || override.trim().length === 0) return status.label;
+  const reserved = RESERVED_STATUS_WORDS.get(normalizeStatusWord(override));
+  if (reserved !== undefined && reserved !== status.key) return status.label;
+  return override;
 }
 
 // ════════════════════════════════════════════════════════════════════════════════════════

@@ -16,6 +16,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { renderToString } from "preact-render-to-string";
 import {
+  ctxBand,
   ctxBarGeom,
   ctxMeterClass,
   ctxNoteText,
@@ -304,5 +305,42 @@ describe("SessionCard — package-wide scans (this component's share)", () => {
 
   test("no render ever emits an inline style attribute (CSP style-src 'self')", () => {
     for (const html of renders) expect(html).not.toContain("style=");
+  });
+});
+
+describe("SessionCard — the design card's warn/error states (spec states 2 and 3)", () => {
+  test("a hot context replaces the status line, in the band's hue", () => {
+    const high = renderToString(
+      <SessionCard name="Peter" meta={["pm", "sonnet-5", "4h 02m"]} status={{ lifecycle: "active" }} contextPct={83} />,
+    );
+    expect(high).toContain(">context high<");
+    expect(high).toContain(`class="${sessionStatusClass(sessionStatus({ lifecycle: "active" }, "warn"))}"`);
+    expect(high).not.toContain(">active<");
+
+    const critical = renderToString(<SessionCard name="Rasmus" status={{ lifecycle: "active" }} contextPct={94} />);
+    expect(critical).toContain(">context critical<");
+    expect(critical).toContain(sessionStatusClass(sessionStatus({ lifecycle: "active" }, "error")));
+  });
+
+  test("the status the card renders is derived from the SAME band the meter is drawn from", () => {
+    for (const pct of [12, 62, 74, 75, 83, 89, 90, 94, 100]) {
+      const html = renderToString(<SessionCard name="J" status={{ lifecycle: "active" }} contextPct={pct} />);
+      const band = ctxBand(pct);
+      expect(html).toContain(`class="${sessionStatusClass(sessionStatus({ lifecycle: "active" }, band))}"`);
+      expect(html).toContain(ctxMeterClass({ band, stale: false }));
+    }
+  });
+
+  test("INVARIANT 1: an unmeasured context never escalates the status line", () => {
+    const html = renderToString(<SessionCard name="J" status={{ lifecycle: "active" }} />);
+    expect(html).toContain(">active<");
+    expect(html).not.toContain("context high");
+    expect(html).not.toContain("context critical");
+  });
+
+  test("INVARIANT 2: statusLabel cannot pin 'idle' on a session that never claimed it", () => {
+    const html = renderToString(<SessionCard name="J" status={{ lifecycle: "active" }} statusLabel="idle" />);
+    expect(html).toContain(">active<");
+    expect(html).not.toContain(">idle<");
   });
 });

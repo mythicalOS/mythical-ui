@@ -114,9 +114,11 @@ export function SessionCard(props: SessionCardProps) {
     children,
   } = props;
 
-  const status: SessionStatus = sessionStatus(statusInput);
-  const stale = sessionCardStale(status, props.stale);
   const band = ctxBand(contextPct, thresholds);
+  // the band is part of the status derivation, not a second opinion on it: the design card's
+  // warn/error states replace the status line with the context claim
+  const status: SessionStatus = sessionStatus(statusInput, band);
+  const stale = sessionCardStale(status, props.stale);
   const bar = ctxBarGeom(contextPct, thresholds);
   const subline = sessionSubline(meta);
   const spineSummary = sessionSpineSummary(spine);

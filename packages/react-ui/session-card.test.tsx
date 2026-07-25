@@ -222,3 +222,27 @@ describe("SessionCard (React) — the stale/label rules come from ui-core, not f
     expect(ctxBarGeom(95, broken).ticks.map((t) => t.pct)).toEqual([75, 90]);
   });
 });
+
+describe("SessionCard (React) — the context escalation and the reserved-word rule", () => {
+  test("a hot context replaces the status line, in the band's hue", () => {
+    for (const [pct, word] of [
+      [83, "context high"],
+      [94, "context critical"],
+    ] as const) {
+      const html = renderToStaticMarkup(<SessionCard name="J" status={{ lifecycle: "active" }} contextPct={pct} />);
+      expect(html).toContain(`>${word}<`);
+      expect(html).toContain(sessionStatusClass(sessionStatus({ lifecycle: "active" }, ctxBand(pct))));
+    }
+  });
+
+  test("an unmeasured context never escalates, and statusLabel cannot pin an unmade claim", () => {
+    const plain = renderToStaticMarkup(<SessionCard name="J" status={{ lifecycle: "active" }} />);
+    expect(plain).toContain(">active<");
+    expect(plain).not.toContain("context critical");
+    const laundered = renderToStaticMarkup(
+      <SessionCard name="J" status={{ lifecycle: "active" }} statusLabel="working" />,
+    );
+    expect(laundered).toContain(">active<");
+    expect(laundered).not.toContain(">working<");
+  });
+});

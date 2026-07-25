@@ -38,6 +38,7 @@ import {
   CTX_THRESHOLDS_DEFAULT,
   CTX_UNKNOWN_TEXT,
   SESSION_AVATAR_UNKNOWN,
+  SESSION_STATUS_UNKNOWN,
   SPINE_MAX_NODES,
   type CtxBand,
   type CtxThresholds,
@@ -714,5 +715,83 @@ describe("sessionCardClass — the WHOLE root class attribute is derived in core
     for (const extra of ["", "   ", undefined, null]) {
       expect(sessionCardClass({ extra })).toBe("my-session-card");
     }
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// the design card's context escalation (spec states 2 and 3)
+// ════════════════════════════════════════════════════════════════════════════════════════
+
+describe("sessionStatus — a hot context speaks over the status line, in the band's hue", () => {
+  test("warn ⇒ 'context high'; error ⇒ 'context critical' (spec states 2 and 3)", () => {
+    const high = sessionStatus({ lifecycle: "active" }, "warn");
+    expect(high).toEqual({ key: "context-high", label: "context high", tone: "warn", pulse: false });
+    const critical = sessionStatus({ lifecycle: "active" }, "error");
+    expect(critical).toEqual({ key: "context-critical", label: "context critical", tone: "error", pulse: false });
+  });
+
+  test("the underlying pulse rides along — a working session that goes hot is still working", () => {
+    expect(sessionStatus({ lifecycle: "active", activity: "working" }, "error").pulse).toBe(true);
+    expect(sessionStatus({ lifecycle: "active", activity: "idle" }, "error").pulse).toBe(false);
+  });
+
+  test("a measurement is a real claim, so it speaks even when the lifecycle was never reported", () => {
+    expect(sessionStatus({}, "error").key).toBe("context-critical");
+    expect(sessionStatus(undefined, "warn").key).toBe("context-high");
+  });
+
+  test("INVARIANT 1: an UNMEASURED context never escalates — unknown is not a band", () => {
+    expect(sessionStatus({ lifecycle: "active" }, "unknown").key).toBe("active");
+    expect(sessionStatus({ lifecycle: "active" }, undefined).key).toBe("active");
+    expect(sessionStatus({ lifecycle: "active" }, null).key).toBe("active");
+    expect(sessionStatus({}, "unknown")).toEqual(SESSION_STATUS_UNKNOWN);
+  });
+
+  test("a nominal context changes nothing", () => {
+    expect(sessionStatus({ lifecycle: "active" }, "ok").key).toBe("active");
+    expect(sessionStatus({ activity: "idle" }, "ok").key).toBe("idle");
+  });
+
+  test("a down link, and every terminal/transient lifecycle, outrank the context", () => {
+    expect(sessionStatus({ lifecycle: "active", connected: false }, "error").key).toBe("disconnected");
+    for (const lifecycle of ["spawning", "stopping", "stopped", "failed", "paused"] as const) {
+      expect(sessionStatus({ lifecycle }, "error").key).toBe(lifecycle);
+    }
+  });
+
+  test("the escalated tones are ones the stylesheet already dresses", () => {
+    for (const band of ["warn", "error"] as const) {
+      const s = sessionStatus({ lifecycle: "active" }, band);
+      expect(s.tone).toBe(band);
+      expect(sessionStatusClass(s)).toContain(`my-session-card__status--${band}`);
+    }
+  });
+});
+
+describe("sessionStatusText — an override may reword, never borrow another status's word", () => {
+  test("INVARIANT 2: 'idle'/'working' cannot be pinned on a session that claimed neither", () => {
+    const active = sessionStatus({ lifecycle: "active" });
+    for (const laundering of ["idle", "working", "Idle", "  WORKING  "]) {
+      expect(sessionStatusText(active, laundering)).toBe("active");
+    }
+  });
+
+  test("no status can borrow another's reserved word", () => {
+    const stopped = sessionStatus({ lifecycle: "stopped" });
+    for (const laundering of ["active", "working", "disconnected", "context critical", "unknown"]) {
+      expect(sessionStatusText(stopped, laundering)).toBe("stopped");
+    }
+    expect(sessionStatusText(sessionStatus({ lifecycle: "active" }, "error"), "active")).toBe("context critical");
+  });
+
+  test("a status may still be reworded with its OWN word, ellipsis form included", () => {
+    expect(sessionStatusText(sessionStatus({ activity: "idle" }), "idle")).toBe("idle");
+    expect(sessionStatusText(sessionStatus({ lifecycle: "stopping" }), "stopping...")).toBe("stopping...");
+  });
+
+  test("free wording outside the reserved vocabulary still passes", () => {
+    const down = sessionStatus({ lifecycle: "active", connected: false });
+    expect(sessionStatusText(down, "wake unavailable")).toBe("wake unavailable");
+    expect(sessionStatusText(sessionStatus({ lifecycle: "failed" }), "failed (exit 1)")).toBe("failed (exit 1)");
   });
 });
