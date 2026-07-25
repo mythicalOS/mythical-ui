@@ -390,24 +390,37 @@ a:focus-visible, .link:focus-visible, .is-focus {
 /* git status chip (ds/components-git-chip.html `.gitchip`/`.gitflag`) — a bordered inline mono
    chip. The flags are the card's own squared 4px badge, NOT the pill `.my-chip`: inside a mono
    chip the card gives them a tighter, squared shape, and design rule #10 reserves the pill for
-   stand-alone non-interactive tags. */
+   stand-alone non-interactive tags.
+
+   Three deliberate deltas from the card, all recorded here (and pinned by
+   test/css-small-atoms.test.ts) rather than left to be discovered:
+     - `flex-wrap: wrap` on the chip and its flag group. The card demonstrates the chip inside a
+       fixed 820px panel where it cannot run out of room; a packaged atom renders at whatever width
+       the consumer gives it, and a long branch name plus three flags must wrap rather than
+       overflow its container.
+     - the branch keeps the card's inherited weight (NOT bold). The product's local sheet bolds it;
+       the card does not, so the card wins.
+     - the flag weight is `--my-fw-bold` (650), where the card's literal is 700. There is no 700
+       step on the canonical --my-fw-* scale, and the additions section above already normalizes
+       badge weights onto the nearest token (`.my-chip` does exactly this). */
 .my-gitchip {
-  display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; /* delta 1 */
   font-family: var(--my-font-mono); font-size: var(--my-fs-caption);
   border: 1px solid var(--my-border); border-radius: var(--my-r-control);
   padding: 6px 10px; background: var(--my-surface);
 }
-.my-gitchip__branch { font-weight: var(--my-fw-bold); color: var(--my-ink); }
+.my-gitchip__branch { color: var(--my-ink); } /* delta 2 — card weight, not the product's bold */
 .my-gitchip__flags { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .my-gitchip__flag {
   font-size: var(--my-fs-micro); /* card: 10px, no exact token step */
-  font-weight: var(--my-fw-bold); letter-spacing: .3px; border-radius: 4px; padding: 2px 6px;
+  font-weight: var(--my-fw-bold); /* delta 3 — card: 700, no exact token step */
+  letter-spacing: .3px; border-radius: 4px; padding: 2px 6px;
 }
 .my-gitchip__flag--warn  { background: var(--my-warn-soft);  color: var(--my-warn); }
 .my-gitchip__flag--error { background: var(--my-error-soft); color: var(--my-error); }
 .my-gitchip__flag--ok    { background: var(--my-ok-soft);    color: var(--my-ok); }
 /* the honest unavailable arm: the branch slot is muted and the note carries the reason in UI type */
-.my-gitchip--unavailable .my-gitchip__branch { color: var(--my-muted); font-weight: var(--my-fw-regular); }
+.my-gitchip--unavailable .my-gitchip__branch { color: var(--my-muted); }
 .my-gitchip__note { font-family: var(--my-font-ui); color: var(--my-muted); }
 /* a retained (not current) status — flagged on BOTH arms */
 .my-gitchip--stale { border-color: var(--my-warn); }

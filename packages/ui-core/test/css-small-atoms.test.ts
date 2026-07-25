@@ -125,6 +125,25 @@ describe("git chip", () => {
       expect({ c, found: hasClassSelector(c) }).toEqual({ c, found: true });
     }
   });
+  test("the three documented deltas from the card are exactly what ships", () => {
+    // delta 1 — the chip and its flag group wrap (the card's fixed-width panel needs no wrap; a
+    // packaged atom renders at arbitrary widths and must not overflow).
+    const root = css.match(/\.my-gitchip\s*\{([^}]*)\}/);
+    const flags = css.match(/\.my-gitchip__flags\s*\{([^}]*)\}/);
+    expect(root?.[1]).toContain("flex-wrap: wrap");
+    expect(flags?.[1]).toContain("flex-wrap: wrap");
+
+    // delta 2 — the branch keeps the card's inherited weight; it is NOT bolded like the product's.
+    const branch = css.match(/\.my-gitchip__branch\s*\{([^}]*)\}/);
+    expect(branch).not.toBeNull();
+    expect(branch?.[1]).not.toContain("font-weight");
+
+    // delta 3 — the flag weight rides the nearest --my-fw-* token, never a raw 700.
+    const flag = css.match(/\.my-gitchip__flag\s*\{([^}]*)\}/);
+    expect(flag?.[1]).toContain("font-weight: var(--my-fw-bold)");
+    expect(flag?.[1]).not.toMatch(/font-weight:\s*\d/);
+  });
+
   test("the flags are the card's squared badge, not the pill chip", () => {
     const rule = css.match(/\.my-gitchip__flag\s*\{([^}]*)\}/);
     expect(rule).not.toBeNull();
