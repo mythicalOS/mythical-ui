@@ -38,3 +38,47 @@ export {
   type StatusTone,
   type BannerTone,
 } from "./logic/tone.js";
+
+// ── small atoms graduated out of a single product: save-bar, stat-tiles, git-chip ──
+export {
+  saveBarNote,
+  saveBarDirty,
+  saveBarClass,
+  SAVE_BAR_SEP,
+  SAVE_BAR_DISCARD_LABEL,
+  SAVE_BAR_SAVE_LABEL,
+  type SaveBarNote,
+} from "./logic/save-bar.js";
+
+export {
+  statTilesClass,
+  statTileClass,
+  formatStatCompact,
+  formatStatCount,
+  formatStatUsd,
+  formatStatPercent,
+  STAT_TILE_EMPTY,
+  STAT_TILE_MINUS,
+  type StatTile,
+  type StatTileTone,
+} from "./logic/stat-tiles.js";
+
+export {
+  gitFlags,
+  gitBranchLabel,
+  gitChipClass,
+  gitFlagClass,
+  gitChipNote,
+  GIT_BRANCH_GLYPH,
+  GIT_BRANCH_UNKNOWN,
+  GIT_DETACHED_LABEL,
+  GIT_CLEAN_LABEL,
+  GIT_LOADING_NOTE,
+  GIT_UNAVAILABLE_NOTE,
+  GIT_STALE_LABEL,
+  GIT_STALE_TITLE,
+  type GitStatus,
+  type GitFlag,
+  type GitFlagTone,
+  type GitChipState,
+} from "./logic/git-chip.js";

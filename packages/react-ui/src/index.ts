@@ -53,3 +53,50 @@ export { StatusLine, statusLineClass, type StatusLineProps, type StatusTone } fr
 export { SearchInput, type SearchInputProps } from "./SearchInput.js";
 export { Banner, bannerClass, BANNER_ICON, type BannerProps, type BannerTone } from "./Banner.js";
 export { Gauge, gaugeTone, gaugeGeom, type GaugeProps, type GaugeGeom, type Tone } from "./Gauge.js";
+
+// ── small atoms graduated out of a single product (save-bar / stat-tiles / git-chip cards) ──
+export {
+  SaveBar,
+  saveBarNote,
+  saveBarDirty,
+  saveBarClass,
+  SAVE_BAR_SEP,
+  SAVE_BAR_DISCARD_LABEL,
+  SAVE_BAR_SAVE_LABEL,
+  type SaveBarProps,
+  type SaveBarNote,
+} from "./SaveBar.js";
+export {
+  StatTiles,
+  statTilesClass,
+  statTileClass,
+  formatStatCompact,
+  formatStatCount,
+  formatStatUsd,
+  formatStatPercent,
+  STAT_TILE_EMPTY,
+  STAT_TILE_MINUS,
+  type StatTilesProps,
+  type StatTile,
+  type StatTileTone,
+} from "./StatTiles.js";
+export {
+  GitChip,
+  gitFlags,
+  gitBranchLabel,
+  gitChipClass,
+  gitFlagClass,
+  gitChipNote,
+  GIT_BRANCH_GLYPH,
+  GIT_BRANCH_UNKNOWN,
+  GIT_DETACHED_LABEL,
+  GIT_CLEAN_LABEL,
+  GIT_LOADING_NOTE,
+  GIT_UNAVAILABLE_NOTE,
+  GIT_STALE_LABEL,
+  GIT_STALE_TITLE,
+  type GitChipProps,
+  type GitStatus,
+  type GitFlag,
+  type GitFlagTone,
+} from "./GitChip.js";

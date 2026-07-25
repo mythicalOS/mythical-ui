@@ -327,3 +327,87 @@ a:focus-visible, .link:focus-visible, .is-focus {
 /* design rule 6 — the shared focus ring, restated rather than added to the BASE selector list
    above for the same reason the rules above live here */
 .input-reveal__btn:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   SMALL ATOMS — save bar · stat tiles · git status chip. Each was registered in the design
+   system but implemented only inside one product; these rules are taken from the cards
+   (ds/layouts-settings.html, ds/components-stat-tiles.html, ds/components-git-chip.html) with
+   colors/font-sizes remapped onto canonical --my-* tokens. Where the product's local sheet and
+   the card differed, the CARD wins and the delta is noted inline.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* save bar (ds/layouts-settings.html `.save`) — full-bleed bottom, slides up only when dirty.
+   The card draws it `position:absolute` inside its own bordered screen frame; a packaged atom has
+   no such frame to anchor to, so it is `fixed` to the viewport (what the reference product's
+   sheet does too) — a consumer that needs it scoped to a pane overrides `position` via the
+   passthrough class. */
+.my-savebar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--my-surface); border-top: 1px solid var(--my-border);
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px var(--my-sp-5); font-size: var(--my-fs-caption);
+  animation: my-savebar-up 180ms ease-out; /* the card's "slides up (180ms)" */
+}
+@keyframes my-savebar-up { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { .my-savebar { animation: none; } }
+.my-savebar__note { color: var(--my-muted); }
+.my-savebar__count { color: var(--my-ink); font-weight: var(--my-fw-bold); }
+.my-savebar__actions { margin-left: auto; display: flex; gap: var(--my-sp-2); }
+
+/* stat tiles (ds/components-stat-tiles.html `.tiles`/`.tile`) — mono, tabular-nums, micro key +
+   mono sub-caption. The card sizes tiles by content off a 112px floor; the reference product's
+   sheet additionally stretches them with `flex: 1`, which a consumer can restore from its own
+   sheet (`.my-stat-tiles > .my-stat-tile { flex: 1 }`). */
+.my-stat-tiles { display: flex; gap: 10px; flex-wrap: wrap; }
+.my-stat-tile {
+  min-width: 112px; background: var(--my-surface);
+  border: 1px solid var(--my-border); border-radius: var(--my-r-card); padding: 10px 12px;
+}
+.my-stat-tile__label {
+  font-size: var(--my-fs-micro); /* card: 10px, no exact token step */
+  font-weight: var(--my-fw-bold); text-transform: uppercase; letter-spacing: .4px;
+  color: var(--my-muted);
+}
+.my-stat-tile__value {
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-body-lg); /* card: 17px, nearest token step */
+  font-weight: var(--my-fw-bold); font-variant-numeric: tabular-nums; margin-top: 2px;
+}
+.my-stat-tile__sub {
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-micro); /* card: 10.5px, no exact token step */
+  color: var(--my-muted);
+}
+/* the card's "brag" number (`.tile.save .v` → --my-accent-strong) */
+.my-stat-tile--accent .my-stat-tile__value { color: var(--my-accent-strong); }
+/* band tint (token rule #4 thresholds live with the caller, only the tint is here) */
+.my-stat-tile--warn { border-color: var(--my-warn); }
+.my-stat-tile--warn .my-stat-tile__value { color: var(--my-warn); }
+.my-stat-tile--error { border-color: var(--my-error); }
+.my-stat-tile--error .my-stat-tile__value { color: var(--my-error); }
+
+/* git status chip (ds/components-git-chip.html `.gitchip`/`.gitflag`) — a bordered inline mono
+   chip. The flags are the card's own squared 4px badge, NOT the pill `.my-chip`: inside a mono
+   chip the card gives them a tighter, squared shape, and design rule #10 reserves the pill for
+   stand-alone non-interactive tags. */
+.my-gitchip {
+  display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-caption);
+  border: 1px solid var(--my-border); border-radius: var(--my-r-control);
+  padding: 6px 10px; background: var(--my-surface);
+}
+.my-gitchip__branch { font-weight: var(--my-fw-bold); color: var(--my-ink); }
+.my-gitchip__flags { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.my-gitchip__flag {
+  font-size: var(--my-fs-micro); /* card: 10px, no exact token step */
+  font-weight: var(--my-fw-bold); letter-spacing: .3px; border-radius: 4px; padding: 2px 6px;
+}
+.my-gitchip__flag--warn  { background: var(--my-warn-soft);  color: var(--my-warn); }
+.my-gitchip__flag--error { background: var(--my-error-soft); color: var(--my-error); }
+.my-gitchip__flag--ok    { background: var(--my-ok-soft);    color: var(--my-ok); }
+/* the honest unavailable arm: the branch slot is muted and the note carries the reason in UI type */
+.my-gitchip--unavailable .my-gitchip__branch { color: var(--my-muted); font-weight: var(--my-fw-regular); }
+.my-gitchip__note { font-family: var(--my-font-ui); color: var(--my-muted); }
+/* a retained (not current) status — flagged on BOTH arms */
+.my-gitchip--stale { border-color: var(--my-warn); }
+.my-gitchip__stale { color: var(--my-warn); font-size: var(--my-fs-micro); }
