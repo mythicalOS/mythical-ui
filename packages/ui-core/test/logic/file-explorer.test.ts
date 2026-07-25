@@ -35,6 +35,9 @@ import {
   indentClass,
   isHonestStatus,
   isMarkdownName,
+  isUsableEntryName,
+  MAX_TREE_DEPTH,
+  NODE_ID_SEP,
   nodeId,
   parentRelPath,
   previewBadge,
@@ -55,6 +58,8 @@ import {
   type GitMark,
   type HonestStatus,
 } from "../../src/index.ts";
+
+const ROOT_K = "core";
 
 const css = readFileSync(join(import.meta.dir, "..", "..", "styles.css"), "utf8");
 
@@ -143,6 +148,17 @@ describe("the two tree modes are different trees, not two skins", () => {
     expect(repoBadges({ key: "a", label: "a", projectCount: 1 }, "project")).toEqual([]);
     expect(repoBadges({ key: "a", label: "a", projectCount: 0 }, "project")).toEqual([]);
     expect(repoBadges({ key: "a", label: "a", projectCount: Number.NaN }, "project")).toEqual([]);
+  });
+
+  test("a FRACTIONAL count never claims sharing that isn't there (never '1 projects')", () => {
+    // 1.9 must not pass the shared test and then floor down to a self-contradicting "1 projects"
+    expect(repoBadges({ key: "a", label: "a", projectCount: 1.9 }, "project")).toEqual([]);
+    expect(repoBadges({ key: "a", label: "a", projectCount: 2.7 }, "project")).toEqual([
+      { text: "2 projects", tone: "muted" },
+    ]);
+    for (const n of [0.5, 1, 1.1, 1.99]) {
+      expect(repoBadges({ key: "a", label: "a", projectCount: n }, "project")).toEqual([]);
+    }
   });
 
   test("badges belong to a ROOT repo — a nested directory never carries them", () => {
@@ -383,6 +399,68 @@ describe("deriveFileTreeRows", () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
+  // ── review-round-1 regressions ──
+  test("a listing is read from OWN keys only — a polluted prototype cannot fabricate entries", () => {
+    const id = nodeId(ROOT_K, "");
+    const dirs = Object.create({
+      [id]: { status: "loaded", entries: [{ name: "leaked.md", kind: "file" }] },
+    }) as Record<string, DirState>;
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs,
+      expanded: new Set([id]),
+    });
+    // the inherited "listing" must NOT be believed — the honest unfetched state stands
+    expect(rows.map((r) => r.type)).toEqual(["dir", "note"]);
+    expect(rows[1]).toMatchObject({ status: "loading" });
+    expect(JSON.stringify(rows)).not.toContain("leaked.md");
+  });
+
+  test("a nameless directory entry cannot recurse the walk into a stack overflow", () => {
+    const id = nodeId(ROOT_K, "");
+    expect(() =>
+      deriveFileTreeRows({
+        mode: "project",
+        roots: [{ key: ROOT_K, label: "core" }],
+        dirs: { [id]: loaded([{ name: "", kind: "dir" }]) },
+        expanded: new Set([id]),
+      }),
+    ).not.toThrow();
+  });
+
+  test("structurally unusable entry names are dropped rather than composed into a wrong path", () => {
+    expect(isUsableEntryName("a.md")).toBe(true);
+    expect(isUsableEntryName("")).toBe(false);
+    expect(isUsableEntryName("a/b")).toBe(false);
+    expect(isUsableEntryName(`a${NODE_ID_SEP}b`)).toBe(false);
+
+    const id = nodeId(ROOT_K, "");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs: { [id]: loaded([{ name: "", kind: "file" }, { name: "a/b", kind: "file" }, { name: "ok.md", kind: "file" }]) },
+      expanded: new Set([id]),
+    });
+    const files = rows.filter((r) => r.type === "file");
+    expect(files).toHaveLength(1);
+    expect(files[0]).toMatchObject({ name: "ok.md" });
+  });
+
+  test("traversal depth is bounded even for a pathologically deep listing", () => {
+    const dirs: Record<string, DirState> = {};
+    const expanded = new Set<string>();
+    let rel = "";
+    for (let i = 0; i < MAX_TREE_DEPTH + 20; i++) {
+      const id = nodeId(ROOT_K, rel);
+      dirs[id] = loaded([{ name: `d${i}`, kind: "dir" }]);
+      expanded.add(id);
+      rel = rel.length === 0 ? `d${i}` : `${rel}/d${i}`;
+    }
+    const rows = deriveFileTreeRows({ mode: "project", roots: [{ key: ROOT_K, label: "core" }], dirs, expanded });
+    expect(Math.max(...rows.map((r) => r.depth))).toBeLessThanOrEqual(MAX_TREE_DEPTH + 1);
+  });
+
   test("countLoadedFiles counts only what has actually been listed", () => {
     expect(
       countLoadedFiles({
@@ -506,6 +584,19 @@ describe("the size / mtime header", () => {
     expect(formatRelativeTime(now - 5 * 86_400_000, now)).toBe("5d ago");
     expect(formatRelativeTime(now + 60_000, now)).toBe("0s ago"); // clock skew clamps
     expect(formatRelativeTime(null, now)).toBe("—");
+  });
+
+  test("a pre-2001 MILLISECOND timestamp reads as old, not as the '0s ago' lie", () => {
+    const now = 1_780_000_000_000; // 2026
+    const y2k = 946_684_800_000; // 2000-01-01 in ms — below the old 1e12 threshold
+    expect(formatRelativeTime(y2k, now)).not.toBe("0s ago");
+    expect(formatRelativeTime(y2k, now)).toMatch(/^\d+d ago$/);
+  });
+
+  test("second-precision timestamps are still read as seconds", () => {
+    const nowMs = 1_780_000_000_000;
+    const twoMinAgoSec = Math.floor(nowMs / 1000) - 120;
+    expect(formatRelativeTime(twoMinAgoSec, nowMs)).toBe("2m ago");
   });
 
   test("previewMeta prefers the READ's own values so the header can't show a stale size", () => {

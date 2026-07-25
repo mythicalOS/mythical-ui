@@ -22,6 +22,7 @@
 
 import type { ComponentChildren } from "preact";
 import {
+  badgeClass,
   breadcrumbSegments,
   buildBreadcrumb,
   countLoadedFiles,
@@ -212,7 +213,7 @@ function renderRow(
         <span class="my-files__glyph" aria-hidden="true">{row.glyph}</span>
         <span class="my-files__name">{row.name}</span>
         {row.badges.map((b) => (
-          <span key={b.text} class={badgeClassOf(b.tone)}>{b.text}</span>
+          <span key={b.text} class={badgeClass(b.tone)}>{b.text}</span>
         ))}
       </button>
     );
@@ -239,9 +240,6 @@ function renderRow(
   );
 }
 
-function badgeClassOf(tone: "accent" | "muted"): string {
-  return `my-files__badge my-files__badge--${tone}`;
-}
 
 // ── preview pane ──────────────────────────────────────────────────────────────
 

@@ -18,6 +18,7 @@
 
 import type { ReactNode } from "react";
 import {
+  badgeClass,
   breadcrumbSegments,
   buildBreadcrumb,
   countLoadedFiles,
@@ -199,7 +200,7 @@ function renderRow(
         <span className="my-files__glyph" aria-hidden="true">{row.glyph}</span>
         <span className="my-files__name">{row.name}</span>
         {row.badges.map((b) => (
-          <span key={b.text} className={badgeClassOf(b.tone)}>{b.text}</span>
+          <span key={b.text} className={badgeClass(b.tone)}>{b.text}</span>
         ))}
       </button>
     );
@@ -226,9 +227,6 @@ function renderRow(
   );
 }
 
-function badgeClassOf(tone: "accent" | "muted"): string {
-  return `my-files__badge my-files__badge--${tone}`;
-}
 
 // ── preview pane ──────────────────────────────────────────────────────────────
 

@@ -145,6 +145,8 @@ export {
   countLoadedFiles,
   classifyDirNode,
   repoBadges,
+  isUsableEntryName,
+  MAX_TREE_DEPTH,
   // glyphs
   NODE_GLYPH,
   CHEVRON_OPEN,
@@ -183,6 +185,7 @@ export {
   // formatting
   formatFileSize,
   formatRelativeTime,
+  SECONDS_THRESHOLD,
   // class strings
   MAX_INDENT_DEPTH,
   indentClass,

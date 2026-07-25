@@ -231,8 +231,11 @@ export function repoBadges(root: FileTreeRootSpec, mode: FileTreeMode): FileRowB
   const out: FileRowBadge[] = [];
   if (root.primary === true) out.push({ text: "primary", tone: "accent" });
   const n = root.projectCount;
-  if (typeof n === "number" && Number.isFinite(n) && n > 1) {
-    out.push({ text: `${Math.floor(n)} projects`, tone: "muted" });
+  if (typeof n === "number" && Number.isFinite(n)) {
+    // Floor BEFORE the shared test, not after: a fractional 1.9 would otherwise pass `> 1` and then
+    // floor down to the nonsensical "1 projects" — a claim of sharing where there is none.
+    const count = Math.floor(n);
+    if (count > 1) out.push({ text: `${count} projects`, tone: "muted" });
   }
   return out;
 }
@@ -313,12 +316,21 @@ export function formatFileSize(bytes: unknown): string {
   return `${v.toFixed(1)} ${BYTE_UNITS[i] ?? "PB"}`;
 }
 
-/** Relative time — "2m ago". `now` is injected so this stays pure and testable. Seconds-vs-
- *  milliseconds is disambiguated by magnitude (the same rule the family's other surfaces use). A
- *  future timestamp clamps to "0s ago" rather than rendering a negative age. Pure. */
+/**
+ * Relative time — "2m ago". `now` is injected so this stays pure and testable. A future timestamp
+ * clamps to "0s ago" rather than rendering a negative age. Pure.
+ *
+ * Seconds-vs-milliseconds is disambiguated by magnitude, with the threshold at 1e11 rather than the
+ * 1e12 some sibling surfaces use. 1e12 ms is 2001-09-09, so under that rule ANY millisecond
+ * timestamp older than 2001 is mistaken for seconds, multiplied by 1000 into the far future, and
+ * then clamped — reporting a genuinely old file as "0s ago", i.e. a plausible-looking lie. At 1e11
+ * the seconds branch still covers every second-timestamp up to the year 5138, while millisecond
+ * timestamps are read correctly all the way back to 1973.
+ */
+export const SECONDS_THRESHOLD = 1e11;
 export function formatRelativeTime(t: unknown, now: number = Date.now()): string {
   if (t === null || t === undefined) return "—";
-  const ms = typeof t === "number" ? (t < 1e12 ? t * 1000 : t) : Date.parse(String(t));
+  const ms = typeof t === "number" ? (t < SECONDS_THRESHOLD ? t * 1000 : t) : Date.parse(String(t));
   if (!Number.isFinite(ms)) return String(t);
   let s = Math.floor((now - ms) / 1000);
   if (s < 0) s = 0;
@@ -441,6 +453,23 @@ export function previewBodyMode(name: string, state: FilePreviewState): "markdow
  *  stylesheet without bound. */
 export const MAX_INDENT_DEPTH = 10;
 
+/** Hard ceiling on TRAVERSAL depth. Unlike `MAX_INDENT_DEPTH` (a purely visual cap) this bounds the
+ *  recursion itself, so no caller-supplied listing can walk the derivation into a stack overflow. */
+export const MAX_TREE_DEPTH = 64;
+
+/**
+ * Whether an entry name is structurally usable as one path segment.
+ *
+ * An EMPTY name is the dangerous one: `childRelPath("", "")` returns `""`, which is the ROOT's own
+ * relative path — so an expanded root listing itself as a nameless directory would re-enter the same
+ * node id forever. A name containing "/" or a NUL is rejected for the same class of reason: it would
+ * silently compose a path that addresses a different node than the one listed (and NUL would break
+ * `nodeId`'s separator outright). None of these can name a real filesystem entry.
+ */
+export function isUsableEntryName(name: string): boolean {
+  return typeof name === "string" && name.length > 0 && !name.includes("/") && !name.includes(NODE_ID_SEP);
+}
+
 /** The indent class for a depth. */
 export function indentClass(depth: number): string {
   const d = Number.isFinite(depth) ? Math.max(0, Math.min(Math.floor(depth), MAX_INDENT_DEPTH)) : 0;
@@ -535,7 +564,17 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
   const markFor = (id: string): GitMark | null =>
     Object.prototype.hasOwnProperty.call(marks, id) ? (marks[id] as GitMark) : null;
 
+  // OWN keys only — the same guard `markFor` applies. `dirs` is caller-supplied and may be a plain
+  // object whose prototype chain carries a colliding node id; reading through it would render a
+  // directory the caller never listed, or (worse) treat an unfetched node as loaded and so silently
+  // replace the honest "Loading…" row with fabricated entries.
+  const dirState = (id: string): DirState | undefined =>
+    Object.prototype.hasOwnProperty.call(dirs, id) ? dirs[id] : undefined;
+
   const walk = (rootKey: string, relPath: string, name: string, depth: number, entryRepo: boolean | undefined, root: FileTreeRootSpec): void => {
+    // Depth ceiling — belt and braces against a pathological listing. A real tree is nowhere near
+    // this; without it a caller's malformed data could recurse until the stack overflows.
+    if (depth > MAX_TREE_DEPTH) return;
     const id = nodeId(rootKey, relPath);
     const open = expanded.has(id);
     const kind = classifyDirNode(mode, depth, entryRepo);
@@ -557,7 +596,7 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
     });
     if (!open) return;
 
-    const state = dirs[id];
+    const state = dirState(id);
     if (state === undefined || state.status === "loading") {
       rows.push({
         type: "note",
@@ -592,6 +631,9 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
       // a truncated-but-empty listing is still worth reporting below
     }
     for (const entry of state.entries) {
+      // A structurally unusable name is dropped rather than composed into a path that would address
+      // the wrong node (or, for the empty name, this very node — an infinite descent).
+      if (!isUsableEntryName(entry.name)) continue;
       const childRel = childRelPath(relPath, entry.name);
       if (entry.kind === "dir") {
         walk(rootKey, childRel, entry.name, depth + 1, entry.repo, root);
