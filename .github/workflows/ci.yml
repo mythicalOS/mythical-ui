@@ -89,7 +89,15 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
+      # Must run from the package that OWNS @playwright/test. bun does not hoist
+      # this bin to the workspace root, so from the root `bunx` silently fetches
+      # the LATEST playwright from the registry and installs browser builds for
+      # that, while the suite below runs the locked version out of
+      # packages/ui-core. The skew is invisible until upstream ships a new
+      # browser build — 1.62.0 did, and the run went red with the locked 1.61.1
+      # looking for a chromium build the newer install had not placed.
       - name: Install Playwright browsers
+        working-directory: mythical-ui/packages/ui-core
         run: bunx playwright install --with-deps chromium firefox webkit
 
       - name: mythical-select contract suite (354)
