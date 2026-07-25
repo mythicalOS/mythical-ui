@@ -344,3 +344,25 @@ describe("SessionCard — the design card's warn/error states (spec states 2 and
     expect(html).not.toContain(">idle<");
   });
 });
+
+describe("SessionCard — the displayed value and the band it is drawn in always agree", () => {
+  test("a fractional reading is banded as REPORTED; the label grows a decimal rather than lying", () => {
+    const html = renderToString(<SessionCard name="J" contextPct={89.5} />);
+    expect(html).toContain(">89.5%<");
+    expect(html).toContain(ctxMeterClass({ band: "warn" }));
+    expect(html).not.toContain(">90%<");
+  });
+
+  test("across readings and product thresholds, the rendered number lands in the rendered band", () => {
+    const thresholdSets = [undefined, { warn: 40, critical: 80 }];
+    for (const thresholds of thresholdSets) {
+      for (const pct of [0, 12.5, 39.6, 62, 74.5, 75, 89.5, 90, 94.2, 100]) {
+        const html = renderToString(<SessionCard name="J" contextPct={pct} thresholds={thresholds} />);
+        const shown = Number(ctxValueText(pct, thresholds).replace("%", ""));
+        expect(html).toContain(`>${ctxValueText(pct, thresholds)}<`);
+        expect(html).toContain(ctxMeterClass({ band: ctxBand(shown, thresholds), stale: false }));
+        expect(html).toContain(ctxMeterClass({ band: ctxBand(pct, thresholds), stale: false }));
+      }
+    }
+  });
+});

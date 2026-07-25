@@ -166,7 +166,7 @@ export function SessionCard(props: SessionCardProps) {
         </span>
         <span className="my-session-card__ctx-legend">
           <span className="my-session-card__ctx-note">{ctxNoteText(band, { stale })}</span>
-          <b className="my-session-card__ctx-value">{ctxValueText(contextPct)}</b>
+          <b className="my-session-card__ctx-value">{ctxValueText(contextPct, thresholds)}</b>
         </span>
       </span>
 

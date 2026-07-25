@@ -208,10 +208,11 @@ describe("SessionCard (React) — the stale/label rules come from ui-core, not f
     expect(html).toContain(ctxMeterClass({ band: "error" }));
   });
 
-  test("a fractional reading is banded as the percent it displays", () => {
+  test("a fractional reading is banded as REPORTED, and the label grows a decimal to match", () => {
     const html = renderToStaticMarkup(<SessionCard name="J" contextPct={89.5} />);
-    expect(html).toContain(">90%<");
-    expect(html).toContain(ctxMeterClass({ band: "error" }));
+    expect(html).toContain(">89.5%<");
+    expect(html).toContain(ctxMeterClass({ band: "warn" }));
+    expect(html).not.toContain(">90%<");
   });
 
   test("an unusable threshold pair falls back to the defaults in band AND ticks", () => {

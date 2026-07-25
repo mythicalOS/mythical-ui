@@ -589,29 +589,48 @@ describe("styles.css — every class the session-card logic emits exists as a se
 // what the card SHOWS and what it CLAIMS are the same number
 // ════════════════════════════════════════════════════════════════════════════════════════
 
-describe("ctxReading — one canonical presented value drives band, fill and label", () => {
-  test("a fractional reading cannot display one percent while being banded as another", () => {
-    // 89.5 displays as 90%, so it must BE the ≥90 band — not amber "distill suggested"
-    expect(ctxValueText(89.5)).toBe("90%");
-    expect(ctxBand(89.5)).toBe("error");
-    expect(ctxNoteText(ctxBand(89.5))).toBe("context · distill now");
-    // 74.5 displays as 75%, so it must be the warn band
-    expect(ctxValueText(74.5)).toBe("75%");
-    expect(ctxBand(74.5)).toBe("warn");
-    // and just below the rounding boundary nothing moves
-    expect(ctxValueText(89.4)).toBe("89%");
-    expect(ctxBand(89.4)).toBe("warn");
+describe("the label can never contradict the band — and the band is the REPORTED reading", () => {
+  test("a fractional reading is banded as REPORTED: 89.5 has not crossed a 90 critical line", () => {
+    expect(ctxBand(89.5)).toBe("warn");
+    expect(ctxBand(74.5)).toBe("ok");
+    expect(ctxBand(90)).toBe("error");
+    expect(ctxBand(75)).toBe("warn");
   });
 
-  test("the fill length is the same presented number as the label, across the range", () => {
-    for (const pct of [0, 12.4, 47.6, 62, 74.5, 89.5, 94.2, 100, 150, -3]) {
-      const shown = ctxValueText(pct);
-      expect(`${ctxFillPct(pct)}%`).toBe(shown);
-      expect(`${ctxBarGeom(pct).fill}%`).toBe(shown);
+  test("…so the label grows a decimal rather than rounding across the boundary", () => {
+    expect(ctxValueText(89.5)).toBe("89.5%");
+    expect(ctxValueText(74.5)).toBe("74.5%");
+    expect(ctxNoteText(ctxBand(89.5))).toBe("context · distill suggested");
+  });
+
+  test("the ordinary case is still a whole percent", () => {
+    expect(ctxValueText(62)).toBe("62%");
+    expect(ctxValueText(62.4)).toBe("62%");
+    expect(ctxValueText(89.4)).toBe("89%");
+    expect(ctxValueText(94.2)).toBe("94%");
+    expect(ctxValueText(0)).toBe("0%");
+    expect(ctxValueText(150)).toBe("100%");
+  });
+
+  test("PROPERTY: the number the card displays always lands in the band the card claims", () => {
+    const thresholdSets = [undefined, { warn: 40, critical: 80 }, { warn: 75.5, critical: 90.5 }];
+    const readings = [0, 0.4, 12.5, 39.6, 40.4, 62, 74.5, 74.9, 75, 75.4, 79.5, 80.4, 89.5, 89.9, 90, 94.2, 99.6, 100];
+    for (const t of thresholdSets) {
+      for (const pct of readings) {
+        const shown = Number(ctxValueText(pct, t).replace("%", ""));
+        expect({ pct, t, band: ctxBand(shown, t) }).toEqual({ pct, t, band: ctxBand(pct, t) });
+      }
     }
   });
 
-  test("absence still short-circuits everything (invariant 1 is not weakened by rounding)", () => {
+  test("the fill is the reading itself, at full precision (the bar is not rounded)", () => {
+    expect(ctxFillPct(62.4)).toBe(62.4);
+    expect(ctxBarGeom(89.5).fill).toBe(89.5);
+    expect(ctxFillPct(150)).toBe(100);
+    expect(ctxFillPct(-3)).toBe(0);
+  });
+
+  test("absence still short-circuits everything (invariant 1 is not weakened)", () => {
     expect(ctxReading(undefined)).toBeUndefined();
     expect(ctxReading(null)).toBeUndefined();
     expect(ctxReading(Number.NaN)).toBeUndefined();

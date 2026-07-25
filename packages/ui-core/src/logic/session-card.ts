@@ -86,19 +86,20 @@ function isReading(pct: number | null | undefined): pct is number {
 }
 
 /**
- * The ONE number the card presents: a reading clamped to 0–100 and rounded to the whole percent
- * the card actually shows, or `undefined` when there is no reading. Band, fill and label all
- * derive from this, so the card can never show `90%` while calling it `warn` — what it displays
- * and what it claims are the same number.
+ * The ONE number the card works from: the reading clamped to 0–100, at FULL precision, or
+ * `undefined` when there is no reading. The band and the fill are derived from this — the
+ * threshold comparison is against what was actually reported, so an 89.5% session has NOT crossed
+ * a 90% critical line. The LABEL then adapts its precision to this same number (see
+ * `ctxValueText`) so what the card displays can never contradict what it claims.
  */
 export function ctxReading(pct: number | null | undefined): number | undefined {
-  return isReading(pct) ? Math.round(Math.min(100, Math.max(0, pct))) : undefined;
+  return isReading(pct) ? Math.min(100, Math.max(0, pct)) : undefined;
 }
 
 /**
- * Band for a context reading, derived from the whole percent the card displays. Absent ⇒
- * `"unknown"`. The thresholds are normalized (and ordered) first, so the band and the bar's ticks
- * always agree.
+ * Band for a context reading, derived from the reading AS REPORTED — 89.5 has not crossed a 90
+ * critical line and must not be shown as though it had. Absent ⇒ `"unknown"`. The thresholds are
+ * normalized (and ordered) first, so the band and the bar's ticks always agree.
  */
 export function ctxBand(pct: number | null | undefined, thresholds?: CtxThresholds | null): CtxBand {
   const v = ctxReading(pct);
@@ -121,10 +122,27 @@ export function ctxFillPct(pct: number | null | undefined): number | undefined {
 /** What an absent reading renders as — never `"0%"`. */
 export const CTX_UNKNOWN_TEXT = "—";
 
-/** The meter's right-hand value: `"62%"` for a reading, `"—"` for none (invariant 1). */
-export function ctxValueText(pct: number | null | undefined): string {
+/** How many decimal places the value may grow to before it is shown verbatim. */
+const CTX_VALUE_PLACES = [0, 1, 2] as const;
+
+/**
+ * The meter's right-hand value: `"62%"` for a reading, `"—"` for none (invariant 1).
+ *
+ * Whole percents are what the design card shows, but a rounded percent must never contradict the
+ * band the card is enforcing: at the default thresholds, 89.5% is `warn`, so displaying it as
+ * "90%" would put an amber card next to the critical number. The label therefore takes the FIRST
+ * precision whose displayed number lands in the same band as the reading — "89.5%" here, plain
+ * "62%" in the ordinary case — falling back to the reading verbatim, which by definition agrees.
+ */
+export function ctxValueText(pct: number | null | undefined, thresholds?: CtxThresholds | null): string {
   const v = ctxReading(pct);
-  return v === undefined ? CTX_UNKNOWN_TEXT : `${v}%`;
+  if (v === undefined) return CTX_UNKNOWN_TEXT;
+  const band = ctxBand(v, thresholds);
+  for (const places of CTX_VALUE_PLACES) {
+    const shown = Number(v.toFixed(places));
+    if (ctxBand(shown, thresholds) === band) return `${shown}%`;
+  }
+  return `${v}%`;
 }
 
 /** The meter's left-hand label and the separator the card composes its notes with. */
