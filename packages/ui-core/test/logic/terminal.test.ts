@@ -7,6 +7,7 @@
 
 import { describe, expect, test } from "bun:test";
 import {
+  DEFAULT_DELIVERY_CLASS,
   DELIVERY_CLASSES,
   DELIVERY_HINT,
   QUEUE_CANCEL_ASK,
@@ -48,8 +49,11 @@ import {
   queueRowClass,
   queueStatusLabel,
   queueView,
+  ROW_SCOPE,
   rowKey,
   rowKeys,
+  scopedRowKeys,
+  segmentKeys,
   sendBarClass,
   sendPlaceholder,
   shouldDisarmCancel,
@@ -62,6 +66,7 @@ import {
   transcriptView,
   turnCaption,
   unavailableText,
+  uniqueKeys,
   visibleRows,
   type QueueItem,
   type QueueItemStatus,
@@ -437,6 +442,42 @@ describe("transcript segmentation", () => {
     expect(rowKeys([])).toEqual([]);
   });
 
+  test("scopedRowKeys makes cross-scope expand-state collisions impossible", () => {
+    // the naive `${scope}:${key}` prefix fails exactly here: a transcript row whose id IS another
+    // scope's prefix would share expand state with that scope's row
+    const transcript = scopedRowKeys([ROW_SCOPE.transcript], [row({ id: "l|a" }), row({ id: "a" })]);
+    const local = scopedRowKeys([ROW_SCOPE.local], [row({ id: "a" }), row({ id: "|a" })]);
+    const hist = scopedRowKeys([ROW_SCOPE.history, "seg1"], [row({ id: "a" })]);
+    const all = [...transcript, ...local, ...hist];
+    expect(new Set(all).size).toBe(all.length);
+    // the escape character itself cannot be used to forge another scope's key either
+    const evil = scopedRowKeys([ROW_SCOPE.transcript], [row({ id: "%7Ca" }), row({ id: "%" })]);
+    expect(new Set([...evil, ...local, ...transcript]).size).toBe(evil.length + local.length + transcript.length);
+  });
+
+  test("two history segments never share expand state, even with identical row ids", () => {
+    const rows = [row({ id: "r1" })];
+    const a = scopedRowKeys([ROW_SCOPE.history, "segA"], rows);
+    const b = scopedRowKeys([ROW_SCOPE.history, "segB"], rows);
+    expect(a).not.toEqual(b);
+  });
+
+  test("segment identity rides the segment id, so reordering does not move expand state", () => {
+    const segA = { id: "aaa", rows: [] };
+    const segB = { id: "bbb", rows: [] };
+    expect(segmentKeys([segA, segB])).toEqual(["aaa", "bbb"]);
+    // reordered: each segment keeps ITS key, so a segment carries its expand state with it
+    expect(segmentKeys([segB, segA])).toEqual(["bbb", "aaa"]);
+    // an id-less or repeated segment still gets a unique key
+    expect(new Set(segmentKeys([{ id: "", rows: [] }, { id: "x", rows: [] }, { id: "x", rows: [] }])).size).toBe(3);
+  });
+
+  test("uniqueKeys preserves the first occurrence and disambiguates the rest", () => {
+    expect(uniqueKeys(["a", "b", "a", "a"])).toEqual(["a", "b", "a#1", "a#2"]);
+    expect(uniqueKeys(["a", "a#1", "a"])).toEqual(["a", "a#1", "a#2"]); // no collision with the scheme
+    expect(uniqueKeys([])).toEqual([]);
+  });
+
   test("a foreign segment is captioned by its own immutable id", () => {
     expect(historySegmentCaption("7f3a11c9")).toBe("session 7f3a11c9");
     expect(historySegmentCaption("")).toBe("session —");
@@ -483,8 +524,9 @@ describe("title bar", () => {
 
 // ── send bar composition ──
 describe("send bar composition", () => {
-  test("delivery classes and their labels", () => {
+  test("delivery classes, the shared default, and their labels", () => {
     expect(DELIVERY_CLASSES).toEqual(["asap", "on-done"]);
+    expect(DELIVERY_CLASSES).toContain(DEFAULT_DELIVERY_CLASS);
     expect(deliveryClassLabel("asap")).toBe("ASAP");
     expect(deliveryClassLabel("on-done")).toBe("ON-DONE");
   });

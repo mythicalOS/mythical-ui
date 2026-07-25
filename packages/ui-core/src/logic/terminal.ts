@@ -88,6 +88,18 @@ export interface TermRow {
   noise?: boolean;
 }
 
+/**
+ * One foreign transcript segment — another session's rows sharing this transcript. Shown ONLY
+ * behind the disclosure, captioned with its own immutable id and visually separated; never blended
+ * into the selected session's log.
+ */
+export interface TranscriptSegment {
+  id: string;
+  /** Overrides the default `session {id}` caption. */
+  caption?: string;
+  rows: readonly TermRow[];
+}
+
 /** Row class derivation — base + kind modifier. */
 export function termRowClass(kind: TermRowKind): string {
   return `my-term__row my-term__row--${kind}`;
@@ -111,23 +123,65 @@ export function rowKey(row: TermRow, index: number): string {
 }
 
 /**
- * Collision-free keys for a whole list. `id` is honored so expand state survives rows being
- * prepended, but ids are NOT trusted to be unique: a repeated id would otherwise make two rows
- * expand together and hand the renderer duplicate sibling keys. Repeats get a `#n` disambiguator,
- * and a row with no id falls back to its index. The result is unique by construction.
+ * Dedupe preferred keys into unique ones, preserving the FIRST occurrence verbatim so a caller's
+ * own id keeps identifying the same thing. Repeats take a `#n` disambiguator; the loop (rather than
+ * a counter) also covers a literal id that collides with a disambiguator already handed out.
  */
-export function rowKeys(rows: readonly TermRow[]): string[] {
-  const arr = Array.isArray(rows) ? rows : [];
+export function uniqueKeys(preferred: readonly string[]): string[] {
+  const arr = Array.isArray(preferred) ? preferred : [];
   const used = new Set<string>();
-  return arr.map((row, index) => {
-    const base = rowKey(row!, index);
+  return arr.map((base) => {
     let key = base;
-    // the loop (rather than a counter) also covers a row whose literal id collides with a
-    // disambiguator this function already handed out
     for (let n = 1; used.has(key); n++) key = `${base}#${n}`;
     used.add(key);
     return key;
   });
+}
+
+/**
+ * Collision-free keys for one list of rows. `id` is honored so expand state survives rows being
+ * prepended, but ids are NOT trusted to be unique: a repeated id would otherwise make two rows
+ * expand together and hand the renderer duplicate sibling keys.
+ */
+export function rowKeys(rows: readonly TermRow[]): string[] {
+  const arr = Array.isArray(rows) ? rows : [];
+  return uniqueKeys(arr.map((row, index) => rowKey(row!, index)));
+}
+
+/**
+ * Identity for each foreign segment: its own id where it has one, its position otherwise, deduped.
+ * Using the id (not the position) is what keeps a segment's expand state attached to the segment
+ * when the list is reordered.
+ */
+export function segmentKeys(segments: readonly TranscriptSegment[]): string[] {
+  const arr = Array.isArray(segments) ? segments : [];
+  return uniqueKeys(arr.map((seg, index) => (seg?.id ? seg.id : String(index))));
+}
+
+/** The row scopes a pane renders. Each is a distinct namespace for expand state. */
+export const ROW_SCOPE = {
+  transcript: "t",
+  local: "l",
+  history: "h",
+} as const;
+
+/** `%` and `|` are the escape and the delimiter, so both must be escaped inside a part. */
+function escapePart(part: string): string {
+  return part.replace(/%/g, "%25").replace(/\|/g, "%7C");
+}
+
+/**
+ * Namespace a list's row keys under a scope so expand state can NEVER leak between the transcript,
+ * the client-synthetic local rows and a history segment.
+ *
+ * A naive `${scope}:${key}` prefix is not enough: a transcript row whose id is literally `local:a`
+ * would then share state with the local row `a`. Every part is escaped before being joined, so the
+ * mapping from (scope parts, row key) to string is injective — two different tuples cannot produce
+ * the same key, whatever ids the caller supplies.
+ */
+export function scopedRowKeys(scope: readonly string[], rows: readonly TermRow[]): string[] {
+  const prefix = scope.map(escapePart).join("|");
+  return rowKeys(rows).map((key) => `${prefix}|${escapePart(key)}`);
 }
 
 // ── segmentation ──

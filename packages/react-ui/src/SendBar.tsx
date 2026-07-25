@@ -15,6 +15,7 @@
 
 import { useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
 import {
+  DEFAULT_DELIVERY_CLASS,
   DELIVERY_CLASSES,
   DELIVERY_HINT,
   SENDBAR_CLASSES,
@@ -32,6 +33,7 @@ import {
 } from "@mythicalos/ui-core/logic";
 
 export {
+  DEFAULT_DELIVERY_CLASS,
   DELIVERY_CLASSES,
   DELIVERY_HINT,
   SEND_DISABLED_FALLBACK,
@@ -65,7 +67,7 @@ export interface SendBarProps {
 export function SendBar(props: SendBarProps) {
   const disabled = !!props.disabled;
   const busy = !!props.busy;
-  const [cls, setCls] = useState<DeliveryClass>(props.defaultClass ?? "asap");
+  const [cls, setCls] = useState<DeliveryClass>(props.defaultClass ?? DEFAULT_DELIVERY_CLASS);
   const [text, setText] = useState("");
   // Single-flight: `busy` covers a caller that tracks the request itself, but `onSend` may be async
   // and a caller that flips `busy` a tick later (or never) would let two clicks — or a click racing

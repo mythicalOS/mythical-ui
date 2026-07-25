@@ -8,6 +8,10 @@ export type DeliveryClass = "asap" | "on-done";
 
 export const DELIVERY_CLASSES: readonly DeliveryClass[] = ["asap", "on-done"];
 
+/** The class a bar starts on when the caller expresses no preference. One definition, so the two
+ *  bindings cannot ship different defaults. */
+export const DEFAULT_DELIVERY_CLASS: DeliveryClass = "asap";
+
 /** Verbatim badge/button label for a delivery class. */
 export function deliveryClassLabel(cls: DeliveryClass): "ASAP" | "ON-DONE" {
   return cls === "asap" ? "ASAP" : "ON-DONE";

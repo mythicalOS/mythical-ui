@@ -30,7 +30,9 @@ import {
   historyToggleLabel,
   isExpandable,
   noiseShow,
-  rowKeys,
+  ROW_SCOPE,
+  scopedRowKeys,
+  segmentKeys,
   shouldStopOnKey,
   sourceRows,
   stopButtonClass,
@@ -41,6 +43,7 @@ import {
   visibleRows,
   type TermRow,
   type TermSource,
+  type TranscriptSegment,
 } from "@mythicalos/ui-core/logic";
 
 export {
@@ -53,16 +56,8 @@ export {
   type TermRowKind,
   type TermSource,
   type TermView,
+  type TranscriptSegment,
 } from "@mythicalos/ui-core/logic";
-
-/** One foreign transcript segment sharing this transcript (never blended into the main log). */
-export interface TranscriptSegment {
-  /** Immutable id of the session that produced the segment — shown in its caption. */
-  id: string;
-  /** Overrides the default `session {id}` caption. */
-  caption?: string;
-  rows: readonly TermRow[];
-}
 
 export interface TerminalProps {
   /** The sole transcript input. All six arms are rendered by ui-core's `transcriptView`. */
@@ -116,18 +111,22 @@ function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
   );
 }
 
-/** A keyed run of rows. `rowKeys` guarantees uniqueness even when the caller repeats a row id. */
+/**
+ * A keyed run of rows. `scopedRowKeys` namespaces every key under its scope, so expand state can
+ * never leak between the transcript, the local rows and a history segment — not even when a caller
+ * supplies an id that looks like another scope's prefix.
+ */
 function RowList(props: {
   rows: readonly TermRow[];
-  prefix?: string;
+  scope: readonly string[];
   expanded: Set<string>;
   onToggle(key: string): void;
 }) {
-  const keys = rowKeys(props.rows);
+  const keys = scopedRowKeys(props.scope, props.rows);
   return (
     <>
       {props.rows.map((row, i) => {
-        const key = props.prefix ? `${props.prefix}${keys[i]}` : keys[i]!;
+        const key = keys[i]!;
         return <RowView key={key} row={row} expanded={props.expanded.has(key)} onToggle={() => props.onToggle(key)} />;
       })}
     </>
@@ -175,6 +174,7 @@ export function Terminal(props: TerminalProps) {
   const rows = view.kind === "log" ? visibleRows(allRows, showNoise) : [];
   const localRows = view.kind === "log" ? visibleRows(props.localRows ?? [], showNoise) : [];
   const emptyLog = view.kind === "log" && rows.length === 0 && localRows.length === 0;
+  const segKeys = segmentKeys(history);
   const titleText = termTitleText(props.name, noiseFilterEnabled);
   const caption = turnCaption(props.turnInFlight);
 
@@ -241,11 +241,13 @@ export function Terminal(props: TerminalProps) {
         ) : null}
         {showHistory
           ? history.map((seg, si) => (
-              <div class={TERM_CLASSES.segment} key={`${si}:${seg.id}`}>
+              // keyed by the segment's own identity, not its position, so reordering the list moves
+              // neither the rendered element nor its rows' expand state
+              <div class={TERM_CLASSES.segment} key={segKeys[si]}>
                 <div class={TERM_CLASSES.segmentCaption}>{seg.caption ?? historySegmentCaption(seg.id)}</div>
                 <RowList
                   rows={visibleRows(seg.rows, showNoise)}
-                  prefix={`hist:${si}:`}
+                  scope={[ROW_SCOPE.history, segKeys[si]!]}
                   expanded={expanded}
                   onToggle={toggle}
                 />
@@ -254,8 +256,8 @@ export function Terminal(props: TerminalProps) {
           : null}
         {view.kind === "state" ? <div class={TERM_CLASSES.state}>{view.copy}</div> : null}
         {emptyLog ? <div class={TERM_CLASSES.state}>{TERM_NO_EVENTS_COPY}</div> : null}
-        <RowList rows={rows} expanded={expanded} onToggle={toggle} />
-        <RowList rows={localRows} prefix="local:" expanded={expanded} onToggle={toggle} />
+        <RowList rows={rows} scope={[ROW_SCOPE.transcript]} expanded={expanded} onToggle={toggle} />
+        <RowList rows={localRows} scope={[ROW_SCOPE.local]} expanded={expanded} onToggle={toggle} />
         {props.caret ? <span class={TERM_CLASSES.caret} aria-hidden="true" /> : null}
       </div>
     </div>

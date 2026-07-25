@@ -269,6 +269,7 @@ export {
 
 // ── terminal set (ds/components-terminal v2): terminal · queue-row · send-bar ──
 export {
+  DEFAULT_DELIVERY_CLASS,
   DELIVERY_CLASSES,
   DELIVERY_HINT,
   SEND_PLACEHOLDER,
@@ -319,6 +320,7 @@ export {
 } from "./logic/queue.js";
 
 export {
+  ROW_SCOPE,
   TERM_CLASS,
   TERM_CLASSES,
   TERM_FAILED_COPY,
@@ -344,6 +346,8 @@ export {
   noiseShow,
   rowKey,
   rowKeys,
+  scopedRowKeys,
+  segmentKeys,
   shouldStopOnKey,
   sourceRows,
   stopButtonClass,
@@ -351,9 +355,11 @@ export {
   termTitleText,
   transcriptView,
   turnCaption,
+  uniqueKeys,
   visibleRows,
   type TermRow,
   type TermRowKind,
   type TermSource,
   type TermView,
+  type TranscriptSegment,
 } from "./logic/terminal.js";
