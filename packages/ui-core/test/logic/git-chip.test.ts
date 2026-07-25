@@ -136,8 +136,11 @@ describe("gitBranchLabel", () => {
     expect(gitBranchLabel(null)).toBe(GIT_DETACHED_LABEL);
     expect(GIT_DETACHED_LABEL).toBe("detached HEAD");
   });
-  test("an empty name is treated as detached rather than rendered blank", () => {
+  test("an empty or whitespace-only name is treated as detached rather than rendered blank", () => {
+    // A git ref name cannot contain whitespace, so both are the same malformed input.
     expect(gitBranchLabel("")).toBe(GIT_DETACHED_LABEL);
+    expect(gitBranchLabel("   ")).toBe(GIT_DETACHED_LABEL);
+    expect(gitBranchLabel("\t\n")).toBe(GIT_DETACHED_LABEL);
   });
   test("an UNREPORTED branch is the neutral dash — it does not claim a detached checkout", () => {
     expect(gitBranchLabel(undefined)).toBe(GIT_BRANCH_UNKNOWN);

@@ -79,7 +79,9 @@ export function hasGitStatus(status: GitStatus | null | undefined): status is Gi
 export function gitBranchLabel(branch: string | null | undefined): string {
   if (branch === null) return GIT_DETACHED_LABEL;
   if (typeof branch !== "string") return GIT_BRANCH_UNKNOWN;
-  return branch.length > 0 ? branch : GIT_DETACHED_LABEL;
+  // A git ref name cannot contain whitespace, so blank-or-whitespace is the same malformed input as
+  // `""` — it must not leave the branch slot visibly empty next to a confident status.
+  return branch.trim().length > 0 ? branch : GIT_DETACHED_LABEL;
 }
 
 /** Counter flags in design order (behind · uncommitted · unpushed), collapsing to a single

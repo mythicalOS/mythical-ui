@@ -187,6 +187,13 @@ describe("GitChip — available arm", () => {
     expect(html).toContain(GIT_DETACHED_LABEL);
   });
 
+  test("a whitespace-only branch never leaves the branch slot visibly blank", () => {
+    const html = renderToString(
+      <GitChip status={{ branch: "   ", behind: 0, uncommitted: 0, unpushed: 0 }} />,
+    );
+    expect(html).toContain(GIT_DETACHED_LABEL);
+  });
+
   test("an unreported tree renders the branch and NO flags — never a green clean row", () => {
     const html = renderToString(<GitChip status={{ branch: "main" } as unknown as GitStatus} />);
     expect(html).toContain("main");
