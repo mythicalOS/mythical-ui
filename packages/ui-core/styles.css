@@ -300,3 +300,23 @@ a:focus-visible, .link:focus-visible, .is-focus {
 
 /* truncation helper (design-export base.css) */
 .my-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── revealable secret input (the Input atom's opt-in show/hide affordance) ──
+   Same family as the input rules above, but authored here rather than spliced into the BASE
+   block: that section is a verbatim port and is not edited. The toggle borrows the "Replace"
+   affordance's look (.rep) — micro, bold, accent-strong, no chrome — so a field with a reveal
+   reads as the same control family as a secret slot. */
+.input-reveal { position: relative; display: block; }
+/* room for the toggle so a long token never runs under it */
+.input-reveal .input { padding-right: 58px; }
+.input-reveal__btn {
+  position: absolute; top: 0; right: 0; height: 100%; padding: 0 12px;
+  border: 0; background: none; font-family: inherit;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  color: var(--my-accent-strong); cursor: pointer;
+}
+.input-reveal__btn:hover:not(:disabled) { color: var(--my-accent); }
+.input-reveal__btn:disabled { color: var(--my-disabled-ink); cursor: not-allowed; }
+/* design rule 6 — the shared focus ring, restated rather than added to the BASE selector list
+   above for the same reason the rules above live here */
+.input-reveal__btn:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }

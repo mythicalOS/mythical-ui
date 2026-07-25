@@ -33,6 +33,9 @@ import {
   ToastProvider,
   Toggle,
 } from "./src/index.ts";
+// not on the barrel — `Input`'s hook-free body, the only way to render the revealed state
+// without a DOM (see input-reveal.test.tsx)
+import { InputBody } from "./src/Input.tsx";
 
 const css = readFileSync(join(import.meta.dir, "..", "ui-core", "styles.css"), "utf8");
 
@@ -55,6 +58,23 @@ function allRenders(): string[] {
   out.push(renderToString(<Input label="Name" value="v" help="hint" />));
   out.push(renderToString(<Input value="v" error="bad value" mono dirty />));
   out.push(renderToString(<Input value="v" readOnly disabled />));
+  // the opt-in reveal affordance, in both states — the revealed one via the hook-free body, since
+  // there is no DOM to click the toggle with (see input-reveal.test.tsx's depth note)
+  out.push(renderToString(<Input label="UI token" type="password" value="v" mono revealable />));
+  out.push(
+    renderToString(
+      <InputBody
+        label="UI token"
+        type="password"
+        value="v"
+        mono
+        revealable
+        revealed
+        onToggleReveal={noop}
+        autoId="X1"
+      />,
+    ),
+  );
   out.push(renderToString(<Toggle on />));
   out.push(renderToString(<Toggle on={false} />));
   out.push(renderToString(<Toggle on disabled />));
@@ -146,6 +166,8 @@ describe("self-containment — every emitted class resolves in ui-core's styles.
     for (const c of ["my-chip", "my-status", "my-card", "my-avatar__initials", "my-search", "my-banner", "my-gauge"]) {
       expect(emitted.has(c)).toBe(true);
     }
+    // the reveal affordance's own classes
+    for (const c of ["input-reveal", "input-reveal__btn"]) expect(emitted.has(c)).toBe(true);
   });
 
   test("each emitted class matches ≥1 selector in ui-core's styles.css", () => {

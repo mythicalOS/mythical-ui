@@ -34,6 +34,7 @@ import "@mythicalos/ui-core/styles.css"; // this package ships NO CSS of its own
 
 - `Button` — 5 variants × 6 states, loading spinner, inert+aria-busy.
 - `Input`, `Toggle`, `Checkbox` — inputs with the "unconfigured is a valid state" neutral empty.
+  `<Input type="password" revealable>` adds a show/hide toggle inside the field (see below).
 - `MaskedSecretInput` — presence-only secret slots; the value never round-trips to the UI.
 - `EmptyState` — the designed empty moments (spine motif; never an error tone).
 - `ConfirmDialog` (+ `typedNameMatches`), `Scrim` — modal danger confirms (Esc cancels, safe action
@@ -51,11 +52,33 @@ import "@mythicalos/ui-core/styles.css"; // this package ships NO CSS of its own
   `statusLineClass`, `bannerClass`, `BANNER_ICON`, `gaugeTone`, `gaugeGeom`, `nextPollDelay`,
   `makePollEpochGuard`, `runPollTick`, `POLL_JITTER_RATIO`, `POLL_BACKOFF_CAP_MS`.
 
+## `revealable` — the show/hide affordance for a secret field (0.3.0)
+
+```tsx
+<Input label="UI token" type="password" revealable mono placeholder="paste your token…" />
+```
+
+Opt-in and inert everywhere else: without `revealable`, or on any type other than `password`, the
+markup is byte-identical to what this component rendered before the prop existed. When it is on:
+
+- the field starts **hidden** — revealing is always an explicit act, and no consumer can force it
+  open (the state is held inside the component);
+- the toggle is a real `<button type="button">` in normal tab order, no `tabindex`, with
+  `aria-pressed` for the state and an `aria-label` for the action (`Show token` / `Hide token`);
+- revealing swaps only the input's own `type`; the value is never copied into any other node,
+  attribute or `aria-*` string;
+- because a `<button>` may not sit inside a `<label>`, this path pairs label and control by
+  `for`/`id` instead of wrapping (an `id` is generated if you don't pass one).
+
+Requires `@mythicalos/ui-core` **≥ 0.2.0** for the toggle's styles (`.input-reveal`,
+`.input-reveal__btn`).
+
 ## Styles
 
 This package ships **no stylesheet**. Serve `@mythicalos/ui-core/styles.css` (after
 `@mythicalos/tokens`) — it carries every class this package's components emit, including the 7 new
-atoms (`.my-chip`, `.my-status`, `.my-card`, `.my-avatar`, `.my-search`, `.my-banner`, `.my-gauge`).
+atoms (`.my-chip`, `.my-status`, `.my-card`, `.my-avatar`, `.my-search`, `.my-banner`, `.my-gauge`)
+and the reveal affordance (`.input-reveal`).
 
 ## Provenance
 
