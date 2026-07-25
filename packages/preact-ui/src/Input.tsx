@@ -11,7 +11,7 @@
 // the task report's "concerns" section if a future core module should absorb these too.
 
 import type { ComponentChildren, JSX } from "preact";
-import { useId, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 
 export interface InputProps {
   label?: ComponentChildren;
@@ -31,21 +31,31 @@ export interface InputProps {
    * The field starts hidden — revealing is always an explicit act.
    */
   revealable?: boolean;
+  /**
+   * Overrides the reveal toggle's accessible name for a field that is not a token — e.g.
+   * `{ show: "Show API key", hide: "Hide API key" }`. Defaults to the token wording.
+   */
+  revealLabels?: RevealLabels;
   onInput?: (value: string) => void;
   onKeyDown?: (e: JSX.TargetedKeyboardEvent<HTMLInputElement>) => void;
 }
 
-/** The reveal toggle's accessible name, per state. Exported for the tests + any consumer that
- *  needs to find the control by name. */
+export interface RevealLabels {
+  show: string;
+  hide: string;
+}
+
+/** The reveal toggle's default accessible name, per state. Exported for the tests + any consumer
+ *  that needs to find the control by name. */
 export const REVEAL_SHOW_LABEL = "Show token";
 export const REVEAL_HIDE_LABEL = "Hide token";
-
-const NOOP = () => {};
+export const REVEAL_LABELS: RevealLabels = { show: REVEAL_SHOW_LABEL, hide: REVEAL_HIDE_LABEL };
 
 export interface RevealToggleProps {
   /** True while the secret is shown in the clear. */
   revealed: boolean;
   disabled?: boolean;
+  labels?: RevealLabels;
   onToggle: () => void;
 }
 
@@ -55,12 +65,17 @@ export interface RevealToggleProps {
  * state on `aria-pressed` and the action in its `aria-label`. It never receives, holds or
  * renders the field's value.
  */
-export function RevealToggle({ revealed, disabled, onToggle }: RevealToggleProps) {
+export function RevealToggle({ revealed, disabled, labels, onToggle }: RevealToggleProps) {
+  const names = labels ?? REVEAL_LABELS;
   return (
     <button
       type="button"
       class="input-reveal__btn"
-      aria-label={revealed ? REVEAL_HIDE_LABEL : REVEAL_SHOW_LABEL}
+      // Both the name and aria-pressed move, deliberately. The name has to state the action for
+      // the (larger) group of users who see only "show"/"hide", and aria-pressed has to state the
+      // fact for anyone who queries it; a reader announcing "Hide token, toggle button, pressed"
+      // is redundant, never wrong. The visible word is contained in the name (WCAG 2.5.3).
+      aria-label={revealed ? names.hide : names.show}
       aria-pressed={revealed ? "true" : "false"}
       disabled={disabled}
       onClick={disabled ? undefined : onToggle}
@@ -72,10 +87,10 @@ export function RevealToggle({ revealed, disabled, onToggle }: RevealToggleProps
 
 export interface InputBodyProps extends InputProps {
   /** Reveal state, lifted out of `Input` so a DOM-free test can render BOTH states. */
-  revealed?: boolean;
-  onToggleReveal?: () => void;
+  revealed: boolean;
+  onToggleReveal: () => void;
   /** Fallback id for the reveal path's explicit label/control pairing (see below). */
-  autoId?: string;
+  autoId: string;
 }
 
 /**
@@ -104,7 +119,7 @@ export function InputBody(props: InputBodyProps) {
       id={id}
       // The ONLY thing revealing changes: password ⇄ text on the field itself. The value is
       // never copied anywhere else in the tree.
-      type={reveal && props.revealed === true ? "text" : type}
+      type={reveal && props.revealed ? "text" : type}
       class={cls.join(" ")}
       value={props.value ?? ""}
       placeholder={props.placeholder}
@@ -132,9 +147,10 @@ export function InputBody(props: InputBodyProps) {
         <div class="input-reveal">
           {control}
           <RevealToggle
-            revealed={props.revealed === true}
+            revealed={props.revealed}
             disabled={props.disabled}
-            onToggle={props.onToggleReveal ?? NOOP}
+            labels={props.revealLabels}
+            onToggle={props.onToggleReveal}
           />
         </div>
       ) : (
@@ -168,16 +184,27 @@ export function InputBody(props: InputBodyProps) {
   );
 }
 
-/** The revealable variant, and the ONLY place this component calls a hook. */
-function RevealableInput(props: InputProps) {
-  // Held here, never lifted into the props: a revealed secret must not survive a parent re-render
-  // decision, and no consumer can force the field open.
+/**
+ * Source of the reveal path's fallback field id.
+ *
+ * Deliberately NOT `useId`: that draws from preact's shared per-render id sequence, so taking one
+ * here would renumber the ids of every OTHER component in a consumer's tree — an invisible
+ * regression for an input that asked for none of this. A module counter is safe precisely because
+ * this id never leaves the component: its only job is to pair this instance's own `<label for>`
+ * with its own `<input id>`, so it has to be unique on the page, not reproducible across a
+ * server/client pair.
+ */
+let revealIdSeq = 0;
+
+export function Input(props: InputProps) {
+  // Both hooks run unconditionally, and `Input` always renders the same child component, so
+  // flipping `revealable` or `type` re-renders the field instead of remounting it — a focused
+  // input keeps its focus, caret and selection.
+  //
+  // `revealed` is held here and never lifted into the props: a revealed secret must not survive a
+  // parent's re-render decision, and no consumer can force the field open.
   const [revealed, setRevealed] = useState(false);
-  // Deliberately not called on the plain path: `useId` draws from preact's per-render id
-  // sequence, so calling it unconditionally would renumber the ids of every OTHER component in a
-  // consumer's tree — an invisible hydration-level regression for an input that asked for none of
-  // this.
-  const autoId = useId();
+  const [autoId] = useState(() => `my-input-${++revealIdSeq}`);
   return (
     <InputBody
       {...props}
@@ -186,16 +213,6 @@ function RevealableInput(props: InputProps) {
       autoId={autoId}
     />
   );
-}
-
-export function Input(props: InputProps) {
-  // Hook-free, exactly as before, unless the caller opted into the reveal affordance. Flipping
-  // `revealable` at runtime therefore remounts the field — `revealable` is a static declaration
-  // of what the field IS, not a state to animate.
-  if (props.revealable === true && (props.type ?? "text") === "password") {
-    return <RevealableInput {...props} />;
-  }
-  return <InputBody {...props} />;
 }
 
 export interface ToggleProps {

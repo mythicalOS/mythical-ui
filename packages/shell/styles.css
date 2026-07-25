@@ -476,6 +476,9 @@
    button, the label row) keep coming from ui-core's sheet and are never restated here — writing
    even one of their selectors in here, including inside a comment, is a test failure. */
 .token-entry {
+  /* border-box so the card measures 400px as drawn, padding and border included — this sheet
+     declares no global reset and must not assume the consumer's */
+  box-sizing: border-box;
   max-width: 400px;
   margin: 0 auto;
   display: flex;

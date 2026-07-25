@@ -16,8 +16,11 @@
 // Only the browser's event dispatch is missing.
 
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToString } from "preact-render-to-string";
 import { useId } from "preact/hooks";
+import { options } from "preact";
 import type { VNode } from "preact";
 import {
   Input,
@@ -25,6 +28,7 @@ import {
   RevealToggle,
   REVEAL_HIDE_LABEL,
   REVEAL_SHOW_LABEL,
+  type InputBodyProps,
   type RevealToggleProps,
 } from "./src/Input.tsx";
 
@@ -81,15 +85,16 @@ describe("Input — the default (no `revealable`) is byte-identical to the pre-f
     expect(off).not.toContain("input-reveal");
   });
 
-  test("a plain Input calls NO hook — it does not consume preact's id sequence", () => {
+  test("a plain Input does not consume preact's id sequence", () => {
     // `useId` draws from a per-render counter shared with every other component in the consumer's
-    // tree. If Input took one unconditionally, adding this feature would silently renumber the
-    // ids of unrelated components (a hydration-mismatch class of bug). Proof: an id-taking
-    // sibling rendered after a plain Input must still get the FIRST id.
+    // tree, so this component takes none: adding this feature must not renumber the ids of
+    // unrelated components (a hydration-mismatch class of bug). Proof: an id-taking sibling
+    // rendered after an Input must still get the FIRST id.
     const Probe = () => <i id={useId()} />;
     const withInput = renderToString(
       <div>
         <Input value="" />
+        <Input label="T" type="password" value="" revealable />
         <Probe />
       </div>,
     );
@@ -154,6 +159,20 @@ describe("Input — revealable password field: the hidden (default) state", () =
     expect(id).toBeTruthy();
     expect(html).toContain(`<input id="${id}"`);
     expect(html.indexOf("</label>")).toBeLessThan(html.indexOf("<button"));
+  });
+
+  test("a field that is not a token can name itself", () => {
+    const out = renderToString(
+      <Input
+        label="API key"
+        type="password"
+        value="v"
+        revealable
+        revealLabels={{ show: "Show API key", hide: "Hide API key" }}
+      />,
+    );
+    expect(out).toContain('aria-label="Show API key"');
+    expect(out).not.toContain("token");
   });
 
   test("an explicit id prop still wins over the generated one", () => {
@@ -258,6 +277,77 @@ describe("the secret never reaches the DOM outside the input itself", () => {
     );
     expect(html).toContain('<div class="emsg">');
     expect(html.split(SECRET).length - 1).toBe(1);
+  });
+});
+
+describe("Input — flipping the prop re-renders, it does not remount", () => {
+  const OURS: unknown[] = [Input, InputBody, RevealToggle];
+
+  /** Which of THIS module's components a render instantiates, in creation order (the
+   *  render-to-string wrappers and the already-built root vnode are not ours to assert on). */
+  function componentTrace(node: VNode): unknown[] {
+    const seen: unknown[] = [];
+    const prev = options.vnode;
+    options.vnode = (v) => {
+      if (OURS.includes(v.type as unknown)) seen.push(v.type as unknown);
+      prev?.(v);
+    };
+    try {
+      renderToString(node);
+    } finally {
+      options.vnode = prev;
+    }
+    return seen;
+  }
+
+  test("the same child component renders whether or not the field is revealable", () => {
+    // Preact reconciles by component type at a position: if `Input` swapped children when
+    // `revealable`/`type` flipped, a focused field would be destroyed and rebuilt mid-typing —
+    // losing focus, caret and selection. `Input` therefore always renders the same child, and the
+    // reveal affordance is an extra node inside it rather than a different subtree.
+    expect(componentTrace(<Input label="T" value="v" />)).toEqual([InputBody]);
+    expect(componentTrace(<Input label="T" value="v" type="password" revealable />)).toEqual([
+      InputBody,
+      RevealToggle,
+    ]);
+  });
+});
+
+describe("Input — the toggle is wired to the field's own state", () => {
+  test("InputBody hands the toggle the real onToggleReveal it was given", () => {
+    let calls = 0;
+    const tree = (InputBody as unknown as (p: InputBodyProps) => VNode)({
+      label: "UI token",
+      type: "password",
+      value: "v",
+      revealable: true,
+      revealed: false,
+      autoId: "X1",
+      onToggleReveal: () => calls++,
+    });
+    const toggles: VNode<Record<string, unknown>>[] = [];
+    const walk = (node: unknown): void => {
+      if (Array.isArray(node)) return node.forEach(walk);
+      if (!node || typeof node !== "object") return;
+      const v = node as VNode<Record<string, unknown>>;
+      if (v.type === undefined) return;
+      if ((v.type as unknown) === (RevealToggle as unknown)) toggles.push(v);
+      walk((v.props as { children?: unknown } | undefined)?.children);
+    };
+    walk(tree);
+    expect(toggles.length).toBe(1);
+    (toggles[0]!.props.onToggle as () => void)();
+    expect(calls).toBe(1);
+  });
+
+  test("…and Input hands it the state setter", () => {
+    // The last link — `setRevealed` firing on click — needs a real DOM to drive, which this
+    // package's bun:test environment does not have (see the depth note at the top). It is checked
+    // by source scan instead, the same way product-switcher.test.tsx checks its document-level
+    // listener wiring. A no-op here would pass every render assertion above.
+    const src = readFileSync(join(import.meta.dir, "src", "Input.tsx"), "utf8");
+    expect(src).toContain("onToggleReveal={() => setRevealed((v) => !v)}");
+    expect(src).toContain("const [revealed, setRevealed] = useState(false);");
   });
 });
 

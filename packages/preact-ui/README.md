@@ -69,10 +69,14 @@ markup is byte-identical to what this component rendered before the prop existed
   attribute or `aria-*` string;
 - the field carries `autocomplete="new-password"`, not the atom's usual `off` — browsers largely
   ignore `off` on a password field and will autofill it and offer to save it as a login;
-- it is the only path in this component that calls a hook, so a plain `Input` still consumes
-  nothing from preact's shared `useId` sequence;
+- the component never takes an id from preact's shared `useId` sequence, so installing this
+  version cannot renumber the ids of anything else in your tree;
+- `revealLabels={{ show, hide }}` renames the toggle for a field that is not a token (the default
+  wording is `Show token` / `Hide token`);
 - because a `<button>` may not sit inside a `<label>`, this path pairs label and control by
-  `for`/`id` instead of wrapping (an `id` is generated if you don't pass one).
+  `for`/`id` instead of wrapping (an `id` is generated if you don't pass one);
+- flipping `revealable` or `type` re-renders the field, it does not remount it — a focused input
+  keeps its focus, caret and selection.
 
 Requires `@mythicalos/ui-core` **≥ 0.2.0** for the toggle's styles (`.input-reveal`,
 `.input-reveal__btn`).
