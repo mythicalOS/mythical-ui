@@ -121,6 +121,7 @@ describe("TokenGate — the card's structure, top to bottom", () => {
     expect(html()).toContain('<div class="token-entry-screen"><div class="token-entry">');
   });
 
+
   test("logo, heading, body, field, CTA and hint appear in that order", () => {
     const out = html();
     const order = [
@@ -315,6 +316,29 @@ describe("TokenGate — the retrieval hint", () => {
   test("says, in plain language, what rotating costs", () => {
     const out = html();
     expect(out).toContain("signs out every browser");
+  });
+
+  // A hint the operator cannot paste is WORSE than no hint: it is trusted, then it fails. One
+  // product's CLI is not at its image's default WORKDIR and must drop from root to a service user,
+  // so the simple form is unrunnable there and the container name alone cannot express it.
+  test("a product whose invocation differs can override BOTH commands verbatim", () => {
+    const retrieve = "docker exec -u svc box sh -c 'cd /opt/app && bun run token'";
+    const rotate = "docker exec -u svc box sh -c 'cd /opt/app && bun run token -- --rotate'";
+    const out = html({ container: "mythical", retrieveCommand: retrieve, rotateCommand: rotate });
+    // Rendered as a TEXT node, where preact escapes `&` but leaves quotes alone (they only need
+    // escaping inside attributes). A real command carries both, so this pins the actual encoding
+    // rather than assuming it — a wrongly-escaped hint is one the operator cannot paste.
+    const esc = (s: string) => s.replace(/&/g, "&amp;");
+    expect(out).toContain(esc(retrieve));
+    expect(out).toContain(esc(rotate));
+    // The unrunnable default must be GONE, not merely accompanied by the correct one.
+    expect(out).not.toContain("docker exec mythical bun run token");
+  });
+
+  test("overriding only one command leaves the other on its default", () => {
+    const out = html({ container: "mythical", retrieveCommand: "custom-read" });
+    expect(out).toContain("$ custom-read");
+    expect(out).toContain("$ docker exec mythical bun run token -- --rotate");
   });
 });
 

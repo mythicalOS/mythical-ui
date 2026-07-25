@@ -19,11 +19,33 @@ import { Button, Input } from "@mythicalos/preact-ui";
 import { Logo } from "./Logo.js";
 import { PRODUCTS, type Product } from "./products.js";
 
+/** The simple retrieval form: correct when the product's CLI sits at the image's default WORKDIR
+ * and the image's default user may read the secret slot. Exported so a product can compose or
+ * assert against it rather than restating the string. */
+export function defaultRetrieveCommand(container: string): string {
+  return `docker exec ${container} bun run token`;
+}
+
+/** The rotate variant of {@link defaultRetrieveCommand}. */
+export function defaultRotateCommand(container: string): string {
+  return `docker exec ${container} bun run token -- --rotate`;
+}
+
 export interface TokenGateProps {
   /** Product key — drives the Logo mark + heading. Same keys the PRODUCTS registry uses. */
   product: Product["key"];
-  /** Container name used verbatim in the retrieval hint commands, e.g. "mythical". */
+  /** Container name, used verbatim to BUILD the default retrieval hint, e.g. "mythical". */
   container: string;
+  /**
+   * The command that prints the current token, when `docker exec <container> bun run token` is not
+   * actually runnable in this product's image. A product whose CLI is not at the image's default
+   * WORKDIR, or which must drop from root to a service user, MUST pass its real command here — a
+   * hint the operator cannot paste is worse than no hint, because it is trusted and then fails.
+   * Defaults to the simple form.
+   */
+  retrieveCommand?: string;
+  /** As {@link retrieveCommand}, for the rotate variant. Defaults to the simple form. */
+  rotateCommand?: string;
   /** Receives the TRIMMED token on submit. */
   onSubmit: (token: string) => void;
   /** The previous attempt was rejected. */
@@ -96,6 +118,8 @@ export function TokenGateCard(props: TokenGateCardProps) {
   // The line is only ever shown for a failed attempt, and only when the product handed over both
   // halves of what actually came back.
   const failure = props.invalid ? authErrorLine(props.status, props.reason) : undefined;
+  const retrieveCmd = props.retrieveCommand ?? defaultRetrieveCommand(props.container);
+  const rotateCmd = props.rotateCommand ?? defaultRotateCommand(props.container);
   const submit = () => {
     if (!empty) props.onSubmit(trimmed);
   };
@@ -139,8 +163,8 @@ export function TokenGateCard(props: TokenGateCardProps) {
         </div>
         <div class="token-entry__hint">
           <span>Lost it? From a terminal on the host:</span>
-          <code class="token-entry__cmd">$ docker exec {props.container} bun run token</code>
-          <code class="token-entry__cmd">$ docker exec {props.container} bun run token -- --rotate</code>
+          <code class="token-entry__cmd">$ {retrieveCmd}</code>
+          <code class="token-entry__cmd">$ {rotateCmd}</code>
           <span>Rotating prints a new token and signs out every browser holding the old one.</span>
         </div>
       </div>

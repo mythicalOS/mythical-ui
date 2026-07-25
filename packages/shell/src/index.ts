@@ -40,6 +40,8 @@ export {
 export {
   TokenGate,
   authErrorLine,
+  defaultRetrieveCommand,
+  defaultRotateCommand,
   TOKEN_GATE_BODY,
   TOKEN_GATE_INVALID_BODY,
   type TokenGateProps,
