@@ -26,6 +26,20 @@ Built so a React ASGARD and the Preact family apps share the same components.
 - **Honesty discipline** — degraded / unavailable / loading states are
   first-class.
 
-## License
+## Licence and the paid tier
 
-Apache-2.0.
+**Apache-2.0** — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+All four packages are open and stay open. They are not reduced builds of paid
+ones, and no component is held back for a commercial tier. mythicalOS does sell a
+hosted, multi-user tier — that is separate, private software, and it consumes
+these packages on exactly the terms you do.
+
+Apache-2.0 lets you use, modify, redistribute, and build commercial products on
+these packages — including products that compete with ours — provided you keep
+the licence and attribution notices intact. Contributions are accepted under the
+same licence with a [DCO](https://developercertificate.org/) sign-off and **no
+CLA** (see [`CONTRIBUTING.md`](CONTRIBUTING.md)): we take no copyright assignment
+and no relicensing right, so this project cannot be moved off Apache-2.0 without
+every contributor's agreement, and anything already released under it stays
+available under it.
