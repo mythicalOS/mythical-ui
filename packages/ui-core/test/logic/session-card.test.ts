@@ -39,6 +39,7 @@ import {
   CTX_UNKNOWN_TEXT,
   SESSION_AVATAR_UNKNOWN,
   type CtxBand,
+  type CtxThresholds,
   type SessionLifecycle,
   type SessionStatusTone,
 } from "../../src/logic/session-card.ts";
@@ -623,5 +624,41 @@ describe("sessionStatusText — an override may reword, never blank out", () => 
     expect(sessionStatusText(s, null)).toBe(s.label);
     expect(sessionStatusText(s, "")).toBe(s.label);
     expect(sessionStatusText(s, "   ")).toBe(s.label);
+  });
+});
+
+describe("hostile / runtime-shaped config cannot crash a render or bend an invariant", () => {
+  test("a non-object thresholds value falls back to the defaults instead of throwing", () => {
+    for (const bad of [null, undefined]) {
+      expect(normalizeCtxThresholds(bad)).toEqual(CTX_THRESHOLDS_DEFAULT);
+      expect(ctxBand(95, bad)).toBe("error");
+      expect(ctxBarGeom(95, bad).ticks.map((t) => t.pct)).toEqual([75, 90]);
+    }
+    // a product's settings blob can hand us anything at runtime, TS types notwithstanding
+    for (const bad of [0, "75/90", [], true] as unknown as (CtxThresholds | null)[]) {
+      expect(normalizeCtxThresholds(bad)).toEqual(CTX_THRESHOLDS_DEFAULT);
+      expect(ctxBand(95, bad)).toBe("error");
+    }
+    expect(normalizeCtxThresholds({ warn: "80" } as unknown as CtxThresholds)).toEqual(CTX_THRESHOLDS_DEFAULT);
+  });
+
+  test("the other optional-argument entry points survive null too", () => {
+    expect(ctxNoteText("ok", null)).toBe("context");
+    expect(ctxMeterClass(null)).toBe(ctxMeterClass({ band: "unknown" }));
+    expect(sessionCardClass(null)).toBe("my-session-card");
+    expect(sessionStatus(null)).toEqual(sessionStatus());
+    expect(sessionSubline(null)).toBe("");
+    expect(sessionSubline("worker" as unknown as string[])).toBe("");
+  });
+
+  test("INVARIANT 2: a statusLabel override cannot launder an absent signal into a claim", () => {
+    const unknown = sessionStatus();
+    for (const laundering of ["idle", "working", "active", "healthy"]) {
+      expect(sessionStatusText(unknown, laundering)).toBe(unknown.label);
+      expect(sessionStatusText(unknown, laundering)).toBe("unknown");
+    }
+    // …while a status the product DID claim can still be reworded
+    const down = sessionStatus({ lifecycle: "active", connected: false });
+    expect(sessionStatusText(down, "wake unavailable")).toBe("wake unavailable");
   });
 });

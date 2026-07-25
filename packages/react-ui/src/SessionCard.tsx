@@ -76,7 +76,9 @@ export interface SessionCardProps {
    */
   status?: SessionStatusInput;
   /** The product's own wording for the derived status (e.g. a wake-specific phrase). The tone,
-   *  pulse and stale treatment still come from the derivation — only the words change. */
+   *  pulse and stale treatment still come from the derivation — only the words change. A blank
+   *  override, and ANY override on the `unknown` status, is ignored: nothing was claimed, so there
+   *  is nothing to reword (see ui-core's `sessionStatusText`). */
   statusLabel?: string;
   /** Context reading, 0–100. `undefined`/`null` ⇒ NOT MEASURED: no fill is drawn and the value
    *  reads `—`. It is never rendered as 0. */

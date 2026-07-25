@@ -41,6 +41,12 @@ export interface CtxThresholds {
 /** The design card's tick positions: warn at 75%, critical at 90% — overridable per product. */
 export const CTX_THRESHOLDS_DEFAULT: CtxThresholds = { warn: 75, critical: 90 };
 
+/** A defensive read for the public entry points below: a parameter default only covers
+ *  `undefined`, and a product's runtime-shaped config can hand us `null` or a non-object. */
+function isObject<T extends object>(v: T | null | undefined): v is T {
+  return typeof v === "object" && v !== null;
+}
+
 /**
  * Normalize a product's threshold pair ONCE, so the band and the bar's ticks can never disagree
  * about where the thresholds are. A member that is not a finite number strictly inside the rail
@@ -49,12 +55,16 @@ export const CTX_THRESHOLDS_DEFAULT: CtxThresholds = { warn: 75, critical: 90 };
  * quietly make every session look nominal; `{warn: -5}` must not quietly make every session look
  * hot while drawing no tick to explain why.)
  */
-export function normalizeCtxThresholds(thresholds: CtxThresholds = CTX_THRESHOLDS_DEFAULT): CtxThresholds {
-  const usable = (t: number, fallback: number): number =>
-    Number.isFinite(t) && t > 0 && t < CTX_BAR_SPAN ? t : fallback;
+export function normalizeCtxThresholds(thresholds?: CtxThresholds | null): CtxThresholds {
+  // These are PUBLIC entry points a product reaches with runtime-shaped config (a settings blob,
+  // an API response), so a non-object gets the defaults rather than a TypeError mid-render — a
+  // parameter default only covers `undefined`.
+  const t = isObject(thresholds) ? thresholds : CTX_THRESHOLDS_DEFAULT;
+  const usable = (v: unknown, fallback: number): number =>
+    typeof v === "number" && Number.isFinite(v) && v > 0 && v < CTX_BAR_SPAN ? v : fallback;
   return {
-    warn: usable(thresholds.warn, CTX_THRESHOLDS_DEFAULT.warn),
-    critical: usable(thresholds.critical, CTX_THRESHOLDS_DEFAULT.critical),
+    warn: usable(t.warn, CTX_THRESHOLDS_DEFAULT.warn),
+    critical: usable(t.critical, CTX_THRESHOLDS_DEFAULT.critical),
   };
 }
 
@@ -85,10 +95,7 @@ export function ctxReading(pct: number | null | undefined): number | undefined {
  * `"unknown"`. `critical` is tested first, so a mis-ordered threshold pair (critical < warn) still
  * degrades to the more severe band rather than silently under-reporting.
  */
-export function ctxBand(
-  pct: number | null | undefined,
-  thresholds: CtxThresholds = CTX_THRESHOLDS_DEFAULT,
-): CtxBand {
+export function ctxBand(pct: number | null | undefined, thresholds?: CtxThresholds | null): CtxBand {
   const v = ctxReading(pct);
   if (v === undefined) return "unknown";
   const t = normalizeCtxThresholds(thresholds);
@@ -125,17 +132,19 @@ export const SESSION_CARD_SEP = " · ";
  * says so outright, and says it BEFORE `stale` — "stale" implies a last-known value, so it must
  * never stand in for "we never measured it".
  */
-export function ctxNoteText(band: CtxBand, opts: { stale?: boolean } = {}): string {
+export function ctxNoteText(band: CtxBand, opts?: { stale?: boolean } | null): string {
   if (band === "unknown") return `${CTX_LABEL}${SESSION_CARD_SEP}not measured`;
-  if (opts.stale === true) return `${CTX_LABEL}${SESSION_CARD_SEP}stale`;
+  if (isObject(opts) && opts.stale === true) return `${CTX_LABEL}${SESSION_CARD_SEP}stale`;
   if (band === "error") return `${CTX_LABEL}${SESSION_CARD_SEP}distill now`;
   if (band === "warn") return `${CTX_LABEL}${SESSION_CARD_SEP}distill suggested`;
   return CTX_LABEL;
 }
 
 /** Wrapper class for the meter — the band modifier tints the fill AND the value in one place. */
-export function ctxMeterClass(input: { band: CtxBand; stale?: boolean } = { band: "unknown" }): string {
-  return `my-session-card__ctx my-session-card__ctx--${input.band}${input.stale === true ? " is-stale" : ""}`;
+export function ctxMeterClass(input?: { band: CtxBand; stale?: boolean } | null): string {
+  const band = isObject(input) ? input.band : "unknown";
+  const stale = isObject(input) && input.stale === true;
+  return `my-session-card__ctx my-session-card__ctx--${band}${stale ? " is-stale" : ""}`;
 }
 
 // ── bar geometry (SVG presentation attributes only — CSP forbids the inline `width:62%` the
@@ -173,10 +182,7 @@ export interface CtxBarGeom {
  * actually enforcing. Duplicates collapse, so `{warn: 90, critical: 90}` draws one tick, not two
  * stacked ones.
  */
-export function ctxBarGeom(
-  pct: number | null | undefined,
-  thresholds: CtxThresholds = CTX_THRESHOLDS_DEFAULT,
-): CtxBarGeom {
+export function ctxBarGeom(pct: number | null | undefined, thresholds?: CtxThresholds | null): CtxBarGeom {
   const norm = normalizeCtxThresholds(thresholds);
   const seen = new Set<number>();
   const ticks: CtxBarTick[] = [];
@@ -268,8 +274,8 @@ export const SESSION_STATUS_UNKNOWN: SessionStatus = {
  *     never a fabricated `"idle"` or `"working"` (invariant 2).
  *  4. Nothing reported at all ⇒ `"unknown"` (invariant 2).
  */
-export function sessionStatus(input: SessionStatusInput = {}): SessionStatus {
-  const { lifecycle, activity, connected } = input;
+export function sessionStatus(input?: SessionStatusInput | null): SessionStatus {
+  const { lifecycle, activity, connected } = isObject(input) ? input : {};
 
   if (connected === false && (lifecycle === "active" || lifecycle === undefined)) {
     return { key: "disconnected", label: "disconnected", tone: "muted", pulse: true };
@@ -315,11 +321,18 @@ export function sessionCardStale(status: SessionStatus, productClaim?: boolean):
 
 /**
  * The words beside the dot. A product may substitute its own honest phrasing for the derived
- * label (the tone, the pulse and the stale treatment still come from the derivation) — but a
- * blank override falls back to the derived label rather than leaving the status as colour alone
- * (token rule #7).
+ * label — the tone, the pulse and the stale treatment still come from the derivation.
+ *
+ * Two refusals:
+ *   · a BLANK override falls back to the derived label, rather than leaving the status as colour
+ *     alone (token rule #7);
+ *   · the `unknown` status ignores the override entirely. There is no alternative honest wording
+ *     for "the product told us nothing" — nothing was claimed, so there is nothing to reword —
+ *     and accepting one would let `statusLabel="idle"` launder an absent signal into a positive
+ *     claim, which is exactly what invariant 2 forbids.
  */
 export function sessionStatusText(status: SessionStatus, override?: string | null): string {
+  if (status.key === "unknown") return status.label;
   return typeof override === "string" && override.trim().length > 0 ? override : status.label;
 }
 
@@ -329,8 +342,9 @@ export function sessionStatusText(status: SessionStatus, override?: string | nul
 
 /** Container class. `selected` and `stale` are INDEPENDENT — a selected session can also be
  *  disconnected, so they are two modifiers, never one enum. */
-export function sessionCardClass(input: { selected?: boolean; stale?: boolean } = {}): string {
-  return `my-session-card${input.selected === true ? " is-selected" : ""}${input.stale === true ? " is-stale" : ""}`;
+export function sessionCardClass(input?: { selected?: boolean; stale?: boolean } | null): string {
+  const i = isObject(input) ? input : {};
+  return `my-session-card${i.selected === true ? " is-selected" : ""}${i.stale === true ? " is-stale" : ""}`;
 }
 
 /** What an unnameable session's avatar shows — a question mark, not a fabricated initial. */
@@ -352,8 +366,8 @@ export function sessionAvatarInitial(name: string | null | undefined): string {
  * separator, and an all-absent list yields `""` (the binding then omits the element entirely
  * rather than rendering an empty row).
  */
-export function sessionSubline(parts: readonly (string | null | undefined)[] = []): string {
-  return parts
+export function sessionSubline(parts?: readonly (string | null | undefined)[] | null): string {
+  return (Array.isArray(parts) ? parts : [])
     .map((p) => (typeof p === "string" ? p.trim() : ""))
     .filter((p) => p.length > 0)
     .join(SESSION_CARD_SEP);

@@ -193,6 +193,21 @@ describe("SessionCard (React) — the stale/label rules come from ui-core, not f
     }
   });
 
+  test("INVARIANT 2: statusLabel cannot launder an unreported session into a positive claim", () => {
+    for (const laundering of ["idle", "working"]) {
+      const html = renderToStaticMarkup(<SessionCard name="J" statusLabel={laundering} />);
+      expect(html).toContain(">unknown<");
+      expect(html).not.toContain(`>${laundering}<`);
+    }
+  });
+
+  test("a null thresholds value renders rather than throwing", () => {
+    const html = renderToStaticMarkup(
+      <SessionCard name="J" contextPct={95} thresholds={null as unknown as undefined} />,
+    );
+    expect(html).toContain(ctxMeterClass({ band: "error" }));
+  });
+
   test("a fractional reading is banded as the percent it displays", () => {
     const html = renderToStaticMarkup(<SessionCard name="J" contextPct={89.5} />);
     expect(html).toContain(">90%<");

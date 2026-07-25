@@ -129,6 +129,15 @@ describe("SessionCard — the design card's container states", () => {
     }
   });
 
+  test("INVARIANT 2: statusLabel cannot launder an unreported session into a positive claim", () => {
+    for (const laundering of ["idle", "working", "active"]) {
+      const html = renderToString(<SessionCard name="J" statusLabel={laundering} />);
+      expect(html).toContain(">unknown<");
+      expect(html).not.toContain(`>${laundering}<`);
+      expect(html).toContain(sessionStatusClass(sessionStatus()));
+    }
+  });
+
   test("a card with onSelect is a real button (aria-pressed carries the selection); without, a div", () => {
     const interactive = renderToString(<SessionCard name="J" selected onSelect={noop} />);
     expect(interactive).toContain('<button type="button"');
