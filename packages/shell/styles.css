@@ -468,3 +468,70 @@
   flex-direction: column;
   gap: 16px;
 }
+
+/* ═══ Token gate (the family's shared bearer-token unlock card) ═════════════ */
+/* Ships here, in this package's one stylesheet, on purpose: consumers assemble a single ui.css by
+   concatenating the packaged stylesheets, so a second CSS entry point would leave the card
+   unstyled in every product while every test stayed green. The atoms it composes (the input, the
+   button, the label row) keep coming from ui-core's sheet and are never restated here — writing
+   even one of their selectors in here, including inside a comment, is a test failure. */
+.token-entry {
+  max-width: 400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 26px 26px 22px;
+  background: var(--my-surface);
+  border: 1px solid var(--my-border); /* card boundary, non-interactive (canonical rule #11) */
+  border-radius: var(--my-r-modal);
+  box-shadow: var(--my-shadow-modal);
+}
+.token-entry__title {
+  margin: 0;
+  font-size: var(--my-fs-h2);
+  font-weight: var(--my-fw-bold);
+}
+.token-entry__body {
+  margin: 0;
+  font-size: var(--my-fs-mono);
+  line-height: 1.55;
+  color: var(--my-muted);
+  text-wrap: pretty;
+}
+/* The rejected-attempt line. Deliberately not ui-core's warn banner atom: this row's glyph is
+   aria-hidden (the sentence already carries the meaning), and the banner atom's is not. */
+.token-entry__err {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  padding: 10px 13px;
+  border: 1px solid var(--my-warn);
+  border-radius: var(--my-r-card);
+  background: var(--my-warn-soft);
+  color: var(--my-ink);
+  font-size: var(--my-fs-caption);
+}
+.token-entry__err-glyph {
+  font-style: normal;
+  font-weight: var(--my-fw-bold);
+  color: var(--my-warn);
+}
+/* Full-width CTA without restating any button rule: a single grid item stretches to the column. */
+.token-entry__cta { display: grid; }
+.token-entry__hint {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 1px solid var(--my-border);
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-micro);
+  line-height: 1.6;
+  color: var(--my-muted);
+}
+.token-entry__cmd {
+  color: var(--my-ink);
+  overflow-wrap: anywhere;
+}

@@ -77,6 +77,44 @@ Three behaviors worth knowing:
 `PRODUCTS` hrefs are **placeholders** (`/brokkr`, `/skuld`, `/saga`). A product that knows where
 its siblings actually live should resolve the real target in `onNavigate` and ignore `href`.
 
+## TokenGate — the shared unlock card (0.3.0)
+
+Every product in the family protects its UI with a bearer token minted on first boot. `TokenGate`
+is the one card they all render for it, so the first screen an operator ever sees is identical
+across the family.
+
+```jsx
+<TokenGate
+  product="brokkr"          // registry key — drives the mark and the heading ("Unlock BROKKR")
+  container="mythical"      // named verbatim in the retrieval hint commands
+  onSubmit={(token) => save(token)}   // receives the TRIMMED token
+  invalid={rejected}                  // the previous attempt was refused
+  status={res?.status}                // the REAL status, or omit it
+  reason={res?.reason}                // the REAL reason, or omit it
+/>
+```
+
+Requires `@mythicalos/preact-ui` **≥ 0.3.0** (the field uses its `revealable` Input) and the
+package stylesheet — the card is fully styled by `@mythicalos/shell/styles.css`; no product copies
+any CSS for it.
+
+Four things it will not do:
+
+- **It never invents a failure.** The `status · reason` line renders only when the product hands
+  over *both*, and they must be what actually came back. Miss either and the line is simply not
+  there. `authErrorLine(status?, reason?)` is that whole decision, exported so a product can test
+  its own wiring against it (note `0` is a real status — a request that never reached the server —
+  and does print).
+- **It never states a token format.** The placeholder names no length and no alphabet; the
+  products mint different formats and one is mid-migration.
+- **It never claims to be containerized.** The heading names the product, not "this container" —
+  these products also run outside one in dev. Only the retrieval hint, which is explicitly about a
+  host terminal, mentions `docker exec`.
+- **It never lifts the token out.** The field's value stays inside the component until you are
+  handed the trimmed string on submit; the value is never copied into any other node or attribute.
+
+`onSubmit` fires from the CTA and from Enter (both no-ops while the trimmed value is empty).
+
 ## Upgrading to 0.2.0
 
 Nothing was removed from the JS/TS export surface and no prop became required, so existing code
@@ -131,6 +169,8 @@ const { theme, toggle } = useTheme("light", { storageKey: "mythical.ui.theme" })
 | `NavTabs` | primary nav pills (accent-soft active) |
 | `WorkspaceSplit` + `RailHead`/`RailList`/`RailGroup`/`RailCard` | the 320px rail + detail pattern |
 | `SettingsLayout`, `SettingsNav` | 260px settings nav + detail |
+| `TokenGate` | the shared bearer-token unlock card |
+| `authErrorLine`, `TOKEN_GATE_BODY`, `TOKEN_GATE_INVALID_BODY` | the card's failure-line formatter + its two body strings |
 | `PRODUCTS`, `ASGARD` | the shared family registry + the command-center entry |
 | `FAMILY_NOTE` | *deprecated* — the retired footer-note copy, still exported for compatibility |
 | `useTheme` | light/heritage-dark; persists (configurable key) + sets `<html data-theme>` |
@@ -142,7 +182,8 @@ the family shell.
 ## Styles
 
 `styles.css` ships only the SHELL class families (top bar, logo, product switcher, nav tabs, icon
-button, overflow menu, workspace split/rail/rail-card, settings nav, app/page frame). The ATOM
+button, overflow menu, workspace split/rail/rail-card, settings nav, app/page frame, the
+`.token-entry` unlock card). The ATOM
 families (button, input, chip, card, avatar, status, search, banner, gauge, toast, dialog, …) ship
 from `@mythicalos/ui-core/styles.css` and are never duplicated here — see the stylesheet's own
 top-of-file comment for the full token-fidelity/remap notes.

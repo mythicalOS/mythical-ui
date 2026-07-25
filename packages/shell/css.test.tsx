@@ -33,6 +33,7 @@ import {
   RailList,
   SettingsLayout,
   SettingsNav,
+  TokenGate,
   TopBar,
   WorkspaceSplit,
   PRODUCTS,
@@ -245,6 +246,77 @@ describe("styles.css — (e) every class this package's components render exists
 
   test("no export ever emits an inline style attribute (CSP style-src 'self')", () => {
     for (const html of renders) expect(html).not.toContain("style=");
+  });
+});
+
+describe("styles.css — (g) TokenGate's card ships fully styled from the packaged stylesheets", () => {
+  // TokenGate is the one shell component that composes ui-core ATOMS (Input, Button), so its
+  // emitted classes are split across two sheets by design: the `.token-entry*` family belongs to
+  // this package, everything else must already resolve in ui-core's. Consumers concatenate both,
+  // so this pair of assertions is what proves the card needs no copied CSS in any product.
+  const uiCoreCss = readFileSync(join(import.meta.dir, "..", "ui-core", "styles.css"), "utf8");
+
+  const rendered = renderToString(
+    <TokenGate product="brokkr" container="mythical" onSubmit={() => {}} invalid status={401} reason="bad token" />,
+  );
+  const emitted = new Set<string>();
+  for (const m of rendered.matchAll(/class="([^"]*)"/g)) {
+    for (const c of m[1]!.split(/\s+/)) if (c.length > 0) emitted.add(c);
+  }
+
+  test("the card renders its own class family", () => {
+    for (const c of [
+      "token-entry",
+      "token-entry__title",
+      "token-entry__body",
+      "token-entry__err",
+      "token-entry__err-glyph",
+      "token-entry__cta",
+      "token-entry__hint",
+      "token-entry__cmd",
+    ]) {
+      expect(emitted.has(c)).toBe(true);
+      expect(hasClassSelector(css, c)).toBe(true);
+    }
+  });
+
+  test("every class it emits resolves in THIS package's sheet or in ui-core's — nothing is unstyled", () => {
+    const missing = [...emitted].filter(
+      (c) => !hasClassSelector(css, c) && !hasClassSelector(uiCoreCss, c),
+    );
+    expect(missing).toEqual([]);
+  });
+
+  test("the atoms it composes are still owned by ui-core, not restated here", () => {
+    for (const c of ["input", "btn", "field", "input-reveal__btn"]) {
+      expect(emitted.has(c) || rendered.includes(`${c} `) || rendered.includes(`"${c}"`)).toBe(true);
+      expect(hasClassSelector(css, c)).toBe(false);
+      expect(hasClassSelector(uiCoreCss, c)).toBe(true);
+    }
+  });
+
+  test("card geometry: 400px, centred, surface + border, modal radius and shadow", () => {
+    const rule = css.match(/\.token-entry\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    const r = rule![0];
+    expect(r).toContain("max-width: 400px");
+    expect(r).toContain("margin: 0 auto");
+    expect(r).toContain("background: var(--my-surface)");
+    expect(r).toContain("border: 1px solid var(--my-border)");
+    expect(r).toContain("border-radius: var(--my-r-modal)");
+    expect(r).toContain("box-shadow: var(--my-shadow-modal)");
+  });
+
+  test("the CTA stretches its single child to full width without restating any .btn rule", () => {
+    const rule = css.match(/\.token-entry__cta\s*\{[^}]*\}/);
+    expect(rule?.[0]).toContain("display: grid");
+  });
+
+  test("the hint block is separated by a top rule and set in the mono face", () => {
+    const rule = css.match(/\.token-entry__hint\s*\{[^}]*\}/);
+    expect(rule).not.toBeNull();
+    expect(rule![0]).toContain("border-top: 1px solid var(--my-border)");
+    expect(rule![0]).toContain("font-family: var(--my-font-mono)");
   });
 });
 

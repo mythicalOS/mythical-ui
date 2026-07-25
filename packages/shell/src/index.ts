@@ -37,6 +37,13 @@ export {
   type SettingsNavProps,
   type SettingsNavItem,
 } from "./Settings.js";
+export {
+  TokenGate,
+  authErrorLine,
+  TOKEN_GATE_BODY,
+  TOKEN_GATE_INVALID_BODY,
+  type TokenGateProps,
+} from "./TokenGate.js";
 export { PRODUCTS, ASGARD, FAMILY_NOTE, type Product, type ProductState } from "./products.js";
 export {
   useTheme,
