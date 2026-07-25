@@ -102,15 +102,31 @@ describe("SessionCard — the design card's container states", () => {
     expect(selectedStale).toContain(`class="${sessionCardClass({ selected: true, stale: true })}"`);
   });
 
-  test("stale is DERIVED from the status (a down link) and overridable by the prop", () => {
+  test("stale is DERIVED from a down link, and the prop can only ADD it — never remove it", () => {
     const derived = renderToString(<SessionCard name="M" status={{ lifecycle: "active", connected: false }} />);
     expect(derived).toContain(sessionCardClass({ stale: true }));
-    const forced = renderToString(<SessionCard name="M" stale />);
-    expect(forced).toContain(sessionCardClass({ stale: true }));
-    const suppressed = renderToString(
+
+    const productClaim = renderToString(<SessionCard name="M" stale />);
+    expect(productClaim).toContain(sessionCardClass({ stale: true }));
+
+    // a disconnected session painted as live (solid border, unmuted values) is exactly the lie
+    // this treatment exists to prevent — `stale={false}` must not buy it
+    const attemptedSuppression = renderToString(
       <SessionCard name="M" status={{ lifecycle: "active", connected: false }} stale={false} />,
     );
-    expect(suppressed).not.toContain("is-stale");
+    expect(attemptedSuppression).toContain(sessionCardClass({ stale: true }));
+
+    const live = renderToString(<SessionCard name="M" status={{ lifecycle: "active" }} stale={false} />);
+    expect(live).not.toContain("is-stale");
+  });
+
+  test("a blank status-label override falls back to the derived word (never colour alone)", () => {
+    const derived = sessionStatus({ lifecycle: "spawning" });
+    for (const override of ["", "   "]) {
+      expect(renderToString(<SessionCard name="J" status={{ lifecycle: "spawning" }} statusLabel={override} />)).toContain(
+        `>${derived.label}<`,
+      );
+    }
   });
 
   test("a card with onSelect is a real button (aria-pressed carries the selection); without, a div", () => {

@@ -27,16 +27,20 @@ import { Fragment } from "preact";
 import type { ComponentChildren } from "preact";
 import {
   ctxBand,
+  ctxReading,
   ctxBarGeom,
+  normalizeCtxThresholds,
   ctxMeterClass,
   ctxNoteText,
   ctxValueText,
   sessionAvatarInitial,
   sessionCardClass,
   sessionCardIsStale,
+  sessionCardStale,
   sessionSpineSummary,
   sessionStatus,
   sessionStatusClass,
+  sessionStatusText,
   sessionSubline,
   spineNodeClass,
   CTX_BAR_VIEWBOX,
@@ -50,16 +54,20 @@ import { Avatar } from "./Avatar.js";
 
 export {
   ctxBand,
+  ctxReading,
   ctxBarGeom,
+  normalizeCtxThresholds,
   ctxMeterClass,
   ctxNoteText,
   ctxValueText,
   sessionAvatarInitial,
   sessionCardClass,
   sessionCardIsStale,
+  sessionCardStale,
   sessionSpineSummary,
   sessionStatus,
   sessionStatusClass,
+  sessionStatusText,
   sessionSubline,
   spineNodeClass,
 };
@@ -90,8 +98,8 @@ export interface SessionCardProps {
   spine?: SessionSpine;
   /** The design's selected state (petrol border + ring). Independent of `stale`. */
   selected?: boolean;
-  /** Force the design's stale treatment (dashed border, muted values). Defaults to the derived
-   *  answer: stale exactly when the status came out `disconnected`. */
+  /** ADD the design's stale treatment (dashed border, muted values) for a reason the card cannot
+   *  see. It cannot be used to REMOVE the staleness a down link implies — see `sessionCardStale`. */
   stale?: boolean;
   /** Makes the card a real button. Omit for a non-interactive card. */
   onSelect?: () => void;
@@ -116,7 +124,7 @@ export function SessionCard(props: SessionCardProps) {
   } = props;
 
   const status: SessionStatus = sessionStatus(statusInput);
-  const stale = props.stale ?? sessionCardIsStale(status);
+  const stale = sessionCardStale(status, props.stale);
   const band = ctxBand(contextPct, thresholds);
   const bar = ctxBarGeom(contextPct, thresholds);
   const subline = sessionSubline(meta);
@@ -131,7 +139,7 @@ export function SessionCard(props: SessionCardProps) {
             <b class="my-session-card__name">{name}</b>
             <span class={sessionStatusClass(status)}>
               <span class="my-session-card__dot" />
-              <span class="my-session-card__status-text">{statusLabel ?? status.label}</span>
+              <span class="my-session-card__status-text">{sessionStatusText(status, statusLabel)}</span>
             </span>
           </span>
           {subline.length > 0 ? <span class="my-session-card__meta">{subline}</span> : null}

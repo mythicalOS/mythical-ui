@@ -165,3 +165,45 @@ describe("SessionCard (React) — interaction + package scans", () => {
     expect([...emitted].filter((c) => !new RegExp(`\\.${escapeRe(c)}(?![\\w-])`).test(css))).toEqual([]);
   });
 });
+
+describe("SessionCard (React) — the stale/label rules come from ui-core, not from this binding", () => {
+  test("`stale={false}` cannot paint a disconnected session as live", () => {
+    const html = renderToStaticMarkup(
+      <SessionCard name="M" status={{ lifecycle: "active", connected: false }} stale={false} />,
+    );
+    expect(html).toContain(sessionCardClass({ stale: true }));
+    expect(renderToStaticMarkup(<SessionCard name="M" status={{ lifecycle: "active" }} stale />)).toContain(
+      sessionCardClass({ stale: true }),
+    );
+  });
+
+  test("a real status-label override wins; a blank one falls back to the derived word", () => {
+    const down = sessionStatus({ lifecycle: "active", connected: false });
+    expect(
+      renderToStaticMarkup(
+        <SessionCard name="M" status={{ lifecycle: "active", connected: false }} statusLabel="wake unavailable" />,
+      ),
+    ).toContain(">wake unavailable<");
+    for (const override of ["", "  "]) {
+      expect(
+        renderToStaticMarkup(
+          <SessionCard name="M" status={{ lifecycle: "active", connected: false }} statusLabel={override} />,
+        ),
+      ).toContain(`>${down.label}<`);
+    }
+  });
+
+  test("a fractional reading is banded as the percent it displays", () => {
+    const html = renderToStaticMarkup(<SessionCard name="J" contextPct={89.5} />);
+    expect(html).toContain(">90%<");
+    expect(html).toContain(ctxMeterClass({ band: "error" }));
+  });
+
+  test("an unusable threshold pair falls back to the defaults in band AND ticks", () => {
+    const broken = { warn: Number.NaN, critical: Number.NaN };
+    const html = renderToStaticMarkup(<SessionCard name="J" contextPct={95} thresholds={broken} />);
+    expect(html).toContain(ctxMeterClass({ band: "error" }));
+    for (const t of ctxBarGeom(95, broken).ticks) expect(html).toContain(`x="${t.x}"`);
+    expect(ctxBarGeom(95, broken).ticks.map((t) => t.pct)).toEqual([75, 90]);
+  });
+});

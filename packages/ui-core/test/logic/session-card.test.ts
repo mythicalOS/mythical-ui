@@ -16,17 +16,21 @@ import {
   ctxBarGeom,
   ctxFillPct,
   ctxMeterClass,
+  normalizeCtxThresholds,
   ctxNoteText,
+  ctxReading,
   ctxValueText,
   sessionAvatarInitial,
   sessionCardClass,
   sessionCardIsStale,
+  sessionCardStale,
   sessionSpineLabel,
   sessionSpineNodes,
   sessionSpineSavedText,
   sessionSpineSummary,
   sessionStatus,
   sessionStatusClass,
+  sessionStatusText,
   sessionSubline,
   spineNodeClass,
   CTX_BAR_SPAN,
@@ -270,6 +274,46 @@ describe("INVARIANT 3 — 75/90 are DEFAULTS, not constants baked into the deriv
     expect(ctxBand(80, { warn: 90, critical: 75 })).toBe("error");
   });
 
+  test("an UNUSABLE threshold falls back to the default in BOTH the band and the ticks", () => {
+    // a threshold that is not a finite number strictly inside the rail marks nothing the meter can
+    // draw — it must not silently reclassify every reading while drawing no tick to explain it
+    for (const broken of [
+      { warn: Number.NaN, critical: Number.NaN },
+      { warn: -5, critical: 140 },
+      { warn: 0, critical: 100 },
+      { warn: Number.POSITIVE_INFINITY, critical: Number.NEGATIVE_INFINITY },
+    ]) {
+      expect(normalizeCtxThresholds(broken)).toEqual(CTX_THRESHOLDS_DEFAULT);
+      // the band a broken config yields is the DEFAULT band, never a blanket ok…
+      expect(ctxBand(95, broken)).toBe("error");
+      expect(ctxBand(80, broken)).toBe("warn");
+      expect(ctxBand(10, broken)).toBe("ok");
+      // …and the ticks agree with it, rather than vanishing
+      expect(ctxBarGeom(50, broken).ticks.map((t) => t.pct)).toEqual([75, 90]);
+    }
+  });
+
+  test("one broken member falls back alone — the usable one is honored", () => {
+    expect(normalizeCtxThresholds({ warn: Number.NaN, critical: 60 })).toEqual({ warn: 75, critical: 60 });
+    expect(ctxBarGeom(0, { warn: Number.NaN, critical: 60 }).ticks.map((t) => t.pct)).toEqual([60, 75]);
+  });
+
+  test("the band and the ticks are ALWAYS derived from the same normalized pair", () => {
+    for (const t of [
+      { warn: 75, critical: 90 },
+      { warn: 40, critical: 80 },
+      { warn: 0, critical: 55 },
+      { warn: Number.NaN, critical: 90 },
+      { warn: 99.9, critical: 99.95 },
+    ]) {
+      const norm = normalizeCtxThresholds(t);
+      const ticks = ctxBarGeom(0, t).ticks.map((x) => x.pct);
+      expect(new Set(ticks)).toEqual(new Set([norm.warn, norm.critical]));
+      expect(ctxBand(Math.ceil(norm.critical), t)).toBe("error");
+      expect(ctxBand(Math.ceil(norm.warn), t)).not.toBe("ok");
+    }
+  });
+
   test("out-of-range readings are clamped before the band and the fill are derived", () => {
     expect(ctxBand(-10)).toBe("ok");
     expect(ctxBand(150)).toBe("error");
@@ -291,12 +335,6 @@ describe("ctxBarGeom — pure SVG geometry (no inline CSS: percent IS the x axis
     expect(warn?.width).toBe(CTX_BAR_TICK_WIDTH);
     const [edge] = ctxBarGeom(0, { warn: 99.9, critical: 99.95 }).ticks;
     expect(edge!.x + edge!.width).toBeLessThanOrEqual(CTX_BAR_SPAN);
-  });
-
-  test("a tick flush with a rail end marks nothing and is dropped", () => {
-    expect(ctxBarGeom(0, { warn: 0, critical: 100 }).ticks).toEqual([]);
-    expect(ctxBarGeom(0, { warn: -5, critical: 140 }).ticks).toEqual([]);
-    expect(ctxBarGeom(0, { warn: Number.NaN, critical: 90 }).ticks.map((t) => t.pct)).toEqual([90]);
   });
 
   test("coincident thresholds collapse to ONE tick, not two stacked ones", () => {
@@ -519,5 +557,71 @@ describe("styles.css — every class the session-card logic emits exists as a se
   test("spineNodeClass — distill node and live tip", () => {
     expectSelectorsFor(spineNodeClass({ tip: false }));
     expectSelectorsFor(spineNodeClass({ tip: true }));
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// what the card SHOWS and what it CLAIMS are the same number
+// ════════════════════════════════════════════════════════════════════════════════════════
+
+describe("ctxReading — one canonical presented value drives band, fill and label", () => {
+  test("a fractional reading cannot display one percent while being banded as another", () => {
+    // 89.5 displays as 90%, so it must BE the ≥90 band — not amber "distill suggested"
+    expect(ctxValueText(89.5)).toBe("90%");
+    expect(ctxBand(89.5)).toBe("error");
+    expect(ctxNoteText(ctxBand(89.5))).toBe("context · distill now");
+    // 74.5 displays as 75%, so it must be the warn band
+    expect(ctxValueText(74.5)).toBe("75%");
+    expect(ctxBand(74.5)).toBe("warn");
+    // and just below the rounding boundary nothing moves
+    expect(ctxValueText(89.4)).toBe("89%");
+    expect(ctxBand(89.4)).toBe("warn");
+  });
+
+  test("the fill length is the same presented number as the label, across the range", () => {
+    for (const pct of [0, 12.4, 47.6, 62, 74.5, 89.5, 94.2, 100, 150, -3]) {
+      const shown = ctxValueText(pct);
+      expect(`${ctxFillPct(pct)}%`).toBe(shown);
+      expect(`${ctxBarGeom(pct).fill}%`).toBe(shown);
+    }
+  });
+
+  test("absence still short-circuits everything (invariant 1 is not weakened by rounding)", () => {
+    expect(ctxReading(undefined)).toBeUndefined();
+    expect(ctxReading(null)).toBeUndefined();
+    expect(ctxReading(Number.NaN)).toBeUndefined();
+    expect(ctxReading(0)).toBe(0);
+  });
+});
+
+describe("sessionCardStale — a product may ADD staleness, never remove it", () => {
+  test("a down link is stale no matter what the product claims", () => {
+    const down = sessionStatus({ lifecycle: "active", connected: false });
+    expect(sessionCardStale(down)).toBe(true);
+    expect(sessionCardStale(down, true)).toBe(true);
+    // the lie this guards: painting a disconnected session as a live, solid-bordered card
+    expect(sessionCardStale(down, false)).toBe(true);
+  });
+
+  test("a live session is stale only if the product says so", () => {
+    const live = sessionStatus({ lifecycle: "active" });
+    expect(sessionCardStale(live)).toBe(false);
+    expect(sessionCardStale(live, false)).toBe(false);
+    expect(sessionCardStale(live, true)).toBe(true);
+  });
+});
+
+describe("sessionStatusText — an override may reword, never blank out", () => {
+  test("a real override wins", () => {
+    const down = sessionStatus({ lifecycle: "active", connected: false });
+    expect(sessionStatusText(down, "wake unavailable")).toBe("wake unavailable");
+  });
+  test("an absent or blank override falls back to the derived label (never colour alone)", () => {
+    const s = sessionStatus({ lifecycle: "spawning" });
+    expect(sessionStatusText(s)).toBe(s.label);
+    expect(sessionStatusText(s, undefined)).toBe(s.label);
+    expect(sessionStatusText(s, null)).toBe(s.label);
+    expect(sessionStatusText(s, "")).toBe(s.label);
+    expect(sessionStatusText(s, "   ")).toBe(s.label);
   });
 });

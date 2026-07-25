@@ -42,6 +42,23 @@ export interface CtxThresholds {
 export const CTX_THRESHOLDS_DEFAULT: CtxThresholds = { warn: 75, critical: 90 };
 
 /**
+ * Normalize a product's threshold pair ONCE, so the band and the bar's ticks can never disagree
+ * about where the thresholds are. A member that is not a finite number strictly inside the rail
+ * (0 < t < 100) is not a usable threshold — it marks nothing the meter can draw — so it falls back
+ * to the design default rather than silently reclassifying every reading. (`{warn: NaN}` must not
+ * quietly make every session look nominal; `{warn: -5}` must not quietly make every session look
+ * hot while drawing no tick to explain why.)
+ */
+export function normalizeCtxThresholds(thresholds: CtxThresholds = CTX_THRESHOLDS_DEFAULT): CtxThresholds {
+  const usable = (t: number, fallback: number): number =>
+    Number.isFinite(t) && t > 0 && t < CTX_BAR_SPAN ? t : fallback;
+  return {
+    warn: usable(thresholds.warn, CTX_THRESHOLDS_DEFAULT.warn),
+    critical: usable(thresholds.critical, CTX_THRESHOLDS_DEFAULT.critical),
+  };
+}
+
+/**
  * The context band. `"unknown"` is a FIRST-CLASS member, not a fallback to `"ok"`: a session with
  * no reading (undefined/null/NaN/±Infinity) belongs to no health band — it is neither healthy nor
  * hot (invariant 1).
@@ -53,24 +70,30 @@ function isReading(pct: number | null | undefined): pct is number {
   return typeof pct === "number" && Number.isFinite(pct);
 }
 
-function clampPct(pct: number): number {
-  return Math.min(100, Math.max(0, pct));
+/**
+ * The ONE number the card presents: a reading clamped to 0–100 and rounded to the whole percent
+ * the card actually shows, or `undefined` when there is no reading. Band, fill and label all
+ * derive from this, so the card can never show `90%` while calling it `warn` — what it displays
+ * and what it claims are the same number.
+ */
+export function ctxReading(pct: number | null | undefined): number | undefined {
+  return isReading(pct) ? Math.round(Math.min(100, Math.max(0, pct))) : undefined;
 }
 
 /**
- * Band for a context reading. Absent ⇒ `"unknown"`. The reading is clamped to 0–100 before the
- * comparison so an over-window value cannot escape the top band. `critical` is tested first, so a
- * mis-ordered threshold pair (critical < warn) still degrades to the more severe band rather than
- * silently under-reporting.
+ * Band for a context reading, derived from the whole percent the card displays. Absent ⇒
+ * `"unknown"`. `critical` is tested first, so a mis-ordered threshold pair (critical < warn) still
+ * degrades to the more severe band rather than silently under-reporting.
  */
 export function ctxBand(
   pct: number | null | undefined,
   thresholds: CtxThresholds = CTX_THRESHOLDS_DEFAULT,
 ): CtxBand {
-  if (!isReading(pct)) return "unknown";
-  const v = clampPct(pct);
-  if (v >= thresholds.critical) return "error";
-  if (v >= thresholds.warn) return "warn";
+  const v = ctxReading(pct);
+  if (v === undefined) return "unknown";
+  const t = normalizeCtxThresholds(thresholds);
+  if (v >= t.critical) return "error";
+  if (v >= t.warn) return "warn";
   return "ok";
 }
 
@@ -80,7 +103,7 @@ export function ctxBand(
  * "empty context" (invariant 1).
  */
 export function ctxFillPct(pct: number | null | undefined): number | undefined {
-  return isReading(pct) ? clampPct(pct) : undefined;
+  return ctxReading(pct);
 }
 
 /** What an absent reading renders as — never `"0%"`. */
@@ -88,8 +111,8 @@ export const CTX_UNKNOWN_TEXT = "—";
 
 /** The meter's right-hand value: `"62%"` for a reading, `"—"` for none (invariant 1). */
 export function ctxValueText(pct: number | null | undefined): string {
-  const v = ctxFillPct(pct);
-  return v === undefined ? CTX_UNKNOWN_TEXT : `${Math.round(v)}%`;
+  const v = ctxReading(pct);
+  return v === undefined ? CTX_UNKNOWN_TEXT : `${v}%`;
 }
 
 /** The meter's left-hand label and the separator the card composes its notes with. */
@@ -145,18 +168,20 @@ export interface CtxBarGeom {
 }
 
 /**
- * Pure bar geometry. Ticks sitting at (or outside) the rail ends are dropped — a tick flush with
- * the end of the rail marks nothing — and duplicates collapse, so `{warn: 90, critical: 90}` draws
- * one tick, not two stacked ones.
+ * Pure bar geometry, from the SAME normalized thresholds `ctxBand` uses — an unusable threshold
+ * falls back to the default in both places, so the ticks always mark the boundaries the band is
+ * actually enforcing. Duplicates collapse, so `{warn: 90, critical: 90}` draws one tick, not two
+ * stacked ones.
  */
 export function ctxBarGeom(
   pct: number | null | undefined,
   thresholds: CtxThresholds = CTX_THRESHOLDS_DEFAULT,
 ): CtxBarGeom {
+  const norm = normalizeCtxThresholds(thresholds);
   const seen = new Set<number>();
   const ticks: CtxBarTick[] = [];
-  for (const t of [thresholds.warn, thresholds.critical]) {
-    if (!Number.isFinite(t) || t <= 0 || t >= CTX_BAR_SPAN || seen.has(t)) continue;
+  for (const t of [norm.warn, norm.critical]) {
+    if (seen.has(t)) continue;
     seen.add(t);
     const x = Math.min(CTX_BAR_SPAN - CTX_BAR_TICK_WIDTH, Math.max(0, t - CTX_BAR_TICK_WIDTH / 2));
     ticks.push({ pct: t, x, width: CTX_BAR_TICK_WIDTH });
@@ -276,6 +301,26 @@ export function sessionStatusClass(status: SessionStatus): string {
  */
 export function sessionCardIsStale(status: SessionStatus): boolean {
   return status.key === "disconnected";
+}
+
+/**
+ * The card's stale treatment, including a product's own claim. A product may ADD staleness (its
+ * data is old for a reason the card cannot see); it may NOT take away the staleness a down link
+ * implies — `stale={false}` on a disconnected session would paint it as a live, solid-bordered
+ * card, which is exactly the lie this treatment exists to prevent.
+ */
+export function sessionCardStale(status: SessionStatus, productClaim?: boolean): boolean {
+  return sessionCardIsStale(status) || productClaim === true;
+}
+
+/**
+ * The words beside the dot. A product may substitute its own honest phrasing for the derived
+ * label (the tone, the pulse and the stale treatment still come from the derivation) — but a
+ * blank override falls back to the derived label rather than leaving the status as colour alone
+ * (token rule #7).
+ */
+export function sessionStatusText(status: SessionStatus, override?: string | null): string {
+  return typeof override === "string" && override.trim().length > 0 ? override : status.label;
 }
 
 // ════════════════════════════════════════════════════════════════════════════════════════

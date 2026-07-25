@@ -220,14 +220,18 @@ export {
 // ── session-card (design registry `session-card` v1) ──
 export {
   ctxBand,
+  ctxReading,
   ctxFillPct,
   ctxValueText,
   ctxNoteText,
   ctxMeterClass,
   ctxBarGeom,
+  normalizeCtxThresholds,
   sessionStatus,
   sessionStatusClass,
+  sessionStatusText,
   sessionCardIsStale,
+  sessionCardStale,
   sessionCardClass,
   sessionAvatarInitial,
   sessionSubline,
