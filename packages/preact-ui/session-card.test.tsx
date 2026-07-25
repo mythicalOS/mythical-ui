@@ -27,6 +27,7 @@ import {
   sessionSubline,
   spineNodeClass,
   CTX_THRESHOLDS_DEFAULT,
+  CTX_UNKNOWN_TEXT,
 } from "@mythicalos/ui-core/logic";
 import { SessionCard } from "./src/index.ts";
 
@@ -222,10 +223,17 @@ describe("SessionCard — INVARIANT 1: absence is not zero, on every render path
   test("an unreported spine omits the strip; an unreported saving still shows '—'", () => {
     expect(renderToString(<SessionCard name="J" />)).not.toContain("my-session-card__spine");
     expect(renderToString(<SessionCard name="J" spine={{}} />)).not.toContain("my-session-card__spine");
-    const partial = renderToString(<SessionCard name="J" spine={{ distills: 2 }} />);
+    // a REPORTED context value, so the meter's own "—" cannot stand in for the spine's
+    const partial = renderToString(<SessionCard name="J" contextPct={62} spine={{ distills: 2 }} />);
     expect(partial).toContain("my-session-card__spine");
     expect(partial).toContain("spine · 2 distills");
-    expect(partial).toContain(ctxValueText(undefined));
+    expect(partial).toContain(`<b class="my-session-card__spine-value">${CTX_UNKNOWN_TEXT}</b>`);
+    expect(partial).not.toContain("0 tok");
+    expect(partial).not.toContain(CTX_UNKNOWN_TEXT + "%");
+    // …and a reported saving really does render in that same slot
+    expect(renderToString(<SessionCard name="J" contextPct={62} spine={{ distills: 2, savedTok: 28_400 }} />)).toContain(
+      '<b class="my-session-card__spine-value">−28.4k tok</b>',
+    );
   });
 
   test("the spine strip's nodes/segments match ui-core's summary exactly", () => {

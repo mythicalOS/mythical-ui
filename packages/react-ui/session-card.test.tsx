@@ -98,9 +98,13 @@ describe("SessionCard (React) — the honesty invariants survive this binding to
 
   test("INVARIANT 1: an unreported spine is no strip; an unreported saving is '—'", () => {
     expect(renderToStaticMarkup(<SessionCard name="J" spine={{}} />)).not.toContain("my-session-card__spine");
-    expect(renderToStaticMarkup(<SessionCard name="J" spine={{ distills: 1 }} />)).toContain(
-      `>${ctxValueText(undefined)}<`,
-    );
+    // a REPORTED context value, so the meter's own "—" cannot stand in for the spine's
+    const partial = renderToStaticMarkup(<SessionCard name="J" contextPct={62} spine={{ distills: 1 }} />);
+    expect(partial).toContain(`<b class="my-session-card__spine-value">${ctxValueText(undefined)}</b>`);
+    expect(partial).not.toContain("0 tok");
+    expect(
+      renderToStaticMarkup(<SessionCard name="J" contextPct={62} spine={{ distills: 1, savedTok: 12_800 }} />),
+    ).toContain('<b class="my-session-card__spine-value">−12.8k tok</b>');
   });
 
   test("INVARIANT 2: active-but-no-activity renders the lifecycle word, never idle/working", () => {
