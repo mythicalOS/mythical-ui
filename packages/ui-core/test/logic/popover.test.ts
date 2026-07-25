@@ -24,6 +24,7 @@ import {
   popoverIds,
   popoverItemAria,
   popoverItemClass,
+  popoverAppliesToFocus,
   popoverKeyHandled,
   popoverMenuAria,
   popoverPanelAria,
@@ -257,6 +258,27 @@ describe("keyboard grammar", () => {
       ["x", null],
     ];
     for (const [key, expected] of cases) expect(popoverPanelKeyAction(key)).toBe(expected);
+  });
+
+  test("roving applies ONLY on a roving surface — the caller's footer keeps its own arrow/Home/End", () => {
+    for (const a of ["next", "prev", "first", "last"] as const) {
+      expect(popoverAppliesToFocus(a, true)).toBe(true);
+      // focus is on arbitrary footer content: swallowing these would steal a text input's caret
+      // keys and yank focus back into the menu
+      expect(popoverAppliesToFocus(a, false)).toBe(false);
+    }
+  });
+
+  test("dismissal applies from ANYWHERE inside the popover, footer content included", () => {
+    for (const a of ["close", "dismiss"] as const) {
+      expect(popoverAppliesToFocus(a, true)).toBe(true);
+      expect(popoverAppliesToFocus(a, false)).toBe(true);
+    }
+  });
+
+  test("an unhandled key is never claimed, wherever focus is", () => {
+    expect(popoverAppliesToFocus(null, true)).toBe(false);
+    expect(popoverAppliesToFocus(null, false)).toBe(false);
   });
 
   test("popoverKeyHandled — Tab must keep its native behaviour or the popover becomes a focus trap", () => {

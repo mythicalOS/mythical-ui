@@ -43,6 +43,7 @@ export {
   popoverTriggerKeyAction,
   popoverPanelKeyAction,
   popoverKeyHandled,
+  popoverAppliesToFocus,
   edgePopoverIndex,
   stepPopoverIndex,
   initialPopoverIndex,

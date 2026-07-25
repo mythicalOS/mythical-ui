@@ -312,6 +312,7 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
       "popoverTriggerKeyAction",
       "popoverPanelKeyAction",
       "popoverKeyHandled",
+      "popoverAppliesToFocus",
       "resolvePopoverIndex",
       "resolvePopoverPosition",
       "samePopoverPosition",
@@ -357,6 +358,13 @@ describe("DOM wiring — proven by source scan, since effects never run under re
     const focusCalls = src.match(/\.focus\([^)]*\)/g) ?? [];
     expect(focusCalls.length).toBeGreaterThan(0);
     for (const call of focusCalls) expect(call).toContain("preventScroll: true");
+  });
+
+  test("roving keys are gated on the focused element being a row or the panel, not the footer", () => {
+    expect(src).toContain("popoverAppliesToFocus(action, onRovingSurface)");
+    expect(src).toMatch(/const onRovingSurface = focused >= 0 \|\| document\.activeElement === panelRef\.current;/);
+    // the gate must come BEFORE any preventDefault, or a footer input still loses the keystroke
+    expect(src.indexOf("popoverAppliesToFocus")).toBeLessThan(src.indexOf("e.preventDefault();\n    if (action ==="));
   });
 
   test("focus moves INTO the menu on open, at the index the core picks", () => {

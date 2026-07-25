@@ -38,6 +38,7 @@ import {
   popoverIds,
   popoverItemAria,
   popoverItemClass,
+  popoverAppliesToFocus,
   popoverKeyHandled,
   popoverMenuAria,
   popoverPanelAria,
@@ -83,7 +84,8 @@ export interface PopoverProps {
   /** Optional second heading line — the honest framing/caveat line. */
   caption?: string;
   /** Optional content below a divider (e.g. a "Manage projects →" action). Rows in here are the
-   * caller's own elements; the arrow-key roving above covers `items` only. */
+   * caller's own elements, and the arrow/Home/End roving deliberately does NOT reach them — a
+   * footer input keeps its own caret keys. Escape still closes from inside the footer. */
   footer?: ComponentChildren;
   disabled?: boolean;
   /** Base for the trigger/panel id pair. Defaults to a generated one. */
@@ -261,7 +263,11 @@ export function Popover(props: PopoverProps) {
       return;
     }
     const action = popoverPanelKeyAction(e.key);
-    if (action === null) return;
+    // Roving keys apply only on a row (or the panel fallback); the caller's footer content keeps
+    // its own arrows/Home/End. Escape and Tab still work from anywhere inside the popover.
+    const focused = itemNodes().indexOf(document.activeElement as HTMLButtonElement);
+    const onRovingSurface = focused >= 0 || document.activeElement === panelRef.current;
+    if (!popoverAppliesToFocus(action, onRovingSurface)) return;
     // Tab ("dismiss") must keep its native behaviour or the popover is a focus trap; moving focus
     // to the trigger first makes the browser continue the tab sequence from AFTER the trigger,
     // which is where tabbing out of a menu belongs.
@@ -270,7 +276,7 @@ export function Popover(props: PopoverProps) {
       closeToTrigger();
       return;
     }
-    const next = resolvePopoverIndex(action, items, itemNodes().indexOf(document.activeElement as HTMLButtonElement));
+    const next = resolvePopoverIndex(action, items, focused);
     if (next >= 0) focusRow(next);
   };
 

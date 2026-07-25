@@ -323,6 +323,26 @@ export function popoverKeyHandled(action: PopoverPanelKeyAction): boolean {
   return action !== null && action !== "dismiss";
 }
 
+/**
+ * Does this action apply to the element that currently has focus?
+ *
+ * Dismissal (Escape / Tab) applies from ANYWHERE inside the popover — including the caller's
+ * footer content, where Escape must still close. Roving (arrows / Home / End) applies ONLY when
+ * focus is on a menu row or on the panel fallback. That distinction is load-bearing, not tidiness:
+ * a footer control is arbitrary caller markup, so swallowing Home/End there would steal a text
+ * input's caret keys, and swallowing an arrow would yank focus out of the footer and into the menu.
+ * The binding supplies the one thing this module cannot compute — whether the focused element is a
+ * roving surface.
+ */
+export function popoverAppliesToFocus(
+  action: PopoverPanelKeyAction,
+  focusOnRovingSurface: boolean,
+): boolean {
+  if (action === null) return false;
+  if (action === "close" || action === "dismiss") return true;
+  return focusOnRovingSurface;
+}
+
 /* ── roving-focus index arithmetic (disabled rows are skipped, ends wrap) ── */
 
 /** Index of the first enabled item scanning forward (`dir` 1) or backward (`dir` -1); -1 if every
