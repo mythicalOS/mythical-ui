@@ -23,6 +23,7 @@ import {
   gitChipNote,
   gitFlagClass,
   gitFlags,
+  hasGitStatus,
   type GitFlag,
   type GitFlagTone,
   type GitStatus,
@@ -34,6 +35,7 @@ export {
   gitChipNote,
   gitFlagClass,
   gitFlags,
+  hasGitStatus,
   GIT_BRANCH_GLYPH,
   GIT_BRANCH_UNKNOWN,
   GIT_CLEAN_LABEL,
@@ -48,8 +50,9 @@ export {
 };
 
 export interface GitChipProps {
-  /** The reported status. Absent ⇒ the honest unavailable arm — never a fabricated clean tree. */
-  status?: GitStatus;
+  /** The reported status. Absent — `undefined` OR `null`, so a "no data yet" slot can be passed
+   *  straight through — ⇒ the honest unavailable arm, never a fabricated clean tree. */
+  status?: GitStatus | null;
   /** Human copy for why there is no status. The product maps its own reason codes to this
    *  sentence; the atom carries no reason vocabulary of its own. */
   unavailableNote?: string;
@@ -69,7 +72,7 @@ export function GitChip(props: GitChipProps) {
     </span>
   ) : null;
 
-  if (status !== undefined) {
+  if (hasGitStatus(status)) {
     const flags = gitFlags(status);
     return (
       <span className={`${gitChipClass({ stale })} ${cls}`}>

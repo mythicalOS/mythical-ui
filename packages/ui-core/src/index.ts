@@ -65,6 +65,7 @@ export {
 
 export {
   gitFlags,
+  hasGitStatus,
   gitBranchLabel,
   gitChipClass,
   gitFlagClass,

@@ -132,6 +132,12 @@ describe("StatTiles", () => {
     expect(html).not.toContain("my-stat-tile__value");
   });
 
+  test("a non-array tiles prop renders an empty row rather than crashing", () => {
+    const html = renderToStaticMarkup(<StatTiles tiles={undefined as unknown as StatTile[]} />);
+    expect(html).toContain(statTilesClass());
+    expect(html).not.toContain("my-stat-tile__value");
+  });
+
   test("duplicate labels do not collide", () => {
     const dupes: StatTile[] = [
       { label: "tokens", value: "1" },
@@ -213,6 +219,18 @@ describe("GitChip — unavailable arm (the honesty this atom exists for)", () =>
     expect(html).toContain(reason);
     expect(html).not.toContain(GIT_UNAVAILABLE_NOTE);
     expect(html).toContain(`title="${reason}"`);
+  });
+
+  test("a NULL status takes the unavailable arm — it must not be read as a status object", () => {
+    const html = renderToStaticMarkup(<GitChip status={null} />);
+    expect(html).toContain(`class="${gitChipClass({ unavailable: true })} "`);
+    expect(html).toContain(GIT_UNAVAILABLE_NOTE);
+    expect(html).not.toContain(GIT_CLEAN_LABEL);
+  });
+
+  test("a null status still honours a product-supplied reason", () => {
+    const html = renderToStaticMarkup(<GitChip status={null} unavailableNote="Not a repository." />);
+    expect(html).toContain("Not a repository.");
   });
 
   test("loading, with no reason, is the in-flight line", () => {

@@ -21,6 +21,7 @@ import {
   gitChipNote,
   gitFlagClass,
   gitFlags,
+  hasGitStatus,
   type GitFlagTone,
   type GitStatus,
 } from "../../src/index.ts";
@@ -95,8 +96,35 @@ describe("gitFlags — honesty: an UNREPORTED status is never coerced into 'clea
     expect(flags).toEqual([]);
   });
 
+  test("FRACTIONAL counters are malformed — a commit count cannot be 1.5, so no flag is rendered", () => {
+    // …and a malformed counter also BLOCKS the clean claim: `behind: 1.5` is not "no commits
+    // behind", it is an unusable answer, so the tree cannot be declared all-clear off it.
+    expect(gitFlags({ branch: "main", behind: 1.5, uncommitted: 0, unpushed: 0 })).toEqual([]);
+    const all = gitFlags({ branch: "main", behind: 1.5, uncommitted: 2.7, unpushed: 0.5 });
+    expect(all).toEqual([]);
+    expect(JSON.stringify(all)).not.toContain("1.5");
+    expect(JSON.stringify(all)).not.toContain("2.7");
+  });
+
+  test("a fractional uncommitted count cannot earn a clean claim either", () => {
+    expect(gitFlags({ branch: "main", behind: 0, uncommitted: 0.4, unpushed: 0 })).toEqual([]);
+  });
+
   test("an entirely missing status object degrades to no flags rather than throwing", () => {
     expect(gitFlags(undefined as unknown as GitStatus)).toEqual([]);
+    expect(gitFlags(null as unknown as GitStatus)).toEqual([]);
+  });
+});
+
+describe("hasGitStatus — null is 'no status', not a status to read fields off", () => {
+  test.each([
+    [undefined, false],
+    [null, false],
+    ["main", false],
+    [clean, true],
+    [{}, true],
+  ] as [unknown, boolean][])("%p ⇒ %p", (input, expected) => {
+    expect(hasGitStatus(input as GitStatus)).toBe(expected);
   });
 });
 

@@ -44,7 +44,11 @@ export interface StatTilesProps {
 }
 
 export function StatTiles(props: StatTilesProps) {
-  const { tiles, class: cls = "" } = props;
+  const { class: cls = "" } = props;
+  // A JS caller can hand a non-array where the type says `StatTile[]` (an unloaded slot); render an
+  // empty row rather than crashing on `.map` — the same "absent is not a value" rule the
+  // formatters follow.
+  const tiles = Array.isArray(props.tiles) ? props.tiles : [];
   return (
     <div class={`${statTilesClass()} ${cls}`}>
       {tiles.map((t, i) => (

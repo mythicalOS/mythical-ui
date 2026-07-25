@@ -83,6 +83,7 @@ export {
 export {
   GitChip,
   gitFlags,
+  hasGitStatus,
   gitBranchLabel,
   gitChipClass,
   gitFlagClass,

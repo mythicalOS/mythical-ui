@@ -59,17 +59,26 @@ export const GIT_UNAVAILABLE_NOTE = "Repository status is unavailable.";
 export const GIT_STALE_LABEL = "· stale";
 export const GIT_STALE_TITLE = "the last read failed — showing the last received status";
 
-/** A real, finite, non-negative count. `null` (no upstream), `undefined` (not reported), `NaN` and
- *  negatives are all "not a count". */
+/** A real, non-negative INTEGER commit/file count. `null` (no upstream), `undefined` (not
+ *  reported), `NaN`, negatives and fractions are all "not a count" — a fractional value cannot be a
+ *  number of commits, so it is malformed data and must not be rendered as one ("1.5↓ behind"). */
 function isCount(n: unknown): n is number {
-  return typeof n === "number" && Number.isFinite(n) && n >= 0;
+  return typeof n === "number" && Number.isInteger(n) && n >= 0;
+}
+
+/** True when a status object was actually supplied. A JS caller can hand `null` where the type says
+ *  `GitStatus | undefined` — `null` means "no status", so it must take the honest unavailable arm
+ *  rather than crash on a field read. Both bindings gate on this. */
+export function hasGitStatus(status: GitStatus | null | undefined): status is GitStatus {
+  return typeof status === "object" && status !== null;
 }
 
 /** Branch label: the real name, or the honest "detached HEAD" for `null`. An unreported branch
- *  (`undefined`) falls back to the neutral `—` rather than inventing a checkout state. */
+ *  (`undefined`, or any non-string) falls back to the neutral `—` rather than inventing a checkout
+ *  state. */
 export function gitBranchLabel(branch: string | null | undefined): string {
-  if (branch === undefined) return GIT_BRANCH_UNKNOWN;
   if (branch === null) return GIT_DETACHED_LABEL;
+  if (typeof branch !== "string") return GIT_BRANCH_UNKNOWN;
   return branch.length > 0 ? branch : GIT_DETACHED_LABEL;
 }
 
