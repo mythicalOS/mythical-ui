@@ -474,6 +474,60 @@ describe("deriveFileTreeRows", () => {
     expect(rows[0]).toMatchObject({ rootKey: "ok" });
   });
 
+  test("DUPLICATE entry names within one listing are dropped — ids must stay unique tree-wide", () => {
+    const id = nodeId(ROOT_K, "");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs: {
+        [id]: loaded([
+          { name: "x.md", kind: "file" },
+          { name: "x.md", kind: "file" },
+          // a DIRECTORY sharing a file's name composes to the same node id too
+          { name: "x.md", kind: "dir" },
+          { name: "y.md", kind: "file" },
+        ]),
+      },
+      expanded: new Set([id]),
+    });
+    expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
+    expect(rows.filter((r) => r.type === "file").map((r) => r.name)).toEqual(["x.md", "y.md"]);
+  });
+
+  test("a duplicated DIRECTORY entry cannot re-emit its whole subtree", () => {
+    const rootId = nodeId(ROOT_K, "");
+    const docsId = nodeId(ROOT_K, "docs");
+    const rows = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs: {
+        [rootId]: loaded([{ name: "docs", kind: "dir" }, { name: "docs", kind: "dir" }]),
+        [docsId]: loaded([{ name: "a.md", kind: "file" }, { name: "b.md", kind: "file" }]),
+      },
+      expanded: new Set([rootId, docsId]),
+    });
+    expect(new Set(rows.map((r) => r.id)).size).toBe(rows.length);
+    expect(rows.filter((r) => r.type === "file")).toHaveLength(2);
+  });
+
+  test("the header count still matches rendered rows once duplicates are collapsed", () => {
+    const dirs: Record<string, DirState> = {
+      [nodeId(ROOT_K, "")]: loaded([
+        { name: "x.md", kind: "file" },
+        { name: "x.md", kind: "file" },
+        { name: "y.md", kind: "file" },
+      ]),
+    };
+    const rendered = deriveFileTreeRows({
+      mode: "project",
+      roots: [{ key: ROOT_K, label: "core" }],
+      dirs,
+      expanded: new Set([nodeId(ROOT_K, "")]),
+    }).filter((r) => r.type === "file").length;
+    expect(countLoadedFiles(dirs)).toBe(rendered);
+    expect(rendered).toBe(2);
+  });
+
   test("DUPLICATE root keys are dropped — colliding ids would act on the wrong root", () => {
     const rows = deriveFileTreeRows({
       mode: "project",

@@ -668,10 +668,19 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
       });
       // a truncated-but-empty listing is still worth reporting below
     }
+    // Names already emitted in THIS listing. A node id is (root, path), so two entries sharing a
+    // name in one directory address the same node — even when their kinds differ, since a directory
+    // "x" and a file "x" both compose to `<root>\0<parent>/x`. Emitting both would duplicate a
+    // framework key (invalid keyed rendering) and make a click ambiguous between two rows; a
+    // duplicated DIRECTORY would additionally re-emit its whole subtree. First occurrence wins, the
+    // same order-defined rule applied to duplicate roots below.
+    const seenNames = new Set<string>();
     for (const entry of state.entries) {
       // A structurally unusable name is dropped rather than composed into a path that would address
       // the wrong node (or, for the empty name, this very node — an infinite descent).
       if (!isUsableEntryName(entry.name)) continue;
+      if (seenNames.has(entry.name)) continue;
+      seenNames.add(entry.name);
       const childRel = childRelPath(relPath, entry.name);
       if (entry.kind === "dir") {
         walk(rootKey, childRel, entry.name, depth + 1, entry.repo, root);
@@ -730,7 +739,14 @@ export function countLoadedFiles(dirs: Readonly<Record<string, DirState>>): numb
   for (const key of Object.keys(dirs)) {
     const state = dirs[key]!;
     if (state.status !== "loaded") continue;
-    for (const e of state.entries) if (e.kind === "file" && isUsableEntryName(e.name)) n++;
+    // Same screening AND same per-listing name dedupe the walk applies, so the header can never
+    // count a row the tree collapses away.
+    const seen = new Set<string>();
+    for (const e of state.entries) {
+      if (!isUsableEntryName(e.name) || seen.has(e.name)) continue;
+      seen.add(e.name);
+      if (e.kind === "file") n++;
+    }
   }
   return n;
 }
