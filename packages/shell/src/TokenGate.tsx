@@ -219,7 +219,8 @@ export interface CopyRunnerIO {
 export interface CopyRunner {
   /** Runs one copy attempt and publishes its REAL outcome. */
   run(target: CopyTarget, command: string): Promise<void>;
-  /** Drops any pending revert timer — the unmount path. */
+  /** Retires everything outstanding — a pending revert timer AND any write still in flight. The
+   *  unmount path. */
   dispose(): void;
 }
 
@@ -260,7 +261,13 @@ export function createCopyRunner(io: CopyRunnerIO): CopyRunner {
         io.setFeedback(null);
       }, COPY_FEEDBACK_MS);
     },
-    dispose: clear,
+    dispose() {
+      // Bumping the sequence retires any write still in flight as well, which is the whole point:
+      // a `writeText` that resolves after the card is gone would otherwise publish an outcome and
+      // arm a revert timer that nothing is left to clear.
+      seq++;
+      clear();
+    },
   };
 }
 

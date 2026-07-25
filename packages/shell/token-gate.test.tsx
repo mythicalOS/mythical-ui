@@ -596,6 +596,19 @@ describe("createCopyRunner — the sequencing, with no DOM and no real clock", (
     expect(h.liveTimers()).toBe(0);
   });
 
+  // REGRESSION (cross-model review, round 2): dispose used to drop only an ARMED timer. A write
+  // still in flight when the card unmounted went on to publish an outcome and arm a fresh timer
+  // that nothing was left to clear.
+  test("dispose retires an IN-FLIGHT write too — nothing is published after unmount", async () => {
+    const h = harness();
+    void h.runner.run("retrieve", RETRIEVE);
+    const publishedBefore = h.published.length;
+    h.runner.dispose();
+    await h.settle(0, true);
+    expect(h.published.length).toBe(publishedBefore);
+    expect(h.liveTimers()).toBe(0);
+  });
+
   test("the runner reports the write's REAL result — it never assumes", async () => {
     const seen: (CopyFeedback | null)[] = [];
     const runner = createCopyRunner({
