@@ -225,8 +225,9 @@ button:focus-visible{outline:2px solid var(--my-accent,#0F6B66);outline-offset:2
 .car{flex:none;color:var(--my-muted,#5A5F6A);transition:transform var(--my-t-fast,120ms ease)}
 :host([data-open]) .car{transform:rotate(180deg)}
 /* Pinned to BOTH edges with border-box sizing: under the old
-   `min-width:100%` + content-box, the 6px padding and 1px border were added
-   OUTSIDE the 100%, so the popup rendered 14px wider than its own control. */
+   min-width:100% + content-box, the 6px padding and 1px border were added
+   OUTSIDE the 100%, so the popup rendered 14px wider than its own control.
+   (No backticks in this comment — the whole sheet is a JS template literal.) */
 #pop{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:30;width:100%;
   box-sizing:border-box;max-height:280px;
   overflow:auto;overscroll-behavior:contain;padding:6px;background:var(--my-surface,#fff);
