@@ -18,6 +18,7 @@ import {
   nodeId,
   previewBadgeClass,
   scopeItemClass,
+  SCOPE_CARET,
   type DirState,
   type FilePreviewState,
   type FileScopeOption,
@@ -204,6 +205,11 @@ describe("FileScopePicker (React)", () => {
     const html = renderToStaticMarkup(<FileScopePicker options={options} activeKey="all" mode="all-mounts" open />);
     expect(html).toContain(scopeItemClass(true));
     expect(html).toContain("my-files__scope-divider");
+  });
+
+  test("the caret glyph comes from ui-core, not a binding literal", () => {
+    const html = renderToStaticMarkup(<FileScopePicker options={options} activeKey="all" mode="all-mounts" open={false} />);
+    expect(html).toContain(SCOPE_CARET);
   });
 
   test("a single option renders a static label, not a dead control", () => {

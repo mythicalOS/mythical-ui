@@ -35,6 +35,7 @@ import {
   previewNoteClass,
   previewNoteText,
   scopeGlyph,
+  SCOPE_CARET,
   scopeItemClass,
   type DirState,
   type FilePreviewState,
@@ -99,7 +100,7 @@ export function FileScopePicker(props: FileScopePickerProps) {
         <button type="button" className="my-files__scope-btn" aria-expanded={open} onClick={() => onToggle?.(!open)}>
           <span className="my-files__scope-glyph" aria-hidden="true">{glyph}</span>
           <span className="my-files__scope-label">{text}</span>
-          <span className="my-files__scope-caret" aria-hidden="true">⌄</span>
+          <span className="my-files__scope-caret" aria-hidden="true">{SCOPE_CARET}</span>
         </button>
       ) : (
         <div className="my-files__scope-static">

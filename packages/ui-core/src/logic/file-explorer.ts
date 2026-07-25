@@ -109,6 +109,9 @@ export function chevronGlyph(open: boolean): string {
   return open ? CHEVRON_OPEN : CHEVRON_CLOSED;
 }
 
+/** The scope picker’s disclosure caret. Lives here, not in the bindings, so the two cannot drift. */
+export const SCOPE_CARET = "⌄";
+
 /** The scope-picker glyph for a mode: ⌂ for all-mounts, ◈ for a project. */
 export function scopeGlyph(mode: FileTreeMode): string {
   return mode === "all-mounts" ? "⌂" : "◈";
@@ -657,6 +660,21 @@ export function deriveFileTreeRows(input: DeriveFileTreeInput): FileTreeRow[] {
       });
       return;
     }
+    // At the traversal ceiling the children cannot be rendered at all. Say so — an open directory
+    // that silently showed nothing would read as empty, which is precisely the false claim the
+    // depth bound must not introduce. Reported BEFORE the empty check for the same reason.
+    if (depth + 1 > MAX_TREE_DEPTH) {
+      rows.push({
+        type: "note",
+        id: `${id} depth`,
+        depth,
+        status: "truncated",
+        text: "This tree is nested too deeply to show further levels.",
+        className: treeNoteRowClass("truncated", depth),
+      });
+      return;
+    }
+
     // EMPTY is a positive claim — "there is nothing here" — and only a COMPLETE listing can support
     // it. A truncated listing that happens to carry no entries proves nothing about the directory,
     // so it falls through to the truncated note alone rather than asserting both "this directory is

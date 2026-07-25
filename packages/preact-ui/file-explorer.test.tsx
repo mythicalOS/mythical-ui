@@ -20,6 +20,7 @@ import {
   nodeId,
   previewBadgeClass,
   scopeItemClass,
+  SCOPE_CARET,
   type DirState,
   type FilePreviewState,
   type FileScopeOption,
@@ -340,6 +341,11 @@ describe("FileScopePicker", () => {
     expect(html).toContain(">11<");
     expect(html).toContain(scopeItemClass(true));
     expect(html).toContain("my-files__scope-divider");
+  });
+
+  test("the caret glyph comes from ui-core, not a binding literal", () => {
+    const html = render(<FileScopePicker options={options} activeKey="all" mode="all-mounts" open={false} />);
+    expect(html).toContain(SCOPE_CARET);
   });
 
   test("the trigger glyph tracks the mode (⌂ all-mounts · ◈ project)", () => {

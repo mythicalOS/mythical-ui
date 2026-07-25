@@ -155,6 +155,7 @@ export {
   CHEVRON_CLOSED,
   chevronGlyph,
   scopeGlyph,
+  SCOPE_CARET,
   fileGlyph,
   isMarkdownName,
   // path + breadcrumb composition

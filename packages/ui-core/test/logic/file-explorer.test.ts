@@ -659,6 +659,24 @@ describe("deriveFileTreeRows", () => {
     expect(rendered).toBe(1);
   });
 
+  test("the depth ceiling EXPLAINS itself — deep levels are never silently hidden as 'empty'", () => {
+    const dirs: Record<string, DirState> = {};
+    const expanded = new Set<string>();
+    let rel = "";
+    for (let i = 0; i <= MAX_TREE_DEPTH + 2; i++) {
+      const id = nodeId(ROOT_K, rel);
+      dirs[id] = loaded([{ name: `d${i}`, kind: "dir" }]);
+      expanded.add(id);
+      rel = rel.length === 0 ? `d${i}` : `${rel}/d${i}`;
+    }
+    const rows = deriveFileTreeRows({ mode: "project", roots: [{ key: ROOT_K, label: "core" }], dirs, expanded });
+    const notes = rows.filter((r) => r.type === "note") as Array<{ status: string; text: string }>;
+    // the deepest rendered level says why it stops, and never claims emptiness
+    expect(notes.at(-1)?.status).toBe("truncated");
+    expect(notes.at(-1)?.text).toContain("nested too deeply");
+    expect(notes.some((n) => n.status === "empty")).toBe(false);
+  });
+
   test("traversal depth is bounded even for a pathologically deep listing", () => {
     const dirs: Record<string, DirState> = {};
     const expanded = new Set<string>();
