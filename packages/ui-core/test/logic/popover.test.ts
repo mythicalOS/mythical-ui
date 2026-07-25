@@ -120,6 +120,19 @@ describe("resolvePopoverAlign — start-aligned unless that overflows the right 
     expect(resolvePopoverAlign({ top: 40, bottom: 70, left: 690, right: 800 }, 800, VIEWPORT)).toBe("end");
   });
 
+  test("an anchor hanging off the LEFT edge end-aligns — start would clip it, end fits", () => {
+    // left -10 (already off-screen), right 300, panel 210 ⇒ start spans -10..200 (clipped),
+    // end spans 90..300 (fits). Checking only right-overflow would wrongly keep this at start.
+    const offscreenLeft = { top: 40, bottom: 70, left: -10, right: 300 };
+    expect(offscreenLeft.left + 210).toBeLessThanOrEqual(VIEWPORT.width); // no RIGHT overflow …
+    expect(resolvePopoverAlign(offscreenLeft, 210, VIEWPORT)).toBe("end"); // … yet start clips
+  });
+
+  test("an anchor hanging off BOTH edges stays start — neither alignment fits", () => {
+    const huge = { top: 40, bottom: 70, left: -50, right: 900 };
+    expect(resolvePopoverAlign(huge, 210, VIEWPORT)).toBe("start");
+  });
+
   test("an anchor hanging off the RIGHT edge must not end-align — that would clip the panel too", () => {
     // right 810 is already past the 800px viewport; end-aligning pins the panel's right edge THERE.
     // Checking only `right - panelWidth >= 0` (810 - 210 = 600) would wrongly call this a fit.

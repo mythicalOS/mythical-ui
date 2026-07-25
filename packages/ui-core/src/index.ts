@@ -26,6 +26,8 @@ export {
   POPOVER_EMPTY_VALUE,
   POPOVER_DEFAULT_POSITION,
   POPOVER_CLASS,
+  POPOVER_DECORATIVE_ARIA,
+  POPOVER_SEPARATOR_ARIA,
   resolvePopoverPlacement,
   resolvePopoverAlign,
   resolvePopoverPosition,

@@ -85,24 +85,25 @@ export function resolvePopoverPlacement(
 }
 
 /**
- * Viewport-aware horizontal alignment. The panel is start-aligned (design card: `left: 0`); it
- * switches to end-aligned only when start-aligning would overflow the right edge AND end-aligning
- * puts BOTH panel edges inside the viewport.
+ * Viewport-aware horizontal alignment. The panel is start-aligned (design card: `left: 0`) and
+ * switches to end-aligned only when start does NOT fit and end does.
  *
- * Both edges matter, not just the left one: end-aligning pins the panel's RIGHT edge to the
- * anchor's right edge, so an anchor that is itself partly off-screen to the right would drag the
- * panel off-screen with it. Checking only `right - panelWidth >= 0` would call that a fit and
- * produce a clipped panel. A panel that fits neither way stays `start` — flipping would only trade
- * a right-edge overflow for a left-edge one.
+ * "Fits" means BOTH resulting edges are inside the viewport, on both branches — an alignment pins
+ * one panel edge to the matching anchor edge, so an anchor that is itself partly off-screen drags
+ * the panel off with it. Testing only the far edge is wrong in each direction symmetrically:
+ * start-aligning an anchor hanging off the LEFT clips the panel's left edge even though its right
+ * edge is comfortable, and end-aligning an anchor hanging off the RIGHT clips its right edge even
+ * though `right - panelWidth >= 0`. A panel that fits neither way stays `start` — flipping would
+ * only trade one overflow for the other.
  */
 export function resolvePopoverAlign(
   anchor: PopoverRect,
   panelWidth: number,
   viewport: PopoverViewport,
 ): PopoverAlign {
-  const startOverflows = anchor.left + panelWidth > viewport.width;
+  const startFits = anchor.left >= 0 && anchor.left + panelWidth <= viewport.width;
   const endFits = anchor.right <= viewport.width && anchor.right - panelWidth >= 0;
-  return startOverflows && endFits ? "end" : "start";
+  return !startFits && endFits ? "end" : "start";
 }
 
 /** Both axes at once — what a binding calls from its post-open measurement effect. */
@@ -250,6 +251,16 @@ export interface PopoverMenuAria {
 export function popoverMenuAria(ids: PopoverIds, titled: boolean): PopoverMenuAria {
   return { id: ids.menu, role: "menu", "aria-labelledby": titled ? ids.title : ids.trigger };
 }
+
+/**
+ * The caret and the ✓ are pure decoration: the trigger's `aria-expanded` and the row's
+ * `aria-checked` already convey both states, so reading the glyphs would duplicate them. Lives here
+ * rather than inline in each binding so neither can quietly un-hide one.
+ */
+export const POPOVER_DECORATIVE_ARIA = { "aria-hidden": "true" } as const;
+
+/** The rule between the menu and the caller's footer — a real separator, not a styled `<div>`. */
+export const POPOVER_SEPARATOR_ARIA = { role: "separator" } as const;
 
 export interface PopoverItemAria {
   /** Single-select menu ⇒ radio semantics, so a screen reader announces "1 of N, checked". */

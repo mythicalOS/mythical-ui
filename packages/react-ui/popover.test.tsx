@@ -6,7 +6,8 @@
 //     emit the design card's markup, with every class/glyph/ARIA attribute equal, verbatim, to
 //     what `@mythicalos/ui-core` derives.
 //  2. THE SPLIT IS GENUINE — a source scan proving this binding re-implements NONE of the core's
-//     decisions: no key names, no role/ARIA literals, no glyphs, no base class strings.
+//     decisions: no key names, no role/ARIA literals (not even `aria-hidden` or the divider's
+//     `role="separator"`), no glyphs, no class strings in any quote form.
 //  3. CROSS-BINDING PARITY — a Preact tree cannot be handed to react-dom/server (parity.test.tsx's
 //     standing note), so the two bindings are pinned to the SAME core outputs from both sides, and
 //     the two source files are diffed structurally: identical except for the documented
@@ -271,6 +272,8 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
     ['"menu"', "panel role / haspopup belong to popoverPanelAria + popoverTriggerAria"],
     ['"aria-haspopup"', "trigger ARIA belongs to popoverTriggerAria"],
     ['"aria-checked"', "row ARIA belongs to popoverItemAria"],
+    ['aria-hidden', "decoration marking belongs to POPOVER_DECORATIVE_ARIA"],
+    ['"separator"', "the divider's role belongs to POPOVER_SEPARATOR_ARIA"],
     ["▾", "the caret glyph belongs to POPOVER_CARET"],
     ["✓", "the check glyph belongs to POPOVER_CHECK"],
     ["is-selected", "state modifiers belong to popoverItemClass"],
@@ -302,6 +305,8 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
       "popoverTriggerAria",
       "popoverPanelAria",
       "popoverMenuAria",
+      "POPOVER_DECORATIVE_ARIA",
+      "POPOVER_SEPARATOR_ARIA",
       "popoverItemAria",
       "popoverTriggerKeyAction",
       "popoverPanelKeyAction",

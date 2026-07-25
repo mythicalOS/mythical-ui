@@ -7,7 +7,8 @@
 //     emit exactly the markup the design card describes, with every class/glyph/ARIA attribute
 //     equal, verbatim, to what `@mythicalos/ui-core` derives.
 //  2. THE SPLIT IS GENUINE — a source scan proving this binding re-implements NONE of the core's
-//     decisions: no key names, no role/ARIA literals, no glyphs, no base class strings. If someone
+//     decisions: no key names, no role/ARIA literals (not even `aria-hidden` or the divider's
+//     `role="separator"`), no glyphs, no class strings in any quote form. If someone
 //     later inlines "ArrowDown" or "✓" here, the React sibling silently diverges — this catches it.
 //
 // `preact-render-to-string` never runs effects or dispatches events, so the DOM wiring itself
@@ -272,6 +273,8 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
     ['"menu"', "panel role / haspopup belong to popoverPanelAria + popoverTriggerAria"],
     ['"aria-haspopup"', "trigger ARIA belongs to popoverTriggerAria"],
     ['"aria-checked"', "row ARIA belongs to popoverItemAria"],
+    ['aria-hidden', "decoration marking belongs to POPOVER_DECORATIVE_ARIA"],
+    ['"separator"', "the divider's role belongs to POPOVER_SEPARATOR_ARIA"],
     ["▾", "the caret glyph belongs to POPOVER_CARET"],
     ["✓", "the check glyph belongs to POPOVER_CHECK"],
     ["is-selected", "state modifiers belong to popoverItemClass"],
@@ -303,6 +306,8 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
       "popoverTriggerAria",
       "popoverPanelAria",
       "popoverMenuAria",
+      "POPOVER_DECORATIVE_ARIA",
+      "POPOVER_SEPARATOR_ARIA",
       "popoverItemAria",
       "popoverTriggerKeyAction",
       "popoverPanelKeyAction",

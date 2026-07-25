@@ -30,7 +30,9 @@ import {
   POPOVER_CARET,
   POPOVER_CHECK,
   POPOVER_CLASS,
+  POPOVER_DECORATIVE_ARIA,
   POPOVER_DEFAULT_POSITION,
+  POPOVER_SEPARATOR_ARIA,
   edgePopoverIndex,
   initialPopoverIndex,
   popoverIds,
@@ -139,7 +141,7 @@ export function PopoverPanel(props: PopoverPanelProps) {
             }}
           >
             <span class={POPOVER_CLASS.itemLabel}>{item.label}</span>
-            <span class={POPOVER_CLASS.itemCheck} aria-hidden="true">
+            <span class={POPOVER_CLASS.itemCheck} {...POPOVER_DECORATIVE_ARIA}>
               {item.selected ? POPOVER_CHECK : ""}
             </span>
           </button>
@@ -147,7 +149,7 @@ export function PopoverPanel(props: PopoverPanelProps) {
       </div>
       {props.footer !== undefined ? (
         <>
-          <div class={POPOVER_CLASS.divider} role="separator" />
+          <div class={POPOVER_CLASS.divider} {...POPOVER_SEPARATOR_ARIA} />
           <div class={POPOVER_CLASS.foot}>{props.footer}</div>
         </>
       ) : null}
@@ -287,7 +289,7 @@ export function Popover(props: PopoverProps) {
       >
         {text.label !== null ? <span class={POPOVER_CLASS.triggerLabel}>{text.label}</span> : null}
         <span class={POPOVER_CLASS.triggerValue}>{text.value}</span>
-        <span class={POPOVER_CLASS.triggerCaret} aria-hidden="true">
+        <span class={POPOVER_CLASS.triggerCaret} {...POPOVER_DECORATIVE_ARIA}>
           {POPOVER_CARET}
         </span>
       </button>
