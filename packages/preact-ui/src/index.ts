@@ -157,3 +157,37 @@ export {
   type PreviewBadgeState,
   type GitMark,
 } from "./FileExplorer.js";
+
+// ── session-card (design registry `session-card` v1) ──
+export {
+  SessionCard,
+  ctxBand,
+  ctxBarGeom,
+  ctxMeterClass,
+  ctxNoteText,
+  ctxValueText,
+  sessionAvatarInitial,
+  sessionCardClass,
+  sessionCardIsStale,
+  sessionSpineSummary,
+  sessionStatus,
+  sessionStatusClass,
+  sessionSubline,
+  spineNodeClass,
+  type SessionCardProps,
+} from "./SessionCard.js";
+export type {
+  CtxThresholds,
+  CtxBand,
+  CtxBarTick,
+  CtxBarGeom,
+  SessionLifecycle,
+  SessionActivity,
+  SessionStatusTone,
+  SessionStatusKey,
+  SessionStatus,
+  SessionStatusInput,
+  SessionSpine,
+  SpineNode,
+  SpineSummary,
+} from "@mythicalos/ui-core/logic";

@@ -1,0 +1,523 @@
+// test/logic/session-card.test.ts — the pure derivation behind the `session-card` atom (design
+// registry spec v1). The product this was extracted from enforces an honesty doctrine in its view
+// model; the parts of it that live in the CARD are design, not product logic, so they are pinned
+// here rather than left to the bindings:
+//
+//   INVARIANT 1 — absence is not zero: no reading ⇒ no band, no fill, "—" (never 0/"0%").
+//   INVARIANT 2 — unknown is not idle: no activity signal ⇒ the lifecycle claim, or "unknown";
+//                 "idle" is returned ONLY when the product actually claims it.
+//   INVARIANT 3 — the 75/90 thresholds are product-tunable, not constants in a render path.
+
+import { describe, expect, test } from "bun:test";
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import {
+  ctxBand,
+  ctxBarGeom,
+  ctxFillPct,
+  ctxMeterClass,
+  ctxNoteText,
+  ctxValueText,
+  sessionAvatarInitial,
+  sessionCardClass,
+  sessionCardIsStale,
+  sessionSpineLabel,
+  sessionSpineNodes,
+  sessionSpineSavedText,
+  sessionSpineSummary,
+  sessionStatus,
+  sessionStatusClass,
+  sessionSubline,
+  spineNodeClass,
+  CTX_BAR_SPAN,
+  CTX_BAR_TICK_WIDTH,
+  CTX_THRESHOLDS_DEFAULT,
+  CTX_UNKNOWN_TEXT,
+  SESSION_AVATAR_UNKNOWN,
+  type CtxBand,
+  type SessionLifecycle,
+  type SessionStatusTone,
+} from "../../src/logic/session-card.ts";
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// INVARIANT 1 — absence is not zero
+// ════════════════════════════════════════════════════════════════════════════════════════
+
+describe("INVARIANT 1 — a session with no context reading belongs to NO health band", () => {
+  test.each([undefined, null])("ctxBand(%p) is 'unknown' — neither healthy nor hot", (pct) => {
+    expect(ctxBand(pct)).toBe("unknown");
+  });
+
+  test("a garbage reading is not a reading (NaN / ±Infinity ⇒ unknown, never 'ok')", () => {
+    expect(ctxBand(Number.NaN)).toBe("unknown");
+    expect(ctxBand(Number.POSITIVE_INFINITY)).toBe("unknown");
+    expect(ctxBand(Number.NEGATIVE_INFINITY)).toBe("unknown");
+  });
+
+  test("unknown is NOT the same band as a healthy reading", () => {
+    expect(ctxBand(undefined)).not.toBe(ctxBand(0));
+    expect(ctxBand(undefined)).not.toBe(ctxBand(12));
+    expect(ctxBand(0)).toBe("ok");
+  });
+
+  test("no reading ⇒ no fill length at all — the caller cannot substitute 0", () => {
+    expect(ctxFillPct(undefined)).toBeUndefined();
+    expect(ctxFillPct(null)).toBeUndefined();
+    expect(ctxFillPct(Number.NaN)).toBeUndefined();
+    // a REPORTED zero is a real reading and stays a number
+    expect(ctxFillPct(0)).toBe(0);
+  });
+
+  test("no reading ⇒ the meter's value is an em-dash, NEVER '0%'", () => {
+    expect(ctxValueText(undefined)).toBe(CTX_UNKNOWN_TEXT);
+    expect(ctxValueText(null)).toBe(CTX_UNKNOWN_TEXT);
+    expect(ctxValueText(undefined)).not.toBe("0%");
+    // a reported zero still renders as a confident zero
+    expect(ctxValueText(0)).toBe("0%");
+  });
+
+  test("ctxBarGeom emits NO fill for an absent reading (a 0-width rect would read as 0%)", () => {
+    expect(ctxBarGeom(undefined).fill).toBeUndefined();
+    expect(ctxBarGeom(0).fill).toBe(0);
+  });
+
+  test("the unknown note says so outright and outranks 'stale' (stale implies a last-known value)", () => {
+    expect(ctxNoteText("unknown")).toBe("context · not measured");
+    expect(ctxNoteText("unknown", { stale: true })).toBe("context · not measured");
+    expect(ctxNoteText("ok", { stale: true })).toBe("context · stale");
+  });
+
+  test("the unknown meter carries its own class — visually distinct from every band", () => {
+    expect(ctxMeterClass({ band: "unknown" })).toBe("my-session-card__ctx my-session-card__ctx--unknown");
+    expect(ctxMeterClass({ band: "ok" })).not.toBe(ctxMeterClass({ band: "unknown" }));
+    expect(ctxMeterClass({ band: "ok", stale: true })).toBe("my-session-card__ctx my-session-card__ctx--ok is-stale");
+  });
+});
+
+describe("INVARIANT 1 — the spine strip never fabricates a zero either", () => {
+  test("an unreported distill count ⇒ NO nodes and NO strip", () => {
+    expect(sessionSpineNodes(undefined)).toEqual([]);
+    expect(sessionSpineSummary(undefined)).toBeUndefined();
+    expect(sessionSpineSummary({})).toBeUndefined();
+    expect(sessionSpineSummary({ savedTok: 41_200 })).toBeUndefined();
+  });
+
+  test("a REPORTED zero is a real reading — the tip alone, labelled 0", () => {
+    expect(sessionSpineNodes(0)).toEqual([{ tip: true }]);
+    expect(sessionSpineSummary({ distills: 0 })?.label).toBe("spine · 0 distills");
+  });
+
+  test("an unreported saving renders '—', never '0 tok'", () => {
+    expect(sessionSpineSavedText(undefined)).toBe(CTX_UNKNOWN_TEXT);
+    expect(sessionSpineSavedText(null)).toBe(CTX_UNKNOWN_TEXT);
+    expect(sessionSpineSavedText(Number.NaN)).toBe(CTX_UNKNOWN_TEXT);
+    expect(sessionSpineSavedText(0)).toBe("0 tok");
+    expect(sessionSpineSummary({ distills: 2 })?.value).toBe(CTX_UNKNOWN_TEXT);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// INVARIANT 2 — unknown is not idle
+// ════════════════════════════════════════════════════════════════════════════════════════
+
+describe("INVARIANT 2 — 'idle' is a claim; absence of a signal is 'unknown'", () => {
+  test("nothing reported at all ⇒ unknown, with its own key AND its own tone", () => {
+    const s = sessionStatus();
+    expect(s.key).toBe("unknown");
+    expect(s.label).toBe("unknown");
+    expect(s.tone).toBe("unknown");
+    expect(s.pulse).toBe(false);
+    expect(sessionStatus({})).toEqual(s);
+  });
+
+  test("unknown is NOT collapsed into idle — different key, label and tone", () => {
+    const unknown = sessionStatus();
+    const idle = sessionStatus({ activity: "idle" });
+    expect(idle.key).toBe("idle");
+    expect(unknown.key).not.toBe(idle.key);
+    expect(unknown.label).not.toBe(idle.label);
+    expect(unknown.tone).not.toBe(idle.tone);
+    // and the class strings differ, so the two cannot render identically
+    expect(sessionStatusClass(unknown)).not.toBe(sessionStatusClass(idle));
+  });
+
+  test("ACTIVE BUT NO ACTIVITY SIGNAL ⇒ the honest lifecycle label, never a fabricated idle/working", () => {
+    const s = sessionStatus({ lifecycle: "active" });
+    expect(s.key).toBe("active");
+    expect(s.label).toBe("active");
+    expect(s.tone).toBe("ok");
+    expect(s.pulse).toBe(false);
+    expect(s.label).not.toBe("idle");
+    expect(s.label).not.toBe("working");
+  });
+
+  test("'idle' is returned ONLY for an explicit activity claim", () => {
+    expect(sessionStatus({ activity: "idle" }).key).toBe("idle");
+    expect(sessionStatus({ lifecycle: "active", activity: "idle" }).key).toBe("idle");
+    // every other input shape that could tempt a collapse
+    expect(sessionStatus({ lifecycle: "active" }).key).not.toBe("idle");
+    expect(sessionStatus({ lifecycle: "stopped" }).key).not.toBe("idle");
+    expect(sessionStatus({ connected: true }).key).not.toBe("idle");
+    expect(sessionStatus({ connected: false }).key).not.toBe("idle");
+  });
+
+  test("an unreported connection is not a claim of disconnection", () => {
+    expect(sessionStatus({ lifecycle: "active" }).key).toBe("active");
+    expect(sessionStatus({ lifecycle: "active", connected: true }).key).toBe("active");
+  });
+});
+
+describe("sessionStatus — precedence", () => {
+  test("a down link on a session the product calls active wins over the activity claim", () => {
+    const s = sessionStatus({ lifecycle: "active", activity: "working", connected: false });
+    expect(s.key).toBe("disconnected");
+    expect(s.tone).toBe("muted");
+    expect(s.pulse).toBe(true);
+    // never the prototype's "reconnecting…" — this atom cannot verify retry machinery
+    expect(s.label).toBe("disconnected");
+  });
+
+  test("a down link with NO reported lifecycle still reads disconnected (we are not hearing from it)", () => {
+    expect(sessionStatus({ connected: false }).key).toBe("disconnected");
+  });
+
+  test("a down link does NOT override a lifecycle that already explains it", () => {
+    for (const lifecycle of ["spawning", "stopping", "stopped", "failed"] as const) {
+      expect(sessionStatus({ lifecycle, connected: false }).key).toBe(lifecycle);
+    }
+  });
+
+  test("an activity claim about a non-active session loses to the lifecycle (a contradiction)", () => {
+    expect(sessionStatus({ lifecycle: "stopped", activity: "working" }).key).toBe("stopped");
+    expect(sessionStatus({ lifecycle: "failed", activity: "idle" }).key).toBe("failed");
+  });
+
+  test("working: ok tone, pulsing — and it is a claim, so it needs the wire to make it", () => {
+    const s = sessionStatus({ lifecycle: "active", activity: "working" });
+    expect(s).toEqual({ key: "working", label: "working", tone: "ok", pulse: true });
+  });
+
+  test("every lifecycle has an honest label/tone, and only transient states pulse", () => {
+    const cases: Record<SessionLifecycle, { label: string; tone: SessionStatusTone; pulse: boolean }> = {
+      spawning: { label: "spawning…", tone: "info", pulse: true },
+      active: { label: "active", tone: "ok", pulse: false },
+      stopping: { label: "stopping…", tone: "warn", pulse: true },
+      stopped: { label: "stopped", tone: "muted", pulse: false },
+      failed: { label: "failed", tone: "error", pulse: false },
+      paused: { label: "paused", tone: "warn", pulse: false },
+    };
+    for (const [lifecycle, want] of Object.entries(cases) as [SessionLifecycle, (typeof cases)[SessionLifecycle]][]) {
+      const s = sessionStatus({ lifecycle });
+      expect(s.key).toBe(lifecycle);
+      expect(s.label).toBe(want.label);
+      expect(s.tone).toBe(want.tone);
+      expect(s.pulse).toBe(want.pulse);
+    }
+  });
+
+  test("sessionStatusClass — tone modifier + the transient-pulse flag", () => {
+    expect(sessionStatusClass(sessionStatus({ lifecycle: "active" }))).toBe(
+      "my-session-card__status my-session-card__status--ok",
+    );
+    expect(sessionStatusClass(sessionStatus({ lifecycle: "spawning" }))).toBe(
+      "my-session-card__status my-session-card__status--info is-pulse",
+    );
+    expect(sessionStatusClass(sessionStatus())).toBe(
+      "my-session-card__status my-session-card__status--unknown",
+    );
+  });
+
+  test("stale is exactly 'the link is down' — not merely 'we know nothing'", () => {
+    expect(sessionCardIsStale(sessionStatus({ lifecycle: "active", connected: false }))).toBe(true);
+    expect(sessionCardIsStale(sessionStatus())).toBe(false);
+    expect(sessionCardIsStale(sessionStatus({ lifecycle: "active" }))).toBe(false);
+    expect(sessionCardIsStale(sessionStatus({ lifecycle: "stopped" }))).toBe(false);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// INVARIANT 3 — product-tunable thresholds
+// ════════════════════════════════════════════════════════════════════════════════════════
+
+describe("INVARIANT 3 — 75/90 are DEFAULTS, not constants baked into the derivation", () => {
+  test("the defaults are the design card's fixed ticks", () => {
+    expect(CTX_THRESHOLDS_DEFAULT).toEqual({ warn: 75, critical: 90 });
+  });
+
+  test("band boundaries with the defaults", () => {
+    expect(ctxBand(74)).toBe("ok");
+    expect(ctxBand(75)).toBe("warn");
+    expect(ctxBand(89)).toBe("warn");
+    expect(ctxBand(90)).toBe("error");
+    expect(ctxBand(100)).toBe("error");
+  });
+
+  test("a product can retune both thresholds and the whole derivation follows", () => {
+    const tuned = { warn: 50, critical: 60 };
+    expect(ctxBand(49, tuned)).toBe("ok");
+    expect(ctxBand(50, tuned)).toBe("warn");
+    expect(ctxBand(60, tuned)).toBe("error");
+    // …and the same reading lands in a different band under the defaults
+    expect(ctxBand(60)).toBe("ok");
+  });
+
+  test("the ticks the bar draws come from the SAME thresholds the band uses", () => {
+    expect(ctxBarGeom(50).ticks.map((t) => t.pct)).toEqual([75, 90]);
+    expect(ctxBarGeom(50, { warn: 40, critical: 80 }).ticks.map((t) => t.pct)).toEqual([40, 80]);
+  });
+
+  test("a mis-ordered threshold pair degrades to the MORE severe band, never under-reports", () => {
+    expect(ctxBand(80, { warn: 90, critical: 75 })).toBe("error");
+  });
+
+  test("out-of-range readings are clamped before the band and the fill are derived", () => {
+    expect(ctxBand(-10)).toBe("ok");
+    expect(ctxBand(150)).toBe("error");
+    expect(ctxFillPct(150)).toBe(100);
+    expect(ctxFillPct(-10)).toBe(0);
+    expect(ctxValueText(150)).toBe("100%");
+  });
+});
+
+describe("ctxBarGeom — pure SVG geometry (no inline CSS: percent IS the x axis)", () => {
+  test("the fill maps 1:1 onto the rail's user space", () => {
+    expect(ctxBarGeom(62).fill).toBe(62);
+    expect(ctxBarGeom(62).span).toBe(CTX_BAR_SPAN);
+  });
+
+  test("ticks are centred on their threshold and kept inside the rail", () => {
+    const [warn] = ctxBarGeom(0).ticks;
+    expect(warn?.x).toBeCloseTo(75 - CTX_BAR_TICK_WIDTH / 2, 10);
+    expect(warn?.width).toBe(CTX_BAR_TICK_WIDTH);
+    const [edge] = ctxBarGeom(0, { warn: 99.9, critical: 99.95 }).ticks;
+    expect(edge!.x + edge!.width).toBeLessThanOrEqual(CTX_BAR_SPAN);
+  });
+
+  test("a tick flush with a rail end marks nothing and is dropped", () => {
+    expect(ctxBarGeom(0, { warn: 0, critical: 100 }).ticks).toEqual([]);
+    expect(ctxBarGeom(0, { warn: -5, critical: 140 }).ticks).toEqual([]);
+    expect(ctxBarGeom(0, { warn: Number.NaN, critical: 90 }).ticks.map((t) => t.pct)).toEqual([90]);
+  });
+
+  test("coincident thresholds collapse to ONE tick, not two stacked ones", () => {
+    expect(ctxBarGeom(0, { warn: 90, critical: 90 }).ticks.map((t) => t.pct)).toEqual([90]);
+  });
+
+  test("ticks come out ascending regardless of the order they were configured in", () => {
+    expect(ctxBarGeom(0, { warn: 90, critical: 40 }).ticks.map((t) => t.pct)).toEqual([40, 90]);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// the rest of the card's derivation
+// ════════════════════════════════════════════════════════════════════════════════════════
+
+describe("ctxNoteText — the design card's band annotations", () => {
+  test.each([
+    ["ok", {}, "context"],
+    ["warn", {}, "context · distill suggested"],
+    ["error", {}, "context · distill now"],
+    ["ok", { stale: true }, "context · stale"],
+    ["unknown", {}, "context · not measured"],
+  ] as const)("band=%s opts=%p", (band, opts, want) => {
+    expect(ctxNoteText(band, opts)).toBe(want);
+  });
+});
+
+describe("sessionCardClass — selected and stale are INDEPENDENT modifiers", () => {
+  test("a session can be selected AND disconnected at once", () => {
+    expect(sessionCardClass()).toBe("my-session-card");
+    expect(sessionCardClass({ selected: true })).toBe("my-session-card is-selected");
+    expect(sessionCardClass({ stale: true })).toBe("my-session-card is-stale");
+    expect(sessionCardClass({ selected: true, stale: true })).toBe("my-session-card is-selected is-stale");
+  });
+});
+
+describe("sessionAvatarInitial", () => {
+  test("first alphanumeric, uppercased", () => {
+    expect(sessionAvatarInitial("Jacob")).toBe("J");
+    expect(sessionAvatarInitial("  peter")).toBe("P");
+    expect(sessionAvatarInitial("·—· mike")).toBe("M");
+    expect(sessionAvatarInitial("42-worker")).toBe("4");
+  });
+  test("no nameable character ⇒ '?', not a fabricated initial", () => {
+    expect(sessionAvatarInitial("")).toBe(SESSION_AVATAR_UNKNOWN);
+    expect(sessionAvatarInitial("   ")).toBe(SESSION_AVATAR_UNKNOWN);
+    expect(sessionAvatarInitial(undefined)).toBe(SESSION_AVATAR_UNKNOWN);
+    expect(sessionAvatarInitial(null)).toBe(SESSION_AVATAR_UNKNOWN);
+    expect(sessionAvatarInitial("···")).toBe(SESSION_AVATAR_UNKNOWN);
+  });
+});
+
+describe("sessionSubline — absent parts collapse, never a dangling separator", () => {
+  test("the design card's own sublines", () => {
+    expect(sessionSubline(["worker", "opus-4-8", "2h 14m"])).toBe("worker · opus-4-8 · 2h 14m");
+    expect(sessionSubline(["reviewer", "opus-4-8", "queued: 1 ON-DONE"])).toBe(
+      "reviewer · opus-4-8 · queued: 1 ON-DONE",
+    );
+    expect(sessionSubline(["architect", "last seen 00:12 ago"])).toBe("architect · last seen 00:12 ago");
+  });
+  test("holes collapse from any position", () => {
+    expect(sessionSubline(["worker", undefined, "2h"])).toBe("worker · 2h");
+    expect(sessionSubline([undefined, "opus", null])).toBe("opus");
+    expect(sessionSubline(["", "  ", "opus"])).toBe("opus");
+  });
+  test("an all-absent list yields the empty string (the binding then omits the line)", () => {
+    expect(sessionSubline([])).toBe("");
+    expect(sessionSubline([undefined, null, "   "])).toBe("");
+    expect(sessionSubline()).toBe("");
+  });
+});
+
+describe("spine strip — filled nodes = distills, hollow node = the live tip", () => {
+  test("the design card's three spine states", () => {
+    expect(sessionSpineNodes(3)).toEqual([{ tip: false }, { tip: false }, { tip: false }, { tip: true }]);
+    expect(sessionSpineNodes(1)).toEqual([{ tip: false }, { tip: true }]);
+    expect(sessionSpineNodes(2)).toEqual([{ tip: false }, { tip: false }, { tip: true }]);
+  });
+  test("exactly one tip, always last", () => {
+    for (const n of [0, 1, 5]) {
+      const nodes = sessionSpineNodes(n);
+      expect(nodes.filter((x) => x.tip)).toHaveLength(1);
+      expect(nodes[nodes.length - 1]!.tip).toBe(true);
+    }
+  });
+  test("a non-integer / negative count degrades to a sane node count", () => {
+    expect(sessionSpineNodes(2.7)).toHaveLength(3);
+    expect(sessionSpineNodes(-4)).toEqual([{ tip: true }]);
+  });
+  test("spineNodeClass distinguishes the tip", () => {
+    expect(spineNodeClass({ tip: false })).toBe("my-session-card__spine-node");
+    expect(spineNodeClass({ tip: true })).toBe(
+      "my-session-card__spine-node my-session-card__spine-node--tip",
+    );
+  });
+  test("label pluralizes", () => {
+    expect(sessionSpineLabel(1)).toBe("spine · 1 distill");
+    expect(sessionSpineLabel(3)).toBe("spine · 3 distills");
+    expect(sessionSpineLabel(0)).toBe("spine · 0 distills");
+  });
+  test("saved-token text: a saving is a reduction (real U+2212 minus), growth is stated as growth", () => {
+    expect(sessionSpineSavedText(41_200)).toBe("−41.2k tok");
+    expect(sessionSpineSavedText(12_800)).toBe("−12.8k tok");
+    expect(sessionSpineSavedText(412)).toBe("−412 tok");
+    expect(sessionSpineSavedText(2_400_000)).toBe("−2.4M tok");
+    expect(sessionSpineSavedText(-1_500)).toBe("+1.5k tok");
+  });
+  test("the whole summary, matching the design card's default state", () => {
+    expect(sessionSpineSummary({ distills: 3, savedTok: 41_200 })).toEqual({
+      nodes: [{ tip: false }, { tip: false }, { tip: false }, { tip: true }],
+      label: "spine · 3 distills",
+      value: "−41.2k tok",
+    });
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════════════════
+// stylesheet — this component's share of test/css.test.ts's guards, scoped to the new block
+// ════════════════════════════════════════════════════════════════════════════════════════
+//
+// css.test.ts resolves the canonical tokens.css relative to a MAIN CHECKOUT of this repo, so it
+// cannot run from a git worktree. These two guards are the same checks — (c) every referenced
+// token exists, and (e) every class the logic emits has a real selector — scoped to the
+// session-card block, with a tokens path that resolves from either layout.
+
+const stylesPath = join(import.meta.dir, "..", "..", "styles.css");
+const styles = readFileSync(stylesPath, "utf8");
+const SESSION_CARD_MARKER = "/* ── session-card (design registry";
+
+/** The canonical tokens.css: a sibling of this repo's checkout, whether that checkout is the
+ *  repo root itself or a worktree one level deeper under `.worktrees/<name>/`. */
+function canonicalTokensPath(): string {
+  const up = [
+    join(import.meta.dir, "..", "..", "..", "..", "..", "mythical-design", "tokens.css"),
+    join(import.meta.dir, "..", "..", "..", "..", "..", "..", "mythical-design", "tokens.css"),
+  ];
+  const hit = up.find((p) => existsSync(p));
+  if (hit === undefined) throw new Error(`canonical tokens.css not found; tried:\n${up.join("\n")}`);
+  return hit;
+}
+
+function stripComments(text: string): string {
+  return text.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+function sessionCardSlice(): string {
+  const idx = styles.indexOf(SESSION_CARD_MARKER);
+  if (idx === -1) throw new Error(`session-card block not found in styles.css (marker: ${SESSION_CARD_MARKER})`);
+  return styles.slice(idx);
+}
+
+function hasSelector(className: string): boolean {
+  const escaped = className.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`\\.${escaped}(?![\\w-])`).test(styles);
+}
+
+describe("styles.css — the session-card block obeys the sheet's own rules", () => {
+  const block = sessionCardSlice();
+
+  test("the block is present and non-trivial (the scan itself is meaningful)", () => {
+    expect(block.length).toBeGreaterThan(500);
+  });
+
+  test("every var(--my-*) it references exists in the canonical tokens.css", () => {
+    const tokens = stripComments(readFileSync(canonicalTokensPath(), "utf8"));
+    const defined = new Set(Array.from(tokens.matchAll(/(--my-[a-zA-Z0-9-]+)(?=\s*:)/g)).map((m) => m[1]));
+    expect(defined.size).toBeGreaterThan(20);
+    const referenced = new Set(Array.from(block.matchAll(/var\(\s*(--my-[a-zA-Z0-9-]+)/g)).map((m) => m[1]));
+    expect(referenced.size).toBeGreaterThan(10);
+    expect(Array.from(referenced).filter((n) => !defined.has(n)).sort()).toEqual([]);
+  });
+
+  test("zero hard-coded hex colors and zero raw px font-sizes", () => {
+    expect(stripComments(block).match(/#[0-9a-fA-F]{3,8}\b/g) ?? []).toEqual([]);
+    expect(block.match(/font-size:\s*[\d.]+px/g) ?? []).toEqual([]);
+  });
+});
+
+describe("styles.css — every class the session-card logic emits exists as a selector", () => {
+  function expectSelectorsFor(classString: string) {
+    for (const token of classString.split(/\s+/).filter(Boolean)) {
+      expect({ class: token, found: hasSelector(token) }).toEqual({ class: token, found: true });
+    }
+  }
+
+  test("sessionCardClass — every selected × stale combination", () => {
+    for (const selected of [false, true]) {
+      for (const stale of [false, true]) expectSelectorsFor(sessionCardClass({ selected, stale }));
+    }
+  });
+
+  test("sessionStatusClass — every tone the derivation can produce, pulsing and not", () => {
+    const tones: SessionStatusTone[] = ["ok", "warn", "error", "info", "muted", "unknown"];
+    for (const tone of tones) {
+      for (const pulse of [false, true]) {
+        expectSelectorsFor(sessionStatusClass({ key: "unknown", label: "x", tone, pulse }));
+      }
+    }
+    // and the tones are really reachable from real inputs, not just typeable
+    const reached = new Set(
+      [
+        sessionStatus(),
+        sessionStatus({ lifecycle: "active" }),
+        sessionStatus({ lifecycle: "spawning" }),
+        sessionStatus({ lifecycle: "stopping" }),
+        sessionStatus({ lifecycle: "failed" }),
+        sessionStatus({ activity: "idle" }),
+      ].map((s) => s.tone),
+    );
+    expect(reached).toEqual(new Set(["unknown", "ok", "info", "warn", "error", "muted"]));
+  });
+
+  test("ctxMeterClass — every band × stale combination", () => {
+    const bands: CtxBand[] = ["unknown", "ok", "warn", "error"];
+    for (const band of bands) {
+      for (const stale of [false, true]) expectSelectorsFor(ctxMeterClass({ band, stale }));
+    }
+  });
+
+  test("spineNodeClass — distill node and live tip", () => {
+    expectSelectorsFor(spineNodeClass({ tip: false }));
+    expectSelectorsFor(spineNodeClass({ tip: true }));
+  });
+});

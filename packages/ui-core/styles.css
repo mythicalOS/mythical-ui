@@ -694,3 +694,115 @@ a:focus-visible, .link:focus-visible, .is-focus {
   max-width: 720px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
   font-family: var(--my-font-mono); font-size: var(--my-fs-mono); color: var(--my-ink);
 }
+
+/* ── session-card (design registry `session-card` v1, ds/components-session-card.html) ──
+   Five states: default·nominal, selected, warn ≥75%, error ≥90%, disconnected·stale — plus the
+   UNKNOWN states the design's five did not enumerate but the doctrine requires (no context
+   reading; no activity signal). Every dynamic visual is a class or an SVG presentation
+   attribute: the prototype positioned its gauge fill and its 75/90 ticks with inline
+   `style="width:62%"` / `style="left:75%"`, which CSP style-src 'self' forbids AND which cannot
+   express product-tuned thresholds — so the meter is an SVG whose rects carry the geometry.
+
+   The status dot deliberately does NOT reuse `.my-status` (StatusLine): that atom's tone axis has
+   no `unknown` member and its component takes no `class`, so neither the hollow unknown dot nor
+   the ≤1/s pulse could ride on it without reshaping a sibling atom. Same tone vocabulary, own
+   elements. */
+.my-session-card {
+  display: block; width: 100%; text-align: left;
+  background: var(--my-surface); color: var(--my-ink);
+  border: 1px solid var(--my-border); /* card outline — a valid --my-border use (rule #11) */
+  border-radius: var(--my-r-card); padding: var(--my-sp-4);
+  font-family: inherit; font-size: var(--my-fs-body);
+  transition: border-color var(--my-t-fast);
+}
+button.my-session-card { cursor: pointer; }
+.my-session-card:hover { border-color: var(--my-control-border); } /* the prototype's "hover deepens the border" */
+/* selected = petrol border doubled (1px border + 1px ring), per the card's caption */
+.my-session-card.is-selected { border-color: var(--my-accent); box-shadow: 0 0 0 1px var(--my-accent); }
+/* disconnected = dashed border, values muted as stale */
+.my-session-card.is-stale { border-style: dashed; color: var(--my-muted); }
+.my-session-card:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule #6 */
+
+.my-session-card__head { display: flex; gap: var(--my-sp-3); align-items: center; }
+.my-session-card__ident { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.my-session-card__line1 { display: flex; align-items: center; gap: var(--my-sp-2); flex-wrap: wrap; }
+.my-session-card__name { font-size: var(--my-fs-body); font-weight: var(--my-fw-bold); }
+.my-session-card__meta { font-size: var(--my-fs-caption); color: var(--my-muted); }
+/* the packaged Avatar rides here; stale mutes it the way the prototype's `.stale .avatar` did */
+.my-session-card.is-stale .my-session-card__avatar {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+}
+
+/* status: dot + words (token rule #7 — never colour alone) */
+.my-session-card__status { display: inline-flex; align-items: center; gap: var(--my-sp-1); font-size: var(--my-fs-caption); }
+.my-session-card__status-text { white-space: nowrap; }
+.my-session-card__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.my-session-card__status--ok { color: var(--my-ok); }
+.my-session-card__status--ok .my-session-card__dot { background: var(--my-ok); }
+.my-session-card__status--warn { color: var(--my-warn); }
+.my-session-card__status--warn .my-session-card__dot { background: var(--my-warn); }
+.my-session-card__status--error { color: var(--my-error); }
+.my-session-card__status--error .my-session-card__dot { background: var(--my-error); }
+.my-session-card__status--info { color: var(--my-info); }
+.my-session-card__status--info .my-session-card__dot { background: var(--my-info); }
+.my-session-card__status--muted { color: var(--my-muted); }
+.my-session-card__status--muted .my-session-card__dot { background: var(--my-disabled-ink); }
+/* UNKNOWN is not idle: a HOLLOW dot, so an unreported session can never be read as a solid-dot
+   claim. The word beside it says "unknown"; the ring says it a second time, without colour. */
+.my-session-card__status--unknown { color: var(--my-muted); font-style: italic; }
+.my-session-card__status--unknown .my-session-card__dot {
+  background: transparent; box-shadow: inset 0 0 0 1.5px var(--my-disabled-ink);
+}
+/* transient states only, ≤1/s */
+.my-session-card__status.is-pulse .my-session-card__dot { animation: my-session-pulse 1s ease-in-out infinite; }
+@keyframes my-session-pulse { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .my-session-card__status.is-pulse .my-session-card__dot { animation: none; }
+}
+
+/* context meter — rail + fill + fixed threshold ticks (rule #4: whole-hue flip, rail = --my-track) */
+.my-session-card__ctx { display: block; margin-top: var(--my-sp-3); }
+.my-session-card__ctx-bar {
+  display: block; height: 8px; border-radius: var(--my-r-pill); overflow: hidden;
+}
+.my-session-card__ctx-svg { display: block; width: 100%; height: 100%; }
+.my-session-card__ctx-track { fill: var(--my-track); }
+/* whole-hue flip at each threshold (rule #4) — never a gradient */
+.my-session-card__ctx-fill,
+.my-session-card__ctx--ok .my-session-card__ctx-fill { fill: var(--my-accent); } /* < warn: fill = accent */
+.my-session-card__ctx--warn .my-session-card__ctx-fill { fill: var(--my-warn); }
+.my-session-card__ctx--error .my-session-card__ctx-fill { fill: var(--my-error); }
+/* no reading ⇒ no fill element is emitted at all; the rail itself also changes, so the unknown
+   state cannot be mistaken for a healthy 0% one */
+.my-session-card__ctx--unknown .my-session-card__ctx-track { fill: var(--my-disabled-bg); }
+.my-session-card__ctx-tick { fill: var(--my-surface); }
+/* a stale reading is a LAST-KNOWN value: kept visible, drained of its band hue */
+.my-session-card__ctx.is-stale .my-session-card__ctx-fill { fill: var(--my-disabled-ink); }
+.my-session-card__ctx-legend {
+  display: flex; justify-content: space-between; gap: var(--my-sp-2);
+  margin-top: var(--my-sp-1); font-size: var(--my-fs-micro); color: var(--my-muted);
+}
+/* a long note truncates rather than pushing the (load-bearing) value off the card */
+.my-session-card__ctx-note,
+.my-session-card__spine-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-session-card__ctx-value {
+  font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; /* rule #5 */
+  color: var(--my-ink); font-weight: var(--my-fw-medium);
+}
+.my-session-card__ctx--unknown .my-session-card__ctx-value,
+.my-session-card__ctx.is-stale .my-session-card__ctx-value { color: var(--my-disabled-ink); }
+
+/* spine strip — filled petrol nodes = distills, hollow node = the live tip */
+.my-session-card__spine { display: flex; align-items: center; margin-top: var(--my-sp-3); }
+.my-session-card__spine-seg { height: 3px; background: var(--my-border); flex: 1; }
+.my-session-card__spine-node {
+  width: 13px; height: 13px; border-radius: 50%; flex: none;
+  background: var(--my-accent); border: 3px solid var(--my-surface);
+  box-shadow: 0 0 0 1px var(--my-border);
+}
+.my-session-card__spine-node--tip { background: var(--my-surface); border-color: var(--my-accent); }
+.my-session-card__spine-value {
+  font-family: var(--my-font-mono); font-variant-numeric: tabular-nums;
+  color: var(--my-ink); font-weight: var(--my-fw-medium);
+}
+.my-session-card.is-stale .my-session-card__spine-value { color: var(--my-disabled-ink); }
