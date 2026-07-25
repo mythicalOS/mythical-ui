@@ -27,6 +27,7 @@ import {
   deliveryClassLabel,
   keyAction,
   makeSendGate,
+  resolveSend,
   sendBarClass,
   sendPlaceholder,
   showDeliveryHint,
@@ -43,6 +44,7 @@ export {
   clearDraftOnSend,
   deliveryClassLabel,
   keyAction,
+  resolveSend,
   sendPlaceholder,
   showDeliveryHint,
   type DeliveryClass,
@@ -63,6 +65,12 @@ export interface SendBarProps {
   targetName?: string;
   /** Resolve `true` on success; the draft clears only then (text survives failures). */
   onSend(cls: DeliveryClass, body: string): boolean | Promise<boolean>;
+  /**
+   * Called when `onSend` REJECTS. The rejection is treated as a failed send (nothing delivered, the
+   * draft kept) rather than escaping as an unhandled rejection; this is how a caller still observes
+   * it. Omitting it does not hide a success — only a resolved `true` ever counts as sent.
+   */
+  onSendError?(error: unknown): void;
 }
 
 export function SendBar(props: SendBarProps) {
@@ -84,13 +92,15 @@ export function SendBar(props: SendBarProps) {
     setSending(true);
     const submitted = text;
     try {
-      const sent = await props.onSend(cls, submitted);
+      // a REJECTED onSend resolves to `false` here (a failed send) instead of escaping the handler
+      // as an unhandled rejection; the caller still sees it through `onSendError`
+      const sent = await resolveSend(() => props.onSend(cls, submitted), props.onSendError);
       // Functional update: compared against the LIVE draft at resolve time, not this closure's
       // snapshot, so text typed while the request was in flight is never erased.
       if (sent) setText((current) => (clearDraftOnSend(sent, submitted, current) ? "" : current));
     } finally {
-      // released even if `onSend` rejects — a rejection is a contract violation, but it must not
-      // wedge the bar shut. The draft survives either way (it clears only on `sent === true`).
+      // released on every path, so a failing send can never wedge the bar shut. The draft survives
+      // either way (it clears only on `sent === true`).
       gate.current.release();
       setSending(false);
     }

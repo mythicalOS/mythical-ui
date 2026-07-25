@@ -282,6 +282,7 @@ export {
   deliveryClassLabel,
   keyAction,
   makeSendGate,
+  resolveSend,
   sendBarClass,
   sendPlaceholder,
   showDeliveryHint,

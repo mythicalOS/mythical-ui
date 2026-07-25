@@ -94,6 +94,31 @@ export function makeSendGate(): SendGate {
 }
 
 /**
+ * Resolve one send attempt to a plain success/failure.
+ *
+ * `onSend` is contracted to resolve a boolean, but it is caller code and may REJECT. Letting that
+ * rejection escape an async event handler surfaces it as an unhandled rejection — an application
+ * error, in many apps a full error overlay — for what is really just a send that did not land. So a
+ * rejection is treated as a FAILED send: nothing was delivered, the draft is kept, and the failure
+ * is handed to `onError` so the caller can still see it. It is never swallowed silently AND never
+ * reported as a success: anything other than a resolved `true` is a failure.
+ *
+ * Lives here so both bindings behave identically and so the rejection path is testable without a
+ * DOM.
+ */
+export async function resolveSend(
+  attempt: () => boolean | Promise<boolean>,
+  onError?: (error: unknown) => void,
+): Promise<boolean> {
+  try {
+    return (await attempt()) === true;
+  } catch (error) {
+    onError?.(error);
+    return false;
+  }
+}
+
+/**
  * The draft clears ONLY on a delivered/queued success AND only when the field still holds exactly
  * the submitted body — the field stays editable while the request is in flight, so text typed
  * meanwhile is a NEWER draft a completing send must not erase. A failed send keeps the text either

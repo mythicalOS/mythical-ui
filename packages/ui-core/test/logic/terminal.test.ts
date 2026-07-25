@@ -49,6 +49,7 @@ import {
   queueRowClass,
   queueStatusLabel,
   queueView,
+  resolveSend,
   ROW_SCOPE,
   rowKey,
   rowKeys,
@@ -575,6 +576,34 @@ describe("send bar composition", () => {
     const other = makeSendGate();
     expect(gate.tryAcquire()).toBe(true);
     expect(other.tryAcquire()).toBe(true); // one bar's in-flight send never blocks another's
+  });
+
+  test("a REJECTED onSend is a failed send, not an unhandled rejection", async () => {
+    // letting a rejection escape the async event handler surfaces an application error for what is
+    // really just a send that did not land
+    const boom = new Error("network down");
+    const seen: unknown[] = [];
+    await expect(
+      resolveSend(() => {
+        throw boom;
+      }, (e) => seen.push(e)),
+    ).resolves.toBe(false);
+    expect(seen).toEqual([boom]);
+
+    const seen2: unknown[] = [];
+    await expect(resolveSend(() => Promise.reject(boom), (e) => seen2.push(e))).resolves.toBe(false);
+    expect(seen2).toEqual([boom]);
+
+    // and with NO error callback it still resolves false rather than rejecting
+    await expect(resolveSend(() => Promise.reject(boom))).resolves.toBe(false);
+  });
+
+  test("only a resolved `true` counts as sent — a rejection can never look like success", async () => {
+    await expect(resolveSend(() => true)).resolves.toBe(true);
+    await expect(resolveSend(() => Promise.resolve(true))).resolves.toBe(true);
+    await expect(resolveSend(() => false)).resolves.toBe(false);
+    // a truthy non-boolean is NOT a success — the contract is a boolean
+    await expect(resolveSend(() => "ok" as unknown as boolean)).resolves.toBe(false);
   });
 
   test("the draft clears only on success AND only if it is still the submitted text", () => {
