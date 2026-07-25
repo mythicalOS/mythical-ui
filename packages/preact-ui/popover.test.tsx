@@ -208,6 +208,31 @@ describe("PopoverPanel — open panel render contract", () => {
     expect(menu.slice(0, menu.indexOf("</div>"))).not.toContain("Manage lanes →");
   });
 
+  test("a conditional footer that renders nothing leaves NO orphan separator or empty box", () => {
+    for (const nothing of [undefined, null, false, ""] as const) {
+      const html2 = renderToString(
+        <PopoverPanel
+          ids={ids}
+          pos={{ placement: "below", align: "start" }}
+          items={LANES}
+          footer={nothing}
+          onPick={noop}
+        />,
+      );
+      expect(html2).not.toContain("my-pop__div");
+      expect(html2).not.toContain("my-pop__foot");
+    }
+  });
+
+  test("an empty heading builds no head, and never leaves the menu labelled by empty text", () => {
+    const blank = renderToString(
+      <PopoverPanel ids={ids} pos={{ placement: "below", align: "start" }} items={LANES} title="" onPick={noop} />,
+    );
+    expect(blank).not.toContain("my-pop__head");
+    expect(blank).toContain(`aria-labelledby="${ids.trigger}"`);
+    expect(blank).not.toContain(`aria-labelledby="${ids.title}"`);
+  });
+
   test("the panel itself is programmatically focusable — the fallback when no row can take focus", () => {
     expect(html).toContain('tabindex="-1"');
   });
@@ -283,18 +308,52 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
     expect(code).not.toContain(needle);
   });
 
-  // every quote form, not just double — a single-quoted or templated class must fail too
-  const CLASS_LITERAL = /["'`]my-[^"'`]*["'`]/g;
+  // ── generic guards, not a denylist ───────────────────────────────────────────────────────────
+  // A denylist can only catch the literals someone thought of. These three match ANY quote form
+  // (", ' or backtick), ANYWHERE inside the literal, and any aria-/role attribute whatsoever — so a
+  // NEW core-owned literal, or a class smuggled in as `"x my-pop__item"`, fails too.
 
-  test("the class-literal guard itself catches EVERY quote form (negative fixtures)", () => {
-    for (const bad of ['class="my-pop__item"', "class='my-pop__item'", "class={`my-pop__item`}"]) {
-      expect(bad.match(CLASS_LITERAL)).not.toBeNull();
-    }
-    expect('class={POPOVER_CLASS.item}'.match(CLASS_LITERAL)).toBeNull();
+  /** A quoted literal that CONTAINS `needle` anywhere. */
+  const quoted = (needle: string) => new RegExp(`["'\`][^"'\`]*${needle}[^"'\`]*["'\`]`);
+
+  /** Every token this binding must never spell out for itself. */
+  const CORE_OWNED = [
+    "my-pop", // class names → POPOVER_CLASS
+    "ArrowDown",
+    "ArrowUp",
+    "Home",
+    "End",
+    "Escape",
+    "Tab", // key names → popoverTriggerKeyAction / popoverPanelKeyAction
+    "menuitem",
+    "haspopup",
+    "separator", // roles → popoverItemAria / popoverMenuAria / POPOVER_SEPARATOR_ARIA
+    "▾",
+    "✓", // glyphs → POPOVER_CARET / POPOVER_CHECK
+  ];
+
+  test("the generic guards themselves catch what a denylist would miss (negative fixtures)", () => {
+    // every quote form
+    expect(quoted("ArrowDown").test(`if (e.key === 'ArrowDown')`)).toBe(true);
+    expect(quoted("ArrowDown").test("if (e.key === `ArrowDown`)")).toBe(true);
+    expect(quoted("ArrowDown").test('if (e.key === "ArrowDown")')).toBe(true);
+    // a class smuggled in as part of a longer literal
+    expect(quoted("my-pop").test('class="x my-pop__item"')).toBe(true);
+    // an ARIA attribute nobody put on a denylist
+    expect(/\baria-[a-zA-Z-]+\s*=/.test('<span aria-describedby="x" />')).toBe(true);
+    expect(/\brole\s*=/.test('<div role="group" />')).toBe(true);
+    // and they do NOT fire on the real, core-sourced forms
+    expect(quoted("my-pop").test("class={POPOVER_CLASS.item}")).toBe(false);
+    expect(/\baria-[a-zA-Z-]+\s*=/.test("{...popoverItemAria(item)}")).toBe(false);
   });
 
-  test("NO class-name string literal is inlined at all — every class comes from POPOVER_CLASS", () => {
-    expect(code.match(CLASS_LITERAL)).toBeNull();
+  test.each(CORE_OWNED)("no literal in ANY quote form contains %s", (needle) => {
+    expect(quoted(needle).test(code)).toBe(false);
+  });
+
+  test("NOT ONE aria-* or role attribute is authored here — they arrive only by spreading core maps", () => {
+    expect(code).not.toMatch(/\baria-[a-zA-Z-]+\s*=/);
+    expect(code).not.toMatch(/\brole\s*=/);
     expect(code).toContain("POPOVER_CLASS.");
   });
 
@@ -320,6 +379,7 @@ describe("ui-core/binding split — no core decision is re-implemented here", ()
       "edgePopoverIndex",
       "popoverTriggerText",
       "popoverIds",
+      "popoverHasSlotContent",
       "POPOVER_CLASS",
     ]) {
       expect(code).toContain(symbol);

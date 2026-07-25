@@ -49,6 +49,7 @@ export {
   initialPopoverIndex,
   resolvePopoverIndex,
   popoverTriggerText,
+  popoverHasSlotContent,
   type PopoverItem,
   type PopoverPlacement,
   type PopoverAlign,

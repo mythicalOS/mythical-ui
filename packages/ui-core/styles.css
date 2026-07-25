@@ -471,7 +471,10 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-pop {
   position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
   /* min-width only, per the card — the panel grows to its widest row rather than truncating it */
-  min-width: 210px; padding: var(--my-sp-1);
+  /* 6px is the card's own panel padding and has no step on the --my-sp-* scale (4 / 8); it is
+     kept literal rather than rounded, exactly as the trigger's 5px 12px and the row's 7px 10px
+     are — this block's spacing comes from the card, only its colors/radii/fonts are tokenized. */
+  min-width: 210px; padding: 6px;
   background: var(--my-surface); border: 1px solid var(--my-border); /* panel edge = a card boundary, not a control one */
   border-radius: var(--my-r-card); box-shadow: var(--my-shadow-modal);
 }

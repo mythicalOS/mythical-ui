@@ -30,6 +30,7 @@ import {
   POPOVER_SEPARATOR_ARIA,
   edgePopoverIndex,
   initialPopoverIndex,
+  popoverHasSlotContent,
   popoverIds,
   popoverItemAria,
   popoverItemClass,
@@ -115,17 +116,17 @@ export interface PopoverPanelProps {
 export function PopoverPanel(props: PopoverPanelProps) {
   return (
     <div ref={props.panelRef} className={popoverPanelClass(props.pos)} tabIndex={-1} {...popoverPanelAria(props.ids)}>
-      {props.title !== undefined || props.caption !== undefined ? (
+      {popoverHasSlotContent(props.title) || popoverHasSlotContent(props.caption) ? (
         <div className={POPOVER_CLASS.head}>
-          {props.title !== undefined ? (
+          {popoverHasSlotContent(props.title) ? (
             <span id={props.ids.title} className={POPOVER_CLASS.title}>
               {props.title}
             </span>
           ) : null}
-          {props.caption !== undefined ? <span className={POPOVER_CLASS.caption}>{props.caption}</span> : null}
+          {popoverHasSlotContent(props.caption) ? <span className={POPOVER_CLASS.caption}>{props.caption}</span> : null}
         </div>
       ) : null}
-      <div className={POPOVER_CLASS.menu} {...popoverMenuAria(props.ids, props.title !== undefined)}>
+      <div className={POPOVER_CLASS.menu} {...popoverMenuAria(props.ids, popoverHasSlotContent(props.title))}>
         {props.items.map((item) => (
           <button
             key={item.key}
@@ -146,7 +147,7 @@ export function PopoverPanel(props: PopoverPanelProps) {
           </button>
         ))}
       </div>
-      {props.footer !== undefined ? (
+      {popoverHasSlotContent(props.footer) ? (
         <>
           <div className={POPOVER_CLASS.divider} {...POPOVER_SEPARATOR_ARIA} />
           <div className={POPOVER_CLASS.foot}>{props.footer}</div>

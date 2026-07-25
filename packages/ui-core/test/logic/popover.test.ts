@@ -21,6 +21,7 @@ import {
   POPOVER_GAP_PX,
   edgePopoverIndex,
   initialPopoverIndex,
+  popoverHasSlotContent,
   popoverIds,
   popoverItemAria,
   popoverItemClass,
@@ -397,6 +398,20 @@ describe("trigger text composition — never names an item that is not actually 
         { key: "b", label: "B", selected: true },
       ]).value,
     ).toBe("A");
+  });
+});
+
+describe("popoverHasSlotContent — an optional slot only earns its chrome when it renders something", () => {
+  test("the values both frameworks render as NOTHING never earn a separator or an empty box", () => {
+    // `footer={enabled && <Action />}` passes FALSE when disabled — not undefined. Testing
+    // `!== undefined` would leave an orphan rule and an empty footer behind it.
+    for (const empty of [undefined, null, false, ""]) expect(popoverHasSlotContent(empty)).toBe(false);
+  });
+
+  test("anything renderable earns it", () => {
+    for (const filled of ["Manage lanes →", 0, { type: "div" }, ["a"]]) {
+      expect(popoverHasSlotContent(filled)).toBe(true);
+    }
   });
 });
 

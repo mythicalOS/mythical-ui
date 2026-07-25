@@ -405,6 +405,21 @@ export function resolvePopoverIndex(
   }
 }
 
+/* ── optional slots ───────────────────────────────────────────────────── */
+
+/**
+ * Is an optional slot (heading, caption, footer) worth rendering its chrome?
+ *
+ * `undefined`, `null`, `false` and `""` are all values BOTH frameworks render as nothing, and the
+ * idiomatic conditional slot is `footer={enabled && <Action />}` — which passes `false`, not
+ * `undefined`, when disabled. Testing `!== undefined` would leave an orphan separator and an empty
+ * box behind it, and an empty heading would leave the menu's `aria-labelledby` pointing at an
+ * element with no text. Shared here so both bindings apply the same rule.
+ */
+export function popoverHasSlotContent(slot: unknown): boolean {
+  return slot !== undefined && slot !== null && slot !== false && slot !== "";
+}
+
 /* ── text composition ─────────────────────────────────────────────────── */
 
 export interface PopoverTriggerText {
