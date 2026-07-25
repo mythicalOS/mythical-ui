@@ -100,44 +100,49 @@ export function TokenGateCard(props: TokenGateCardProps) {
     if (!empty) props.onSubmit(trimmed);
   };
   return (
-    <div class="token-entry">
-      <Logo product={props.product} />
-      <h2 class="token-entry__title">Unlock {displayName(props.product)}</h2>
-      <p class="token-entry__body">{props.invalid ? TOKEN_GATE_INVALID_BODY : TOKEN_GATE_BODY}</p>
-      {failure ? (
-        <div class="token-entry__err" role="alert">
-          <span class="token-entry__err-glyph" aria-hidden="true">
-            ▲
-          </span>
-          <span>{failure}</span>
+    // The card owns its own screen framing. Without this wrapper each consumer invents its own
+    // vertical offset (one product padded the gate, another rendered it flush), so the "one card,
+    // identical everywhere" guarantee held for the card but not for where it sat on the page.
+    <div class="token-entry-screen">
+      <div class="token-entry">
+        <Logo product={props.product} />
+        <h2 class="token-entry__title">Unlock {displayName(props.product)}</h2>
+        <p class="token-entry__body">{props.invalid ? TOKEN_GATE_INVALID_BODY : TOKEN_GATE_BODY}</p>
+        {failure ? (
+          <div class="token-entry__err" role="alert">
+            <span class="token-entry__err-glyph" aria-hidden="true">
+              ▲
+            </span>
+            <span>{failure}</span>
+          </div>
+        ) : null}
+        <Input
+          label="UI token"
+          mono
+          type="password"
+          revealable
+          placeholder="paste your ui/token…"
+          value={props.value}
+          onInput={props.onValue}
+          onKeyDown={(e) => {
+            if (e.key !== "Enter") return;
+            // Swallowed even when the field is empty: a product may render this card inside a form
+            // of its own, and an empty Enter must not navigate the page away from the gate.
+            e.preventDefault();
+            submit();
+          }}
+        />
+        <div class="token-entry__cta">
+          <Button variant="pri" disabled={empty} onClick={submit}>
+            Unlock
+          </Button>
         </div>
-      ) : null}
-      <Input
-        label="UI token"
-        mono
-        type="password"
-        revealable
-        placeholder="paste your ui/token…"
-        value={props.value}
-        onInput={props.onValue}
-        onKeyDown={(e) => {
-          if (e.key !== "Enter") return;
-          // Swallowed even when the field is empty: a product may render this card inside a form
-          // of its own, and an empty Enter must not navigate the page away from the gate.
-          e.preventDefault();
-          submit();
-        }}
-      />
-      <div class="token-entry__cta">
-        <Button variant="pri" disabled={empty} onClick={submit}>
-          Unlock
-        </Button>
-      </div>
-      <div class="token-entry__hint">
-        <span>Lost it? From a terminal on the host:</span>
-        <code class="token-entry__cmd">$ docker exec {props.container} bun run token</code>
-        <code class="token-entry__cmd">$ docker exec {props.container} bun run token -- --rotate</code>
-        <span>Rotating prints a new token and signs out every browser holding the old one.</span>
+        <div class="token-entry__hint">
+          <span>Lost it? From a terminal on the host:</span>
+          <code class="token-entry__cmd">$ docker exec {props.container} bun run token</code>
+          <code class="token-entry__cmd">$ docker exec {props.container} bun run token -- --rotate</code>
+          <span>Rotating prints a new token and signs out every browser holding the old one.</span>
+        </div>
       </div>
     </div>
   );

@@ -120,6 +120,22 @@ describe("styles.css — (c) every referenced --my-* token exists in the canonic
     expect(chipRuleMatch).not.toBeNull();
     expect(chipRuleMatch?.[1]?.trim()).toBe("var(--my-fs-micro)");
   });
+
+  // `.mono` (0,1,0) is declared near the top of this sheet; `.input` (also 0,1,0) is declared far
+  // below it and sets the `font` SHORTHAND, which resets font-family. At equal specificity the
+  // later rule wins, so `<input class="input mono">` silently lost its monospace face — visible
+  // only in a consumer that did NOT happen to re-declare `.mono` after this sheet. The fix is the
+  // (0,2,0) `.input.mono` restatement; this pins it so the shorthand can never re-win.
+  test("regression guard: a mono input keeps the mono family despite .input's font shorthand", () => {
+    const inputMono = css.match(/\.input\.mono\s*\{([^}]*)\}/);
+    expect(inputMono).not.toBeNull();
+    expect(inputMono?.[1]).toContain("font-family: var(--my-font-mono)");
+
+    // The fix only works if it comes AFTER the `.input { … font: inherit … }` rule.
+    const shorthandIdx = css.search(/\.input\s*\{[^}]*font:\s*inherit/);
+    expect(shorthandIdx).toBeGreaterThan(-1);
+    expect(css.indexOf(".input.mono")).toBeGreaterThan(shorthandIdx);
+  });
 });
 
 describe("styles.css — (d) no later-task shell classes leak into this atom sheet", () => {

@@ -71,6 +71,11 @@ a:focus-visible, .link:focus-visible, .is-focus {
   transition: border-color var(--my-t-fast);
 }
 .input:hover:not(:disabled) { border-color: var(--my-muted); } /* §1a-4 (input row v2 reference) */
+/* `.mono` is declared far earlier at the SAME specificity (0,1,0), so `.input`'s `font: inherit`
+   shorthand above wins the cascade and resets the family — a `mono` input silently rendered in the
+   body face. Restate it at (0,2,0) so the modifier survives inside this package alone, rather than
+   depending on a consumer happening to re-declare `.mono` after our sheet. */
+.input.mono { font-family: var(--my-font-mono); font-size: var(--my-fs-mono); }
 .input.is-err { border-color: var(--my-error); }
 .input:disabled, .input.is-disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
 .input.is-dirty { border-color: var(--my-accent); }

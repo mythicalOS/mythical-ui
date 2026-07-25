@@ -114,6 +114,13 @@ describe("TokenGate — the card's structure, top to bottom", () => {
     expect(html()).toContain('<div class="token-entry">');
   });
 
+  // The package owns the gate's screen framing. When it did not, each consumer invented its own
+  // vertical offset and the card sat at a different height per product — the card was identical,
+  // its placement was not. Pinned so a refactor cannot quietly hand framing back to consumers.
+  test("the card is wrapped in the package's own .token-entry-screen framing", () => {
+    expect(html()).toContain('<div class="token-entry-screen"><div class="token-entry">');
+  });
+
   test("logo, heading, body, field, CTA and hint appear in that order", () => {
     const out = html();
     const order = [
