@@ -517,6 +517,7 @@ a:focus-visible, .link:focus-visible, .is-focus {
    here (restated locally for the same reason the input-reveal rules above are) */
 .my-pop-trigger:focus-visible, .my-pop__item:focus-visible {
   outline: 2px solid var(--my-accent); outline-offset: 2px;
+}
 
 /* ── file explorer & markdown preview (ds/components-file-explorer) ────────
    A READ-ONLY two-pane explorer: the rail (header + scope picker + tree) and the preview pane
