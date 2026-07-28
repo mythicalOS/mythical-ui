@@ -1146,7 +1146,15 @@ button.my-session-card { cursor: pointer; }
    (a pseudo-element hit-tests as its originating element), so the target is a real 24×24 while
    the painted glyph and the tag's own geometry are untouched. It stays within the tag's padding
    at the default and md steps, and overhangs an xs tag by ~1.5px, well inside the gap any tag
-   row leaves between neighbours. */
+   row leaves between neighbours.
+
+   ON THE RADIUS. This is a clickable element carrying --my-r-pill, which looks like a rule 10
+   violation and is not. Rule 10 governs a control's RESTING SHAPE — "a pill never invites a
+   click, so an interactive control must never look like one" — and this button paints no
+   resting shape at all: no fill, no border, only a glyph. The radius is visible solely in the
+   focus ring, where following the round glyph is the right read, and the sheet already settled
+   this species of control the same way: `.my-search__clear`, a glyph-only button nested inside
+   an input, is `border-radius: 50%`. The card specifies the pill here for the same reason. */
 .my-tag__x {
   position: relative;
   margin-left: 1px; margin-right: -3px; padding: 0 2px;
