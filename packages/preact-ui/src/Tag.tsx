@@ -20,6 +20,7 @@ import {
   TAG_PARTS,
   TAG_REMOVE_GLYPH,
   tagClass,
+  tagCountText,
   tagRemoveLabel,
   type TagSize,
   type TagTone,
@@ -27,6 +28,7 @@ import {
 
 export {
   tagClass,
+  tagCountText,
   tagRemoveLabel,
   TAG_PARTS,
   TAG_REMOVE_GLYPH,
@@ -44,9 +46,10 @@ export interface TagProps {
   size?: TagSize;
   /** Leading tone dot. Decorative — it repeats the tone, it never replaces the word. */
   dot?: boolean;
-  /** Mono count beside the label ("records 248"). A non-number — including `undefined`, `NaN` and
-   *  `Infinity`, none of which is a count anyone measured — renders NOTHING rather than a
-   *  fabricated figure. `0` is a real reported count and DOES render. */
+  /** Mono count beside the label ("records 248"). Only a real, non-negative INTEGER renders;
+   *  `undefined`, `NaN`, `Infinity`, a negative and a fraction are all "not a count anyone
+   *  measured" and render NOTHING rather than a fabricated figure. `0` IS a count and renders.
+   *  The guard is `tagCountText` in the core, so both bindings drop exactly the same values. */
   count?: number;
   /** Renders the removable `×` and receives its click. Omit for a plain tag. */
   onRemove?: () => void;
@@ -59,12 +62,12 @@ export interface TagProps {
 
 export function Tag(props: TagProps) {
   const { tone = "accent", size, dot = false, count, onRemove, class: cls = "" } = props;
-  const hasCount = typeof count === "number" && Number.isFinite(count);
+  const countText = tagCountText(count);
   return (
     <span class={`${tagClass(tone, { size })} ${cls}`}>
       {dot ? <span class={TAG_PARTS.dot} /> : null}
       {props.children}
-      {hasCount ? <span class={TAG_PARTS.num}>{count}</span> : null}
+      {countText !== null ? <span class={TAG_PARTS.num}>{countText}</span> : null}
       {onRemove ? (
         <button
           type="button"

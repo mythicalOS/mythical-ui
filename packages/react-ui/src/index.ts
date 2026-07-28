@@ -109,6 +109,7 @@ export {
 export {
   Tag,
   tagClass,
+  tagCountText,
   tagRemoveLabel,
   TAG_PARTS,
   TAG_REMOVE_GLYPH,

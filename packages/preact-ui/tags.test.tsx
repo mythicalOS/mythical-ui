@@ -18,6 +18,7 @@ import {
   chipDropdownClass,
   flagClass,
   tagClass,
+  tagCountText,
   tagRemoveLabel,
 } from "@mythicalos/ui-core/logic";
 import { ChipDropdown, Flag, Tag } from "./src/index.ts";
@@ -52,16 +53,21 @@ describe("Tag", () => {
     expect(renderToString(<Tag>live</Tag>)).not.toContain(TAG_PARTS.dot);
   });
 
-  test("the count renders a real number — including 0 — and nothing else", () => {
+  test("the count is exactly what tagCountText admits — the core owns the guard", () => {
     expect(renderToString(<Tag count={248}>records</Tag>)).toContain(
-      `<span class="${TAG_PARTS.num}">248</span>`,
+      `<span class="${TAG_PARTS.num}">${tagCountText(248)}</span>`,
     );
     // 0 is a genuinely reported count, not an absence: it must survive the guard.
     expect(renderToString(<Tag count={0}>conflicts</Tag>)).toContain(
       `<span class="${TAG_PARTS.num}">0</span>`,
     );
-    for (const bad of [undefined, NaN, Infinity, -Infinity]) {
-      expect(renderToString(<Tag count={bad}>records</Tag>)).not.toContain(TAG_PARTS.num);
+    // Malformed data is DROPPED, never rendered as a count the caller never measured — a
+    // fraction is not a number of records and a negative is not a number of anything.
+    for (const bad of [undefined, NaN, Infinity, -Infinity, -1, 1.5]) {
+      expect({ bad, html: renderToString(<Tag count={bad}>records</Tag>) }).toEqual({
+        bad,
+        html: renderToString(<Tag>records</Tag>),
+      });
     }
     // A non-number from a JS consumer is not a count either — it must not reach the DOM.
     expect(renderToString(<Tag count={"12" as unknown as number}>records</Tag>)).not.toContain(

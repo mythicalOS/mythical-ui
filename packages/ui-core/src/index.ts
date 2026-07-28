@@ -93,6 +93,7 @@ export {
 // ── tags & chips (the design system's "Tags & chips" card): Tag · Flag · ChipDropdown ──
 export {
   tagClass,
+  tagCountText,
   tagRemoveLabel,
   flagClass,
   chipDropdownClass,

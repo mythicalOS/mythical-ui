@@ -1137,15 +1137,27 @@ button.my-session-card { cursor: pointer; }
 .my-tag__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; opacity: .75; }
 /* The removable × — the one thing inside a tag that may be clicked. It is a focusable CHILD with
    its own focus ring; the tag itself never becomes a control. Rendered as a real <button>, so the
-   element resets (border/background/font) are part of the rule. Consumer note from the card: a
-   removal target stays ≥24px tall in real UI — use `.my-tag--md` (28px) where the tag list is the
-   primary control; the default step is 22.5px and `.my-tag--xs` smaller still. */
+   element resets (border/background/font) are part of the rule.
+
+   TARGET SIZE. The card's caption binds a removal target at ≥24px, and the glyph's own box is
+   nowhere near that: at caption size with line-height 1 and 2px of side padding it is roughly
+   12×11px, and a roomier tag grows the TAG, not this button. The ::after below is the standard
+   fix — a transparent, non-painting overlay centred on the button that carries the hit test
+   (a pseudo-element hit-tests as its originating element), so the target is a real 24×24 while
+   the painted glyph and the tag's own geometry are untouched. It stays within the tag's padding
+   at the default and md steps, and overhangs an xs tag by ~1.5px, well inside the gap any tag
+   row leaves between neighbours. */
 .my-tag__x {
+  position: relative;
   margin-left: 1px; margin-right: -3px; padding: 0 2px;
   border: 0; background: none; color: currentColor; opacity: .6;
   font: inherit; font-size: var(--my-fs-caption); line-height: 1;
   border-radius: var(--my-r-pill); cursor: pointer;
   transition: opacity var(--my-t-fast);
+}
+.my-tag__x::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 24px; height: 24px; transform: translate(-50%, -50%);
 }
 .my-tag__x:hover { opacity: 1; }
 .my-tag__x:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }

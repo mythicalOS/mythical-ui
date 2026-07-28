@@ -106,6 +106,23 @@ describe("tag", () => {
     expect(cssCode).not.toMatch(/\.my-tag:focus/);
   });
 
+  test("the × meets the card's ≥24px removal target, via an overlay that does not paint", () => {
+    // The glyph's own box is ~12×11px; a roomier tag grows the TAG, not the button. Without the
+    // overlay the atom would document a target it does not deliver. Pinned so it cannot be
+    // dropped as "dead CSS".
+    expect(ruleBody(".my-tag__x")).toContain("position: relative");
+    const after = ruleBody(".my-tag__x::after");
+    expect(after).not.toBeNull();
+    expect(after).toContain('content: ""');
+    expect(after).toContain("position: absolute");
+    expect(after).toContain("width: 24px");
+    expect(after).toContain("height: 24px");
+    expect(after).toContain("transform: translate(-50%, -50%)");
+    // It must stay invisible — a painted overlay would cover the glyph it exists to enlarge.
+    expect(after).not.toContain("background");
+    expect(after).not.toContain("border");
+  });
+
   test("the count is tabular (token rule #5: tabular-nums on all counters)", () => {
     const num = ruleBody(".my-tag__num");
     expect(num).not.toBeNull();

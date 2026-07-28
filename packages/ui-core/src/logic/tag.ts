@@ -90,6 +90,17 @@ export function tagClass(tone: TagTone = "accent", state: TagState = {}): string
   return cls;
 }
 
+/** The count slot's text, or `null` when there is no count to show.
+ *
+ *  A count is a real, non-negative INTEGER. `undefined` (not reported), `NaN`, `Infinity`,
+ *  negatives and fractions are all "not a count" — a fraction cannot be a number of records and a
+ *  negative cannot be a number of anything, so they are malformed data and must not be rendered as
+ *  a count the caller never measured. `0` IS a count and renders. Same contract, and the same
+ *  reasoning, as `gitFlags`'s internal `isCount`. */
+export function tagCountText(count?: unknown): string | null {
+  return typeof count === "number" && Number.isInteger(count) && count >= 0 ? String(count) : null;
+}
+
 /** The removal control's accessible name: the card's "Remove <name>" when the subject is known,
  *  the bare {@link TAG_REMOVE_LABEL} when it is not. Never invents a subject. */
 export function tagRemoveLabel(name?: string): string {

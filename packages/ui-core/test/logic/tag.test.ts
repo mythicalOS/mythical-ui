@@ -18,6 +18,7 @@ import {
   chipDropdownValueText,
   flagClass,
   tagClass,
+  tagCountText,
   tagRemoveLabel,
   type TagTone,
 } from "../../src/logic/tag.ts";
@@ -121,6 +122,28 @@ describe("TAG_PARTS / removal copy", () => {
 
   test("the accessible name is never empty — an unlabelled control is unusable by voice", () => {
     for (const name of [undefined, "", "   ", "x"]) expect(tagRemoveLabel(name).length).toBeGreaterThan(0);
+  });
+});
+
+describe("tagCountText", () => {
+  test("a real non-negative integer renders — including 0", () => {
+    expect(tagCountText(248)).toBe("248");
+    expect(tagCountText(3)).toBe("3");
+    // 0 is a genuinely reported count, not an absence: `count && …` would have eaten it.
+    expect(tagCountText(0)).toBe("0");
+  });
+
+  test("nothing that is not a count renders one", () => {
+    // Same contract, and the same reasoning, as git-chip's `isCount`: a fraction cannot be a
+    // number of records and a negative cannot be a number of anything, so both are malformed
+    // data. Rendering them would claim a measurement the caller never made.
+    for (const bad of [undefined, null, NaN, Infinity, -Infinity, -1, 1.5, -0.5, "12", "", {}, []]) {
+      expect({ bad, text: tagCountText(bad) }).toEqual({ bad, text: null });
+    }
+  });
+
+  test("-0 is 0, not a negative", () => {
+    expect(tagCountText(-0)).toBe("0");
   });
 });
 
