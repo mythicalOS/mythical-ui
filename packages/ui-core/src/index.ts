@@ -115,6 +115,38 @@ export {
   type ChipDropdownActivation,
 } from "./logic/chip.js";
 
+// ── theme toggle (ds/components-theme-toggle): segmented · icon · switch ──
+export {
+  THEME_MODES,
+  THEME_TOGGLE_PARTS,
+  THEME_ICON_PARTS,
+  THEME_SWITCH_PARTS,
+  THEME_MODE_LABELS,
+  THEME_MODE_ICONS,
+  THEME_TOGGLE_GROUP_LABEL,
+  THEME_ICON_LABEL,
+  THEME_SWITCH_LABEL,
+  THEME_ICONS,
+  THEME_ICON_STROKE,
+  isThemeMode,
+  themeModeIndex,
+  resolveThemeIsDark,
+  themeGlyph,
+  themeIconTarget,
+  themeToggleKeyAction,
+  nextThemeMode,
+  themeToggleClass,
+  themeIconClass,
+  type ThemeMode,
+  type ResolvedTheme,
+  type ThemeIconName,
+  type ThemeIconShape,
+  type ThemeIconSpec,
+  type ThemeToggleState,
+  type ThemeIconState,
+  type ThemeToggleKeyAction,
+} from "./logic/theme-toggle.js";
+
 // ── small atoms graduated out of a single product: save-bar, stat-tiles, git-chip ──
 export {
   saveBarNote,

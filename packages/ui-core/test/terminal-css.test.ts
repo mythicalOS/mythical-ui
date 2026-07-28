@@ -139,18 +139,43 @@ describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", ()
     expect(offenders).toEqual([]);
   });
 
-  test("the documented residual is exactly the status hues, and nothing in the set uses them", () => {
-    // --my-ok/--my-error/--my-info (and their softs) are deliberately NOT re-pointed: the five-token
-    // terminal palette has no green/red/blue, so any value would be invented. The guard above is
-    // what keeps that honest, so pin the residual explicitly rather than leaving it implied.
+  test("the documented residual is exactly the status hues + the knob shadow, and nothing uses them", () => {
+    // Two groups, deliberately NOT re-pointed, for two different reasons. Both are pinned
+    // explicitly rather than left implied, so growing the list is a decision someone has to make.
+    //
+    //   the status hues — --my-ok/--my-error/--my-info and their softs. The five-token terminal
+    //     palette has no green/red/blue, so any value here would be an invented colour.
+    //
+    //   --my-shadow-knob (tokens 0.5.16) — a raised-knob shadow, minted for the theme toggle. The
+    //     terminal has no knob: no toggle, no switch, no segmented control renders inside .my-term,
+    //     and the guard above is what keeps that true. It could not be pinned honestly even if one
+    //     did: every re-pointed local must resolve THROUGH --my-term-* (asserted above), the
+    //     terminal palette is five colours with no shadow among them, and a literal rgba pair here
+    //     would be both an invented value and a hex/colour literal the sheet-wide guards forbid.
+    //     If a knob ever does land inside the terminal, the guard above goes red first — which is
+    //     the outcome this residual is chosen to preserve.
+    const RESIDUAL = [
+      "--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft",
+      "--my-shadow-knob",
+    ];
     const pinned = new Set(repointed());
-    for (const t of ["--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft"]) {
-      expect(pinned.has(t)).toBe(false);
-    }
+    for (const t of RESIDUAL) expect({ t, pinned: pinned.has(t) }).toEqual({ t, pinned: false });
     // and every OTHER flipping token IS pinned
-    const residual = new Set(["--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft"]);
+    const residual = new Set(RESIDUAL);
     const unpinned = [...FLIPPING].filter((t) => !pinned.has(t) && !residual.has(t)).sort();
     expect(unpinned).toEqual([]);
+  });
+
+  test("the residual is not stale — every token in it is still a flipping token upstream", () => {
+    // A residual entry that stops flipping (renamed, or given one value in both themes) would sit
+    // here forever as a silent exemption for a token that no longer needs one. Only meaningful
+    // when the set is DERIVED from the sibling design repo; the fallback is a frozen snapshot.
+    if (!flippingIsDerived) return;
+    const RESIDUAL = [
+      "--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft",
+      "--my-shadow-knob",
+    ];
+    expect(RESIDUAL.filter((t) => !FLIPPING.has(t))).toEqual([]);
   });
 
   test("NO theme-conditional selector may reach into the terminal", () => {

@@ -865,7 +865,15 @@ button.my-session-card { cursor: pointer; }
      rule in the terminal set uses them (enforced by test/terminal-css.test.ts, which derives the
      flipping-token set from the canonical tokens.css and rejects any unpinned reference under a
      .my-term selector). A consumer nesting a status-toned atom INSIDE the terminal is the one known
-     residual; the terminal's own alert hue is --my-term-user. */
+     residual; the terminal's own alert hue is --my-term-user.
+
+     Also NOT re-pointed, for a different reason: --my-shadow-knob (tokens 0.5.16), the raised-knob
+     shadow the theme toggle uses. The terminal has no knob — no toggle, no switch, no segmented
+     control renders in here — and it could not be pinned honestly if it did: every local
+     re-pointed above resolves THROUGH a --my-term-* token, the terminal palette is five colours
+     with no shadow among them, and a literal rgba pair would be an invented value. The same guard
+     covers it: a knob arriving inside the terminal turns that test red rather than shipping a
+     light-theme shadow into a permanently dark pane. */
 
   display: flex; flex-direction: column;
   background: var(--my-term-bg); color: var(--my-term-ink);
@@ -1225,3 +1233,189 @@ button.my-session-card { cursor: pointer; }
 }
 .my-chip-dd:disabled .my-chip-dd__caret,
 .my-chip-dd[aria-disabled="true"] .my-chip-dd__caret { color: var(--my-disabled-ink); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   THEME TOGGLE (ds/components-theme-toggle) — one component, three members: the segmented
+   radiogroup (the default), the compact icon button, and the settings-row switch. Classes are
+   derived by src/logic/theme-toggle.ts; see that module for the behavioural contract.
+
+   The two segmented variants raise the selection two DIFFERENT ways, and the difference is the
+   whole reason neither needs a measured layout:
+     · icon-only — three fixed 30px cells, so one 30px knob slides between three known offsets
+       (3 / 35 / 67 px = padding + n x (cell + gap)).
+     · labelled  — options size to their words, so there is no offset to know: the knob is hidden
+       and the CHECKED BUTTON itself carries the raised look.
+   That matters beyond tidiness: this image runs under `style-src 'self'`, so the inline style a
+   measured layout would have to write is a CSP violation, and the bindings are render-only.
+
+   ── ON THE PILL RADIUS, AND WHY THIS IS NOT SETTLED ──
+   The card draws the segmented track, its options, the knob and the switch track at
+   --my-r-pill. Canonical token rule 10 says the opposite in as many words: "--my-r-pill is for
+   NON-interactive status chips/labels only. Everything clickable — buttons, inputs, selects,
+   editable chips, toggles — is squared --my-r-control." It even names toggles, and the base
+   `.tog` atom near the top of this sheet was deliberately squared for exactly that reason.
+
+   The port follows the CARD, because the card is the live spec for this component and post-dates
+   the rule (tokens 0.5.16 minted --my-shadow-knob for it). The icon-only options are defensible
+   on the rule's own terms — the rationale is "a pill never invites a click, so an interactive
+   control must never look like one", and they paint no resting shape at all (no fill, no border,
+   only a glyph; the pill shows solely in the focus ring, the same reasoning that already settled
+   `.my-chip__x`), while the track and the knob are a non-interactive container and a decorative
+   <span>. Two cases ARE genuinely unreconciled: the labelled variant's checked option, which
+   paints a real pill-shaped fill on a button, and the switch track, where the sibling `.tog`
+   answered the identical question the other way. Those are design decisions, not styling ones,
+   so they are recorded here and flagged rather than quietly settled in either direction.
+   test/css-theme-toggle.test.ts pins the current answer so a change has to be deliberate.
+
+   Normalizations, per the standing rules of this section:
+     1. The card's 12px option label and its 12.5px switch label both ride --my-fs-caption
+        (12px) — 12 is that step exactly, and 12.5 snaps to it, the same normalization
+        .my-chip-dd / .my-pop-trigger / .my-gitchip already made.
+     2. --my-shadow-knob (tokens 0.5.16) carries every raised surface here. The card's rgba pairs
+        are never restated.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── theme toggle: the segmented member (the default) ─────────────────────────────────────── */
+.my-tt-seg {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 3px;
+  background: var(--my-track); border: 1px solid var(--my-border);
+  border-radius: var(--my-r-pill);
+}
+.my-tt-seg__opt {
+  position: relative; z-index: 1;
+  display: grid; place-items: center;
+  width: 30px; height: 24px; padding: 0;
+  border: 0; background: none; color: var(--my-muted);
+  border-radius: var(--my-r-pill); cursor: pointer; line-height: 1;
+  transition: color var(--my-t-fast);
+}
+.my-tt-seg__opt svg { width: 14px; height: 14px; display: block; flex: none; }
+.my-tt-seg__opt:hover { color: var(--my-ink); }
+.my-tt-seg__opt:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+/* The accent lands on the GLYPH, never as a filled pill behind it — the card's don't-panel is
+   explicit that a saturated track turns a preference into a call to action. */
+.my-tt-seg__opt[aria-checked="true"] { color: var(--my-accent-strong); }
+/* The icon-only knob. `left` rather than a transform, per the card. `width` rides the same
+   transition the card leaves on it: nothing varies it today, and a future variant that sizes the
+   knob would then animate instead of jumping. */
+.my-tt-seg__knob {
+  position: absolute; top: 3px; left: 3px; z-index: 0;
+  width: 30px; height: 24px;
+  border-radius: var(--my-r-pill);
+  background: var(--my-surface); box-shadow: var(--my-shadow-knob);
+  transition: left var(--my-t-base), width var(--my-t-base);
+}
+/* One rule per mode, including the resting one. `--sel-system` repeats the base rule's 3px on
+   purpose: the mode with no rule would otherwise be the only one whose position is an absence. */
+.my-tt-seg--sel-system .my-tt-seg__knob { left: 3px; }
+.my-tt-seg--sel-light .my-tt-seg__knob { left: 35px; }
+.my-tt-seg--sel-dark .my-tt-seg__knob { left: 67px; }
+/* ── theme toggle: the LABELLED variant — the raised look moves onto the checked button ────── */
+/* The knob is still rendered (the two variants share one piece of markup, exactly as the card's
+   does) and hidden here, because a fixed-offset knob cannot track content-width options. */
+.my-tt-seg--lab .my-tt-seg__knob { display: none; }
+.my-tt-seg--lab .my-tt-seg__opt {
+  width: auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 11px;
+  font-family: inherit; line-height: 1;
+  font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); /* normalization (1) */
+  transition: background var(--my-t-fast), color var(--my-t-fast), box-shadow var(--my-t-fast);
+}
+/* Still a lift of value, not a fill of colour: --my-surface + the knob shadow, exactly what the
+   sliding knob paints. The accent stays on the glyph, from the base rule above. */
+.my-tt-seg--lab .my-tt-seg__opt[aria-checked="true"] {
+  background: var(--my-surface); box-shadow: var(--my-shadow-knob);
+}
+
+/* ── theme toggle: the icon member — one 30px button for a crowded top bar ────────────────── */
+.my-tt-icon {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; padding: 0;
+  /* rule 10 the ordinary way: this one paints a resting box, so it is squared. */
+  border: 1px solid transparent; border-radius: var(--my-r-control);
+  background: none; color: var(--my-muted); cursor: pointer;
+  transition: background var(--my-t-fast), color var(--my-t-fast);
+}
+.my-tt-icon svg {
+  width: 16px; height: 16px; display: block;
+  transition: transform var(--my-t-base), opacity var(--my-t-fast);
+}
+.my-tt-icon:hover { background: var(--my-surface-hover); color: var(--my-ink); }
+.my-tt-icon:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-tt-icon--bordered { border-color: var(--my-control-border); }
+.my-tt-icon__stack { display: grid; place-items: center; }
+.my-tt-icon__stack svg { grid-area: 1 / 1; }
+/* The button shows the theme you are IN — sun while light, moon while dark — and the glyphs
+   cross-fade with a 45deg counter-rotation rather than swapping. The state comes from
+   `aria-pressed` (true = dark), so the paint cannot exist without the announcement. */
+.my-tt-icon__moon { opacity: 0; transform: rotate(-45deg) scale(.7); }
+.my-tt-icon__sun { opacity: 1; transform: rotate(0) scale(1); }
+.my-tt-icon[aria-pressed="true"] .my-tt-icon__moon { opacity: 1; transform: rotate(0) scale(1); }
+.my-tt-icon[aria-pressed="true"] .my-tt-icon__sun { opacity: 0; transform: rotate(45deg) scale(.7); }
+
+/* ── theme toggle: the switch member — settings rows only ─────────────────────────────────── */
+.my-tt-switch {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: var(--my-fs-caption); /* card: 12.5px — normalization (1) */
+  color: var(--my-ink); cursor: pointer;
+}
+/* Hidden, never removed: the real <input> is what carries the checkbox role, the checked state,
+   focus and the space bar. Zero-sized rather than display:none, which would take it out of the
+   accessibility tree and the tab order along with it. */
+.my-tt-switch__input { position: absolute; opacity: 0; width: 0; height: 0; }
+.my-tt-switch__track {
+  position: relative; flex: none;
+  width: 40px; height: 22px; border-radius: var(--my-r-pill);
+  background: var(--my-track); border: 1px solid var(--my-control-border);
+  transition: background var(--my-t-base), border-color var(--my-t-base);
+}
+.my-tt-switch__knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--my-surface); box-shadow: var(--my-shadow-knob); color: var(--my-muted);
+  transition: left var(--my-t-base), color var(--my-t-base);
+}
+.my-tt-switch__knob svg { width: 9px; height: 9px; display: block; }
+/* Checked = the inputs Toggle's on/off vocabulary: a soft accent track with an accent boundary,
+   so a theme switch is not a special case. */
+.my-tt-switch__input:checked + .my-tt-switch__track {
+  background: var(--my-accent-soft); border-color: var(--my-accent);
+}
+.my-tt-switch__input:checked + .my-tt-switch__track .my-tt-switch__knob {
+  left: 20px; color: var(--my-accent-strong);
+}
+/* The ring goes on the track, because the input it belongs to is zero-sized and invisible. */
+.my-tt-switch__input:focus-visible + .my-tt-switch__track {
+  outline: 2px solid var(--my-accent); outline-offset: 2px;
+}
+/* Disabled (token rule 8: disabled-bg/-ink + not-allowed, never opacity on text). The hook is the
+   card's `aria-disabled` on the <label>; the SEMANTICS are the input's own native `disabled`,
+   which is what assistive tech and the pointer actually obey. */
+.my-tt-switch[aria-disabled="true"] { color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-tt-switch[aria-disabled="true"] .my-tt-switch__track {
+  background: var(--my-disabled-bg); border-color: var(--my-border);
+}
+
+/* The knob slide, the raised-tile fade and the glyph cross-fade are the only motion this family
+   has, and every one of them is a transition rather than an animation — so, unlike the sheet's
+   other reduced-motion blocks, this one turns off `transition`. The states themselves are
+   unaffected: the selection still lands where it should, it simply arrives at once.
+
+   `.my-tt-seg--lab .my-tt-seg__opt` is listed SEPARATELY and not as a tidier `.my-tt-seg__opt`
+   alone: the labelled rule that restates `transition` is (0,2,0) and would outrank a (0,1,0)
+   override here no matter that this block comes last. */
+@media (prefers-reduced-motion: reduce) {
+  .my-tt-seg__knob,
+  .my-tt-seg__opt,
+  .my-tt-seg--lab .my-tt-seg__opt,
+  .my-tt-icon,
+  .my-tt-icon svg,
+  .my-tt-switch__track,
+  .my-tt-switch__knob { transition: none; }
+}
+

@@ -31,6 +31,9 @@ import {
   StatusLine,
   Toast,
   ToastProvider,
+  ThemeToggle,
+  ThemeToggleIcon,
+  ThemeToggleSwitch,
   Toggle,
 } from "./src/index.ts";
 // not on the barrel — `Input`'s hook-free body, the only way to render the revealed state
@@ -142,6 +145,18 @@ function allRenders(): string[] {
   out.push(renderToString(<Gauge pct={42} />));
   out.push(renderToString(<Gauge pct={80} showLabel={false} />));
   out.push(renderToString(<Gauge pct={95} />));
+
+  // ── the theme toggle family (ds/components-theme-toggle) ──
+  for (const mode of ["system", "light", "dark"] as const) {
+    out.push(renderToString(<ThemeToggle mode={mode} onModeChange={noop} />));
+    out.push(renderToString(<ThemeToggle mode={mode} onModeChange={noop} labelled />));
+  }
+  for (const bordered of [false, true]) {
+    out.push(renderToString(<ThemeToggleIcon isDark onToggle={noop} bordered={bordered} />));
+    out.push(renderToString(<ThemeToggleIcon isDark={false} onToggle={noop} bordered={bordered} />));
+  }
+  out.push(renderToString(<ThemeToggleSwitch checked onChange={noop}>Dark mode</ThemeToggleSwitch>));
+  out.push(renderToString(<ThemeToggleSwitch checked={false} onChange={noop} disabled />));
   return out;
 }
 
@@ -166,6 +181,8 @@ describe("self-containment — every emitted class resolves in ui-core's styles.
     for (const c of ["my-chip", "my-status", "my-card", "my-avatar__initials", "my-search", "my-banner", "my-gauge"]) {
       expect(emitted.has(c)).toBe(true);
     }
+    // the theme toggle family's three roots
+    for (const c of ["my-tt-seg", "my-tt-icon", "my-tt-switch"]) expect(emitted.has(c)).toBe(true);
     // the reveal affordance's own classes
     for (const c of ["input-reveal", "input-reveal__btn"]) expect(emitted.has(c)).toBe(true);
   });

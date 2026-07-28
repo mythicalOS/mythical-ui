@@ -24,9 +24,11 @@ import {
   gaugeGeom,
   gaugeTone,
   statusLineClass,
+  THEME_MODES,
+  themeToggleClass,
   type BtnVariant,
 } from "@mythicalos/ui-core/logic";
-import { Banner, Button, Chip, Gauge, StatusLine } from "./src/index.ts";
+import { Banner, Button, Chip, Gauge, StatusLine, ThemeToggle } from "./src/index.ts";
 
 describe("parity — every sampled component's markup is 100% derived from @mythicalos/ui-core/logic", () => {
   test("Button: every variant × loading/disabled/small combination matches buttonClass exactly", () => {
@@ -66,6 +68,17 @@ describe("parity — every sampled component's markup is 100% derived from @myth
     for (const tone of ["warn", "info", "ok", "error"] as const) {
       const html = renderToStaticMarkup(<Banner tone={tone}>x</Banner>);
       expect(html).toContain(`class="${bannerClass(tone)}"`);
+    }
+  });
+
+  test("ThemeToggle: mode × labelled → class is themeToggleClass(...), verbatim", () => {
+    for (const mode of THEME_MODES) {
+      for (const labelled of [false, true]) {
+        const html = renderToStaticMarkup(
+          <ThemeToggle mode={mode} onModeChange={() => {}} labelled={labelled} />,
+        );
+        expect(html).toContain(`class="${themeToggleClass(mode, { labelled })} "`);
+      }
     }
   });
 
