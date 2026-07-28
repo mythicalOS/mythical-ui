@@ -90,6 +90,30 @@ export {
   type BannerTone,
 } from "./logic/tone.js";
 
+// ── tags & chips (the design system's "Tags & chips" card): Tag · Flag · ChipDropdown ──
+export {
+  tagClass,
+  tagRemoveLabel,
+  flagClass,
+  chipDropdownClass,
+  chipDropdownValueText,
+  TAG_TONES,
+  TAG_SIZES,
+  TAG_PARTS,
+  TAG_REMOVE_GLYPH,
+  TAG_REMOVE_LABEL,
+  FLAG_TONES,
+  FLAG_PARTS,
+  CHIP_DROPDOWN_PARTS,
+  CHIP_DROPDOWN_CARET,
+  CHIP_DROPDOWN_EMPTY_VALUE,
+  type TagTone,
+  type TagSize,
+  type TagState,
+  type FlagTone,
+  type ChipDropdownState,
+} from "./logic/tag.js";
+
 // ── small atoms graduated out of a single product: save-bar, stat-tiles, git-chip ──
 export {
   saveBarNote,

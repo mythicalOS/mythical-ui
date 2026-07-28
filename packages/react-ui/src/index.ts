@@ -105,6 +105,32 @@ export {
   type GitFlagTone,
 } from "./GitChip.js";
 
+// ── tags & chips (the design system's "Tags & chips" card): Tag · Flag · ChipDropdown ──
+export {
+  Tag,
+  tagClass,
+  tagRemoveLabel,
+  TAG_PARTS,
+  TAG_REMOVE_GLYPH,
+  TAG_REMOVE_LABEL,
+  TAG_TONES,
+  TAG_SIZES,
+  type TagProps,
+  type TagTone,
+  type TagSize,
+} from "./Tag.js";
+export { Flag, flagClass, FLAG_TONES, FLAG_PARTS, type FlagProps, type FlagTone } from "./Flag.js";
+export {
+  ChipDropdown,
+  chipDropdownClass,
+  chipDropdownValueText,
+  CHIP_DROPDOWN_PARTS,
+  CHIP_DROPDOWN_CARET,
+  CHIP_DROPDOWN_EMPTY_VALUE,
+  type ChipDropdownProps,
+  type ChipDropdownState,
+} from "./ChipDropdown.js";
+
 // ── dropdown popover (ds/components-popover — registry row `popover` v1) ──
 export {
   Popover,

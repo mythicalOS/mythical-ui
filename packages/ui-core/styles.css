@@ -1079,3 +1079,121 @@ button.my-session-card { cursor: pointer; }
 /* static title line — used instead of .my-term__noise when the pane has no noise toggle, so a
    non-interactive caption never gets a pointer cursor it cannot honor */
 .my-term__title { color: var(--my-term-dim); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   TAGS & CHIPS — the design system's "Tags & chips" card. One family, three jobs, and the
+   SHAPE carries the affordance so a user never has to guess whether a label is a button:
+     .my-tag     pill + soft fill + no hover — a human label that is never clickable,
+     .my-flag    squared + mono + uppercase — machine facts (kinds, counters, diff letters),
+     .my-chipdd  the ONE interactive member — control radius, --my-control-border, hover.
+   That split is canonical token rule #10, so it is an invariant rather than a preference.
+
+   Values come from the card. Four documented normalizations, all following the standing rules
+   of this sheet (and pinned by test/css-tags.test.ts so none of them can be quietly undone):
+
+     1. Every font-size resolves through a --my-fs-* token, as the additions header above
+        requires. The card's 11px is --my-fs-micro exactly; its 12.5px snaps to --my-fs-caption
+        (12px), the same normalization .my-search__icon / .my-pop-trigger / .my-gitchip already
+        made; its 10px snaps to --my-fs-micro, as .my-chip and .my-gitchip__flag already did.
+     2. CONSEQUENCE of (1), stated plainly because it is a real fidelity loss and not an
+        oversight: the card's `.xs` step is 10px and the default is 11px, and both land on
+        --my-fs-micro. So `.my-tag--xs` is a TIGHTER tag (padding + gap), not a smaller face.
+        The canonical scale has no 10px step, and minting one is a change to the tokens
+        package, not something this sheet may invent.
+     3. The card's literal `font-weight: 700` on the flag rides --my-fw-bold (650) instead —
+        there is no 700 step on the --my-fw-* scale, and .my-gitchip__flag set this precedent
+        (650 resolves up to the mono family's 700 face per CSS font matching, so the rendered
+        weight is unchanged).
+     4. The count carries `font-variant-numeric: tabular-nums` (token rule #5: tabular-nums on
+        all counters), which the card's own CSS omits. .my-stat-tile__value set the precedent.
+
+   --my-border on `.my-tag--outline` is a CORRECT use of that token under rule #11: a tag is
+   non-interactive, and --my-border is exactly for dividers, cards and non-interactive
+   outlines. The interactive member below is the one that takes --my-control-border. */
+
+/* ── tag: the canonical non-interactive label ───────────────────────────────────────────── */
+.my-tag {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  /* shape rule 10 — a tag is NOT clickable, so it is the pill. The transparent border keeps every
+     tone the same box, so --outline/--empty cannot reflow the tags beside them. */
+  border: 1px solid transparent; border-radius: var(--my-r-pill);
+  padding: 3px 11px;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+}
+/* tones — `accent` IS the base rule above and has no modifier (as .my-chip's `neutral` does) */
+.my-tag--ok      { background: var(--my-ok-soft);       color: var(--my-ok); }
+.my-tag--warn    { background: var(--my-warn-soft);     color: var(--my-warn); }
+.my-tag--error   { background: var(--my-error-soft);    color: var(--my-error); }
+.my-tag--info    { background: var(--my-info-soft);     color: var(--my-info); }
+.my-tag--neutral { background: var(--my-disabled-bg);   color: var(--my-muted); }
+.my-tag--outline { background: var(--my-surface);       color: var(--my-muted); border-color: var(--my-border); }
+.my-tag--empty   { background: var(--my-disabled-bg);   color: var(--my-muted); border: 1px dashed var(--my-control-border); }
+/* sizes — see normalization (2): xs is tighter, not smaller-faced */
+.my-tag--xs { padding: 2px 8px; gap: 5px; }
+.my-tag--md { padding: 5px 13px; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); }
+/* variants */
+.my-tag__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.my-tag__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; opacity: .75; }
+/* The removable × — the one thing inside a tag that may be clicked. It is a focusable CHILD with
+   its own focus ring; the tag itself never becomes a control. Rendered as a real <button>, so the
+   element resets (border/background/font) are part of the rule. Consumer note from the card: a
+   removal target stays ≥24px tall in real UI — use `.my-tag--md` (28px) where the tag list is the
+   primary control; the default step is 22.5px and `.my-tag--xs` smaller still. */
+.my-tag__x {
+  margin-left: 1px; margin-right: -3px; padding: 0 2px;
+  border: 0; background: none; color: currentColor; opacity: .6;
+  font: inherit; font-size: var(--my-fs-caption); line-height: 1;
+  border-radius: var(--my-r-pill); cursor: pointer;
+  transition: opacity var(--my-t-fast);
+}
+.my-tag__x:hover { opacity: 1; }
+.my-tag__x:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+
+/* ── flag: squared, mono, uppercase — machine facts ─────────────────────────────────────── */
+.my-flag {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-micro); /* card: 10px — normalization (1) */
+  font-weight: var(--my-fw-bold); /* card: 700 — normalization (3) */
+  letter-spacing: .4px; border-radius: 4px; padding: 2px 7px;
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+}
+.my-flag--ok      { background: var(--my-ok-soft);     color: var(--my-ok); }
+.my-flag--warn    { background: var(--my-warn-soft);   color: var(--my-warn); }
+.my-flag--error   { background: var(--my-error-soft);  color: var(--my-error); }
+.my-flag--neutral { background: var(--my-disabled-bg); color: var(--my-muted); }
+
+/* ── chip dropdown: the interactive member ──────────────────────────────────────────────── */
+.my-chipdd {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  /* shape rule 10 — this one IS clickable, so it is squared and takes the control border
+     (rule 11), which is the whole point of the family: shape carries the affordance. */
+  border: 1px solid var(--my-control-border); border-radius: var(--my-r-control);
+  padding: 5px 12px;
+  font: inherit; font-size: var(--my-fs-caption); /* card: 12.5px — normalization (1) */
+  background: var(--my-surface); color: var(--my-ink); cursor: pointer;
+  transition: background var(--my-t-fast);
+}
+/* The hover invite deliberately skips the SELECTED chip, matching the card, where `.chipdd.sel`
+   outranks `.chipdd:hover` and a selected chip therefore keeps its accent fill under the pointer.
+   Excluding it here reproduces that without a specificity arms race. */
+.my-chipdd:hover:not(:disabled):not([aria-disabled="true"]):not(.my-chipdd--sel) {
+  background: var(--my-surface-hover);
+}
+.my-chipdd:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-chipdd--sel { border-color: var(--my-accent); background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-chipdd__value { font-weight: var(--my-fw-medium); }
+.my-chipdd__caret { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+/* Disabled (token rule #8: disabled-bg/-ink + not-allowed, never opacity on text). Both spellings
+   are honored — the card's `aria-disabled="true"`, which the bindings render because it keeps the
+   chip focusable and announced, and a native `:disabled` for a consumer who hands the class to a
+   plain disabled <button>. Same pairing as `.my-pop-trigger:disabled, .my-pop-trigger.is-disabled`
+   above. Higher specificity than `--sel`, so a disabled selected chip reads as disabled. */
+.my-chipdd:disabled,
+.my-chipdd[aria-disabled="true"] {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+  border-color: var(--my-border); cursor: not-allowed;
+}
+.my-chipdd:disabled .my-chipdd__caret,
+.my-chipdd[aria-disabled="true"] .my-chipdd__caret { color: var(--my-disabled-ink); }
