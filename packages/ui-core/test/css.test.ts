@@ -182,8 +182,8 @@ describe("styles.css — (e) every class Task 2's logic emits exists as a select
     expect(hasClassSelector(stripComments(`/* .${commentOnly} */`), commentOnly)).toBe(false);
   });
 
-  test("buttonClass — all 5 variants × representative states", () => {
-    const variants: BtnVariant[] = ["pri", "acc", "sec", "gho", "dan"];
+  test("buttonClass — all 6 variants × representative states", () => {
+    const variants: BtnVariant[] = ["pri", "acc", "sec", "gho", "dan", "tone"];
     const states = [
       {},
       { small: true },

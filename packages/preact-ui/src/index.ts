@@ -4,7 +4,7 @@
 // SearchInput, Banner, Gauge — Task 6). Serve `@mythicalos/ui-core/styles.css` (after
 // `@mythicalos/tokens`) so these components' classes resolve — this package ships no CSS of its own.
 
-export { Button, buttonClass, type ButtonProps, type BtnVariant, type BtnState } from "./Button.js";
+export { Button, buttonClass, type ButtonProps, type BtnVariant, type BtnState, type BtnTone } from "./Button.js";
 export {
   Input,
   Toggle,

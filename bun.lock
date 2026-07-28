@@ -11,9 +11,9 @@
     },
     "packages/preact-ui": {
       "name": "@mythicalos/preact-ui",
-      "version": "0.2.0",
+      "version": "0.7.0",
       "dependencies": {
-        "@mythicalos/ui-core": "workspace:*",
+        "@mythicalos/ui-core": "workspace:^",
       },
       "devDependencies": {
         "preact": "^10.22.0",
@@ -21,7 +21,7 @@
         "typescript": "^5",
       },
       "peerDependencies": {
-        "@mythicalos/tokens": "^0.5.11",
+        "@mythicalos/tokens": "^0.5.17",
         "preact": "^10.22.0",
       },
       "optionalPeers": [
@@ -30,9 +30,9 @@
     },
     "packages/react-ui": {
       "name": "@mythicalos/react-ui",
-      "version": "0.1.0",
+      "version": "0.5.0",
       "dependencies": {
-        "@mythicalos/ui-core": "workspace:*",
+        "@mythicalos/ui-core": "workspace:^",
       },
       "devDependencies": {
         "@types/react": "^19",
@@ -42,7 +42,7 @@
         "typescript": "^5",
       },
       "peerDependencies": {
-        "@mythicalos/tokens": "^0.5.11",
+        "@mythicalos/tokens": "^0.5.17",
         "react": "^18.2.0 || ^19",
         "react-dom": "^18.2.0 || ^19",
       },
@@ -52,7 +52,7 @@
     },
     "packages/shell": {
       "name": "@mythicalos/shell",
-      "version": "0.1.0",
+      "version": "0.5.0",
       "dependencies": {
         "@mythicalos/preact-ui": "workspace:*",
       },
@@ -71,13 +71,13 @@
     },
     "packages/ui-core": {
       "name": "@mythicalos/ui-core",
-      "version": "0.1.0",
+      "version": "0.6.0",
       "devDependencies": {
         "@playwright/test": "^1.61.1",
         "typescript": "^5",
       },
       "peerDependencies": {
-        "@mythicalos/tokens": "^0.5.11",
+        "@mythicalos/tokens": "^0.5.17",
       },
       "optionalPeers": [
         "@mythicalos/tokens",

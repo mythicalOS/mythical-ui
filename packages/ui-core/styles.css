@@ -1426,3 +1426,38 @@ button.my-session-card { cursor: pointer; }
   .my-tt-switch__knob { transition: none; }
 }
 
+
+/* ── tone-filled button (ds/components-buttons; spec originated pane-side as SPEC-btn-tone
+   during the mockup rewire) ─────────────────────────────────────────────────────────────
+   A fill modifier on .btn whose fill is a status tone rather than the accent-only .btn--acc:
+   `data-tone` picks ok/warn/error/info; bare .btn--tone (or data-tone="accent") degrades to
+   .btn--acc behaviour with accent's hand-tuned hover/active steps, so an unset tone never
+   renders unstyled. No new metrics and no new colour values: fills ARE the status tokens,
+   hover/active are derived by mixing toward --my-ink — near-black in light (darkens, like
+   every light hover), cream in heritage (lightens, matching the dark hover grammar of
+   --my-accent-hover/--my-ink-hover) — and label ink rides --my-tone-ink (tokens.css), which
+   flips per theme like every other token, so this block needs no [data-theme] selector.
+   data-tone="error" is still governed by rule 9: danger fills only in lifecycle confirm flows. */
+.btn--tone { background: var(--my-accent); color: var(--my-tone-ink); border-color: transparent; }
+.btn--tone:hover,  .btn--tone.is-hover  { background: var(--my-accent-hover); }
+.btn--tone:active, .btn--tone.is-active { background: var(--my-accent-strong); }
+.btn--tone[data-tone="ok"]    { background: var(--my-ok); }
+.btn--tone[data-tone="warn"]  { background: var(--my-warn); }
+.btn--tone[data-tone="error"] { background: var(--my-error); }
+.btn--tone[data-tone="info"]  { background: var(--my-info); }
+.btn--tone[data-tone="ok"]:hover,    .btn--tone[data-tone="ok"].is-hover    { background: color-mix(in oklab, var(--my-ok) 88%, var(--my-ink)); }
+.btn--tone[data-tone="warn"]:hover,  .btn--tone[data-tone="warn"].is-hover  { background: color-mix(in oklab, var(--my-warn) 88%, var(--my-ink)); }
+.btn--tone[data-tone="error"]:hover, .btn--tone[data-tone="error"].is-hover { background: color-mix(in oklab, var(--my-error) 88%, var(--my-ink)); }
+.btn--tone[data-tone="info"]:hover,  .btn--tone[data-tone="info"].is-hover  { background: color-mix(in oklab, var(--my-info) 88%, var(--my-ink)); }
+.btn--tone[data-tone="ok"]:active,    .btn--tone[data-tone="ok"].is-active    { background: color-mix(in oklab, var(--my-ok) 76%, var(--my-ink)); }
+.btn--tone[data-tone="warn"]:active,  .btn--tone[data-tone="warn"].is-active  { background: color-mix(in oklab, var(--my-warn) 76%, var(--my-ink)); }
+.btn--tone[data-tone="error"]:active, .btn--tone[data-tone="error"].is-active { background: color-mix(in oklab, var(--my-error) 76%, var(--my-ink)); }
+.btn--tone[data-tone="info"]:active,  .btn--tone[data-tone="info"].is-active  { background: color-mix(in oklab, var(--my-info) 76%, var(--my-ink)); }
+/* Disabled must out-rank the tone rules above, which this sheet's shared `.btn:disabled` (0,2,0),
+   declared far earlier, cannot: the per-tone hover/active selectors are (0,3,0), and :hover DOES
+   match a disabled button under a pointer. The [data-tone] forms below tie them at (0,3,0) and
+   win by order; the bare forms cover an unset tone at (0,2,0) for the same reason. */
+.btn--tone:disabled, .btn--tone.is-disabled,
+.btn--tone[data-tone]:disabled, .btn--tone[data-tone].is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+}

@@ -48,6 +48,10 @@ function allRenders(): string[] {
     );
     out.push(renderToStaticMarkup(<Button variant={v} disabled>Go</Button>));
   }
+  for (const t of ["accent", "ok", "warn", "error", "info"] as const) {
+    out.push(renderToStaticMarkup(<Button tone={t}>Go</Button>));
+    out.push(renderToStaticMarkup(<Button tone={t} small disabled>Go</Button>));
+  }
   out.push(renderToStaticMarkup(<Input label="Name" value="v" help="hint" />));
   out.push(renderToStaticMarkup(<Input value="v" error="bad value" mono dirty />));
   out.push(renderToStaticMarkup(<Input value="v" readOnly disabled />));

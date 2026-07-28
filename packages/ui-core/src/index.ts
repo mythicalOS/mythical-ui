@@ -2,7 +2,7 @@
 // `preact`/`react` imports (enforced by test/agnostic.test.ts). Both the Preact and React bindings
 // import from here so they derive identical classes/behavior from one source.
 
-export { buttonClass, type BtnVariant, type BtnState } from "./logic/button.js";
+export { buttonClass, type BtnVariant, type BtnState, type BtnTone } from "./logic/button.js";
 
 export {
   nextPollDelay,

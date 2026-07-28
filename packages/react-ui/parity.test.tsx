@@ -32,7 +32,7 @@ import { Banner, Button, Chip, Gauge, StatusLine, ThemeToggle } from "./src/inde
 
 describe("parity — every sampled component's markup is 100% derived from @mythicalos/ui-core/logic", () => {
   test("Button: every variant × loading/disabled/small combination matches buttonClass exactly", () => {
-    const variants: BtnVariant[] = ["pri", "acc", "sec", "gho", "dan"];
+    const variants: BtnVariant[] = ["pri", "acc", "sec", "gho", "dan", "tone"];
     for (const variant of variants) {
       for (const loading of [false, true]) {
         for (const disabled of [false, true]) {
@@ -48,6 +48,24 @@ describe("parity — every sampled component's markup is 100% derived from @myth
         }
       }
     }
+  });
+
+  test("Button tone: renders data-tone and forces the tone variant over an explicit variant", () => {
+    for (const tone of ["accent", "ok", "warn", "error", "info"] as const) {
+      const html = renderToStaticMarkup(<Button tone={tone}>Go</Button>);
+      expect(html).toContain(`class="${buttonClass("tone")}"`);
+      expect(html).toContain(`data-tone="${tone}"`);
+    }
+    // tone wins over variant — one prop decides the family, no mixed states
+    const html = renderToStaticMarkup(<Button variant="pri" tone="warn">Go</Button>);
+    expect(html).toContain(`class="${buttonClass("tone")}"`);
+    expect(html).toContain('data-tone="warn"');
+    // and without tone, no data-tone attribute leaks into the markup
+    expect(renderToStaticMarkup(<Button variant="pri">Go</Button>)).not.toContain("data-tone");
+    // an unchecked JS consumer passing "" gets unset behaviour — never a variant/attribute mismatch
+    const emptyTone = renderToStaticMarkup(<Button variant="pri" tone={"" as any}>Go</Button>);
+    expect(emptyTone).toContain(`class="${buttonClass("pri")}"`);
+    expect(emptyTone).not.toContain("data-tone");
   });
 
   test("Chip: tone → class is chipClass(tone), verbatim, for every tone", () => {

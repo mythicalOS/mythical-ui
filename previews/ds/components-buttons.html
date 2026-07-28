@@ -33,6 +33,26 @@ h3{font-size:12px;font-weight:650;margin:0 0 10px;color:#5A5F6A;text-transform:u
 /* danger — outline; fills only on interaction */
 .dan{background:#FFF;border-color:#B3261E;color:#B3261E}
 .dan:hover,.dan.h{background:#FAE9E8}.dan.a{background:#F5DBD9}
+/* tone — status fill via data-tone (ok/warn/error/info; bare = accent, with accent's hand-tuned
+   steps). No new metrics or colour values: fills ARE the status tokens; hover/active mix toward
+   ink (88%/76%), so heritage — where ink is cream — steps LIGHTER, matching its hover grammar.
+   Ink = --my-tone-ink: #fff in light, --my-bg in heritage (heritage status hues are too light
+   for white). Error fills stay rule-9-scoped: lifecycle confirm flows only. */
+.tone{background:#0F6B66;color:#fff}
+.tone:hover,.tone.h{background:#0C5A56}.tone.a{background:#0B5450}
+.tone[data-tone=ok]{background:#197C4A}
+.tone[data-tone=ok]:hover,.tone[data-tone=ok].h{background:color-mix(in oklab,#197C4A 88%,#16181D)}
+.tone[data-tone=ok].a{background:color-mix(in oklab,#197C4A 76%,#16181D)}
+.tone[data-tone=warn]{background:#B05109}
+.tone[data-tone=warn]:hover,.tone[data-tone=warn].h{background:color-mix(in oklab,#B05109 88%,#16181D)}
+.tone[data-tone=warn].a{background:color-mix(in oklab,#B05109 76%,#16181D)}
+.tone[data-tone=error]{background:#B3261E}
+.tone[data-tone=error]:hover,.tone[data-tone=error].h{background:color-mix(in oklab,#B3261E 88%,#16181D)}
+.tone[data-tone=error].a{background:color-mix(in oklab,#B3261E 76%,#16181D)}
+.tone[data-tone=info]{background:#2B5FAA}
+.tone[data-tone=info]:hover,.tone[data-tone=info].h{background:color-mix(in oklab,#2B5FAA 88%,#16181D)}
+.tone[data-tone=info].a{background:color-mix(in oklab,#2B5FAA 76%,#16181D)}
+.tone.d,.tone:disabled,.tone[data-tone].d,.tone[data-tone]:disabled{background:#F1EFE9;color:#9AA0AC;border-color:transparent;cursor:not-allowed}
 /* shared states */
 .btn:focus-visible,.btn.f{outline:2px solid #0F6B66;outline-offset:2px}
 .btn.d,.btn:disabled{background:#F1EFE9;color:#9AA0AC;border-color:transparent;cursor:not-allowed}
@@ -78,10 +98,30 @@ h3{font-size:12px;font-weight:650;margin:0 0 10px;color:#5A5F6A;text-transform:u
 <button class="btn dan f">Good-night</button>
 <button class="btn dan d">Good-night</button>
 <button class="btn dan" aria-busy="true"><span class="spin"></span>Stopping…</button>
+<span class="rh">tone</span>
+<button class="btn tone" data-tone="warn">Open advisory</button>
+<button class="btn tone h" data-tone="warn">Open advisory</button>
+<button class="btn tone a" data-tone="warn">Open advisory</button>
+<button class="btn tone f" data-tone="warn">Open advisory</button>
+<button class="btn tone d" data-tone="warn">Open advisory</button>
+<button class="btn tone" data-tone="warn" aria-busy="true"><span class="spin"></span>Opening…</button>
+</div>
+<div style="display:flex;gap:12px;margin-top:20px;align-items:center;flex-wrap:wrap">
+<span class="rh">tone fills</span>
+<button class="btn tone">Spawn team</button>
+<button class="btn tone" data-tone="ok">Mark resolved</button>
+<button class="btn tone" data-tone="warn">Open advisory</button>
+<button class="btn tone" data-tone="error">Yes, delete it</button>
+<button class="btn tone" data-tone="info">View details</button>
 </div>
 <div class="cap">Rules: focus is always the petrol 2px outline, offset 2 — both themes, never removed without
 replacement. Disabled = <b>disabled-bg/-ink</b> tokens + not-allowed cursor, never text opacity. Loading keeps
 the label (width stays stable), 13px 2px-stroke spinner in currentColor, .8s linear; the control is
 <code>aria-busy</code> and inert. Accent appears at most once per view; danger stays an outline until interaction.
 Ghost has no loading state — promote to secondary if it triggers async work.</div>
+<div class="cap">Tone fills (ui-core 0.6): <code>data-tone</code> picks ok/warn/error/info; bare tone = accent with
+accent's hand-tuned steps. Hover/active are derived — <code>color-mix(in oklab, tone 88%/76%, --my-ink)</code> — so
+heritage, where ink is cream, steps <b>lighter</b>, matching its hover grammar. Label ink is <code>--my-tone-ink</code>:
+#fff in light, <code>--my-bg</code> in heritage (the heritage status hues are too light for white to clear AA). The
+error fill stays rule-9-scoped — lifecycle confirm flows only; everywhere else danger remains the outline row above.</div>
 </body></html>

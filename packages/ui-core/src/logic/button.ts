@@ -2,7 +2,13 @@
 // Ported verbatim (name + signature identical) from the family's internal Preact atoms package (derive.ts)
 // so the Preact and React bindings both derive the same class string from one source.
 
-export type BtnVariant = "pri" | "acc" | "sec" | "gho" | "dan";
+export type BtnVariant = "pri" | "acc" | "sec" | "gho" | "dan" | "tone";
+
+/** Status tone for the `tone` variant — rendered as a `data-tone` attribute next to the class
+ * string (the CSS keys `.btn--tone[data-tone=…]`). "accent" (or omitting the attribute) falls
+ * through to `.btn--acc` behaviour. `error` fills stay governed by design rule 9: lifecycle
+ * confirm flows only. */
+export type BtnTone = "accent" | "ok" | "warn" | "error" | "info";
 
 export interface BtnState {
   loading?: boolean;

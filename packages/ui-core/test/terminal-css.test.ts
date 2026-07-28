@@ -66,7 +66,7 @@ const FALLBACK_FLIPPING = [
   "--my-muted", "--my-accent", "--my-accent-strong", "--my-accent-soft", "--my-ok", "--my-warn",
   "--my-error", "--my-info", "--my-ink-hover", "--my-accent-hover", "--my-surface-hover",
   "--my-disabled-bg", "--my-disabled-ink", "--my-ok-soft", "--my-warn-soft", "--my-error-soft",
-  "--my-info-soft", "--my-scrim", "--my-shadow-modal", "--my-shadow-knob",
+  "--my-info-soft", "--my-scrim", "--my-shadow-modal", "--my-shadow-knob", "--my-tone-ink",
 ];
 const flippingIsDerived = existsSync(tokensPath);
 const FLIPPING: Set<string> = (() => {
@@ -171,9 +171,15 @@ describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", ()
     //     would be both an invented value and a hex/colour literal the sheet-wide guards forbid.
     //     If a knob ever does land inside the terminal, the guard above goes red first — which is
     //     the outcome this residual is chosen to preserve.
+    //
+    //   --my-tone-ink (tokens 0.5.17-pending) — label ink on the tone-filled button's status
+    //     fills. It exists to ride the status hues, which are themselves residual here for the
+    //     same reason: no tone-filled control renders inside .my-term, and the usage guard keeps
+    //     that true. Pinning it without pinning the hues under it would be an inconsistent
+    //     half-measure.
     const RESIDUAL = [
       "--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft",
-      "--my-shadow-knob",
+      "--my-shadow-knob", "--my-tone-ink",
     ];
     const pinned = new Set(repointed());
     for (const t of RESIDUAL) expect({ t, pinned: pinned.has(t) }).toEqual({ t, pinned: false });
@@ -190,7 +196,7 @@ describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", ()
     if (!flippingIsDerived) return;
     const RESIDUAL = [
       "--my-ok", "--my-error", "--my-info", "--my-ok-soft", "--my-error-soft", "--my-info-soft",
-      "--my-shadow-knob",
+      "--my-shadow-knob", "--my-tone-ink",
     ];
     expect(RESIDUAL.filter((t) => !FLIPPING.has(t))).toEqual([]);
   });

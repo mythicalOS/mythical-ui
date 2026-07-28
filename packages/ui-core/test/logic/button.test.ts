@@ -13,6 +13,10 @@ describe("buttonClass", () => {
   test("small adds modifier", () => {
     expect(buttonClass("sec", { small: true })).toContain("btn--sm");
   });
+  test("tone is a variant like any other — data-tone is the binding's concern", () => {
+    expect(buttonClass("tone")).toBe("btn btn--tone");
+    expect(buttonClass("tone", { small: true, disabled: true })).toBe("btn btn--tone btn--sm is-disabled");
+  });
   test("loading and disabled both mark inert", () => {
     expect(buttonClass("acc", { loading: true })).toContain("is-disabled");
     expect(buttonClass("acc", { disabled: true })).toContain("is-disabled");

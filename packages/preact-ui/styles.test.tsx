@@ -58,6 +58,10 @@ function allRenders(): string[] {
     );
     out.push(renderToString(<Button variant={v} disabled>Go</Button>));
   }
+  for (const t of ["accent", "ok", "warn", "error", "info"] as const) {
+    out.push(renderToString(<Button tone={t}>Go</Button>));
+    out.push(renderToString(<Button tone={t} small disabled>Go</Button>));
+  }
   out.push(renderToString(<Input label="Name" value="v" help="hint" />));
   out.push(renderToString(<Input value="v" error="bad value" mono dirty />));
   out.push(renderToString(<Input value="v" readOnly disabled />));
@@ -161,6 +165,23 @@ function allRenders(): string[] {
 }
 
 const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+describe("Button tone contract (preact twin of react-ui's parity test)", () => {
+  test("tone renders data-tone and forces the tone variant over an explicit variant", () => {
+    for (const t of ["accent", "ok", "warn", "error", "info"] as const) {
+      const html = renderToString(<Button tone={t}>Go</Button>);
+      expect(html).toContain('class="btn btn--tone"');
+      expect(html).toContain(`data-tone="${t}"`);
+    }
+    const html = renderToString(<Button variant="pri" tone="warn">Go</Button>);
+    expect(html).toContain('class="btn btn--tone"');
+    expect(html).toContain('data-tone="warn"');
+    expect(renderToString(<Button variant="pri">Go</Button>)).not.toContain("data-tone");
+    const emptyTone = renderToString(<Button variant="pri" tone={"" as any}>Go</Button>);
+    expect(emptyTone).toContain('class="btn btn--pri"');
+    expect(emptyTone).not.toContain("data-tone");
+  });
+});
 
 describe("self-containment — every emitted class resolves in ui-core's styles.css (Task 6, adapted from r2-F6)", () => {
   const renders = allRenders();
