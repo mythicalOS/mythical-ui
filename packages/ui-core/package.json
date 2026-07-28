@@ -41,7 +41,7 @@
     "./src/select/mythical-select.js"
   ],
   "peerDependencies": {
-    "@mythicalos/tokens": "^0.5.11"
+    "@mythicalos/tokens": "^0.5.15"
   },
   "peerDependenciesMeta": {
     "@mythicalos/tokens": {

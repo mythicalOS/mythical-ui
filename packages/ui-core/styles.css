@@ -1094,12 +1094,10 @@ button.my-session-card { cursor: pointer; }
      1. Every font-size resolves through a --my-fs-* token, as the additions header above
         requires. The card's 11px is --my-fs-micro exactly; its 12.5px snaps to --my-fs-caption
         (12px), the same normalization .my-search__icon / .my-pop-trigger / .my-gitchip already
-        made; its 10px snaps to --my-fs-micro, as .my-chip and .my-gitchip__flag already did.
-     2. CONSEQUENCE of (1), stated plainly because it is a real fidelity loss and not an
-        oversight: the card's `.xs` step is 10px and the default is 11px, and both land on
-        --my-fs-micro. So `.my-tag--xs` is a TIGHTER tag (padding + gap), not a smaller face.
-        The canonical scale has no 10px step, and minting one is a change to the tokens
-        package, not something this sheet may invent.
+        made; its 10px is --my-fs-nano exactly (minted in tokens 0.5.15 for this family —
+        before that it snapped up to --my-fs-micro, as .my-chip and .my-gitchip__flag did).
+     2. (Resolved 2026-07-28.) The card's `.xs` step is a genuinely smaller face again:
+        --my-fs-nano carries it, so `.my-tag--xs` is tighter AND smaller, per the card.
      3. The card's literal `font-weight: 700` on the flag rides --my-fw-bold (650) instead —
         there is no 700 step on the --my-fw-* scale, and .my-gitchip__flag set this precedent
         (650 resolves up to the mono family's 700 face per CSS font matching, so the rendered
@@ -1132,12 +1130,15 @@ button.my-session-card { cursor: pointer; }
 .my-tag--neutral { background: var(--my-disabled-bg);   color: var(--my-muted); }
 .my-tag--outline { background: var(--my-surface);       color: var(--my-muted); border-color: var(--my-border); }
 .my-tag--empty   { background: var(--my-disabled-bg);   color: var(--my-muted); border: 1px dashed var(--my-control-border); }
-/* sizes — see normalization (2): xs is tighter, not smaller-faced */
-.my-tag--xs { padding: 2px 8px; gap: 5px; }
+/* sizes — nano/caption steps; see normalization (1)-(2) */
+.my-tag--xs { padding: 2px 8px; gap: 5px; font-size: var(--my-fs-nano); }
 .my-tag--md { padding: 5px 13px; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); }
 /* variants */
 .my-tag__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
-.my-tag__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; opacity: .75; }
+.my-tag__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; }
+  /* no opacity dimming: the ok/warn soft pairs sit at ~4.4:1 undimmed, so ANY dimming puts
+     small mono digits below AA on the tones that carry counts most — the mono face is the
+     hierarchy. Card updated to match (tokens 0.5.15). */
 /* The removable × — the one thing inside a tag that may be clicked. It is a focusable CHILD with
    its own focus ring; the tag itself never becomes a control. Rendered as a real <button>, so the
    element resets (border/background/font) are part of the rule.
@@ -1161,7 +1162,7 @@ button.my-session-card { cursor: pointer; }
 .my-tag__x {
   position: relative;
   margin-left: 1px; margin-right: -3px; padding: 0 2px;
-  border: 0; background: none; color: currentColor; opacity: .6;
+  border: 0; background: none; color: currentColor; opacity: .8; /* rest ≥3:1 every tone (was .6 ≈2.3:1 worst) */
   font: inherit; font-size: var(--my-fs-caption); line-height: 1;
   border-radius: var(--my-r-pill); cursor: pointer;
   transition: opacity var(--my-t-fast);
@@ -1177,7 +1178,7 @@ button.my-session-card { cursor: pointer; }
 .my-flag {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
   font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; /* normalization (4) */
-  font-size: var(--my-fs-micro); /* card: 10px — normalization (1) */
+  font-size: var(--my-fs-nano); /* card: 10px — exact since tokens 0.5.15 */
   font-weight: var(--my-fw-bold); /* card: 700 — normalization (3) */
   letter-spacing: .4px; border-radius: 4px; padding: 2px 7px;
   background: var(--my-accent-soft); color: var(--my-accent-strong);

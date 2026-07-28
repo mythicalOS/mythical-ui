@@ -130,16 +130,14 @@ describe("tag", () => {
     expect(num).toContain("font-variant-numeric: tabular-nums");
   });
 
-  test("DOCUMENTED normalization: xs is a tighter tag, not a smaller face", () => {
-    // The card's `.xs` is 10px and its default is 11px; the canonical --my-fs-* scale has no 10px
-    // step, and this sheet's standing rule is to snap odd sizes onto the nearest token (.my-chip
-    // and .my-gitchip__flag both did exactly this with the same 10px). So the xs step is carried
-    // by padding + gap. Pinned here so the loss is a recorded decision, not a silent drift — and
-    // so that minting a 10px token in the sibling repo makes this test the place to revisit.
+  test("xs is a genuinely smaller face: --my-fs-nano carries the card's 10px (tokens 0.5.15)", () => {
+    // History: at 0.4.0-dev this pinned the OPPOSITE — no 10px step existed, xs snapped up to
+    // micro and was a tighter-only tag. The maintainer minted --my-fs-nano the same day, so the
+    // card's 10px/11px distinction is now exact. This test is the revisit the old pin promised.
     expect(ruleBody(".my-tag")).toContain("font-size: var(--my-fs-micro)");
     const xs = ruleBody(".my-tag--xs");
     expect(xs).not.toBeNull();
-    expect(xs).not.toContain("font-size");
+    expect(xs).toContain("font-size: var(--my-fs-nano)");
     expect(xs).toContain("padding: 2px 8px");
     // `md` DOES step up, because 12.5px has a nearest token that differs from micro.
     expect(ruleBody(".my-tag--md")).toContain("font-size: var(--my-fs-caption)");
@@ -159,6 +157,7 @@ describe("flag", () => {
     const root = ruleBody(".my-flag");
     expect(root).not.toBeNull();
     expect(root).toContain("font-family: var(--my-font-mono)");
+    expect(root).toContain("font-size: var(--my-fs-nano)");
     expect(root).toContain("border-radius: 4px");
     expect(root).not.toContain("--my-r-pill");
   });
