@@ -163,6 +163,11 @@ describe("flag", () => {
     expect(root).not.toContain("--my-r-pill");
   });
 
+  test("a flag is a counter, so it is tabular (token rule #5)", () => {
+    // "2↓ behind" has to align under "10↓ behind". The card omits this; rule 5 does not.
+    expect(ruleBody(".my-flag")).toContain("font-variant-numeric: tabular-nums");
+  });
+
   test("the flag weight rides the nearest --my-fw-* token, never the card's raw 700", () => {
     const root = ruleBody(".my-flag");
     expect(root).toContain("font-weight: var(--my-fw-bold)");

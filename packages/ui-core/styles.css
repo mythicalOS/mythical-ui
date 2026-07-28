@@ -1104,8 +1104,11 @@ button.my-session-card { cursor: pointer; }
         there is no 700 step on the --my-fw-* scale, and .my-gitchip__flag set this precedent
         (650 resolves up to the mono family's 700 face per CSS font matching, so the rendered
         weight is unchanged).
-     4. The count carries `font-variant-numeric: tabular-nums` (token rule #5: tabular-nums on
-        all counters), which the card's own CSS omits. .my-stat-tile__value set the precedent.
+     4. The tag's count AND the flag carry `font-variant-numeric: tabular-nums` (token rule #5:
+        tabular-nums on all counters), which the card's own CSS omits on both. Flags are
+        counters — "2↓ behind" beside "10↓ behind" has to align — and .my-stat-tile__value set
+        the precedent. It is belt-and-braces under the mono family, which is already
+        fixed-width, and it is what keeps the column honest under any fallback face.
 
    --my-border on `.my-tag--outline` is a CORRECT use of that token under rule #11: a tag is
    non-interactive, and --my-border is exactly for dividers, cards and non-interactive
@@ -1173,7 +1176,7 @@ button.my-session-card { cursor: pointer; }
 /* ── flag: squared, mono, uppercase — machine facts ─────────────────────────────────────── */
 .my-flag {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
-  font-family: var(--my-font-mono);
+  font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; /* normalization (4) */
   font-size: var(--my-fs-micro); /* card: 10px — normalization (1) */
   font-weight: var(--my-fw-bold); /* card: 700 — normalization (3) */
   letter-spacing: .4px; border-radius: 4px; padding: 2px 7px;

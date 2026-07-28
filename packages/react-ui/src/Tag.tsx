@@ -56,7 +56,11 @@ export interface TagProps {
    *  control is announced as the bare "Remove" — never a guessed subject. */
   removeName?: string;
   className?: string;
-  children?: ReactNode;
+  /** REQUIRED. The card's do/don't panel bans a colour-only tag outright — "a colour-only
+   *  tag says nothing to a screen reader" — and token rule #7 says a soft fill never carries
+   *  meaning alone. Every tag on the card pairs its tone with a word (or a dot PLUS a word),
+   *  so the word is not optional here, and the type says so. */
+  children: ReactNode;
 }
 
 export function Tag(props: TagProps) {

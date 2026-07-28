@@ -5,6 +5,8 @@
 // possible — the guarantee is "both call the same core function", asserted on both sides.)
 
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { renderToStaticMarkup } from "react-dom/server";
 import {
   CHIP_DROPDOWN_CARET,
@@ -198,5 +200,18 @@ describe("ChipDropdown", () => {
 
     // It stays focusable/announced rather than dropping out of the tab order.
     expect(disabled.props.disabled).toBeUndefined();
+  });
+});
+
+describe("the card's \u201cnever colour alone\u201d rule is enforced by the TYPE, not by hope", () => {
+  // The do/don't panel bans a colour-only tag outright ("a colour-only tag says nothing to a
+  // screen reader"), and a flag is an honest counter, never decoration. Both components therefore
+  // declare `children` as REQUIRED, so `<Tag tone="error" />` is a compile error rather than a
+  // silent, meaningless swatch. A runtime test cannot observe a compile error, so this pins the
+  // declaration itself — the thing that would have to be weakened to lose the guarantee.
+  test.each(["Tag", "Flag"])("%s declares children without a `?`", (component) => {
+    const src = readFileSync(join(import.meta.dir, "src", `${component}.tsx`), "utf8");
+    expect(src).toMatch(/\n  children: ReactNode;\n/);
+    expect(src).not.toContain("children?:");
   });
 });

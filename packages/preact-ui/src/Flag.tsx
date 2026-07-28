@@ -20,7 +20,9 @@ export interface FlagProps {
   /** `accent` (the default) is the base rule and emits no modifier. */
   tone?: FlagTone;
   class?: string;
-  children?: ComponentChildren;
+  /** REQUIRED. A flag is an honest counter, never decoration: a tone with no machine fact
+   *  beside it is colour alone, which token rule #7 and the card's do/don't panel both ban. */
+  children: ComponentChildren;
 }
 
 export function Flag(props: FlagProps) {
