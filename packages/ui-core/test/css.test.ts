@@ -160,11 +160,27 @@ describe("styles.css — (d) no later-task shell classes leak into this atom she
 });
 
 describe("styles.css — (e) every class Task 2's logic emits exists as a selector", () => {
+  // Coverage runs against the COMMENT-STRIPPED sheet. A prose mention is not a rule: this sheet
+  // documents several of its own selectors by name (e.g. the chip block's note on why
+  // `.my-chip--outline` may use --my-border), and matching that prose would let a DELETED
+  // selector still satisfy its own coverage check — a component shipped invisible, gate green.
+  const cssCode = stripComments(css);
+
   function expectSelectorsFor(classString: string) {
     for (const token of classString.split(/\s+/).filter(Boolean)) {
-      expect(hasClassSelector(css, token)).toBe(true);
+      expect({ token, found: hasClassSelector(cssCode, token) }).toEqual({ token, found: true });
     }
   }
+
+  test("the strip is real — a selector named ONLY in prose does not satisfy coverage", () => {
+    // Guards the guard: if stripComments() ever no-op'd, every assertion above would go back to
+    // matching comments and this whole describe would quietly stop proving anything.
+    expect(css).toContain(".my-chip--outline"); // present in a comment AND as a rule
+    expect(hasClassSelector(cssCode, "my-chip--outline")).toBe(true);
+    const commentOnly = "my-chip--this-selector-exists-only-in-this-test";
+    expect(hasClassSelector(`/* .${commentOnly} */`, commentOnly)).toBe(true); // raw: matches
+    expect(hasClassSelector(stripComments(`/* .${commentOnly} */`), commentOnly)).toBe(false);
+  });
 
   test("buttonClass — all 5 variants × representative states", () => {
     const variants: BtnVariant[] = ["pri", "acc", "sec", "gho", "dan"];
