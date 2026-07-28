@@ -245,11 +245,15 @@ export interface ThemeToggleSwitchProps {
   checked: boolean;
   onChange: (checked: boolean) => void;
   disabled?: boolean;
-  /** Accessible name, used ONLY when no visible text is rendered (the settings-row placement,
-   *  where the row's own heading is the label). Defaults to the card's "Dark mode". */
+  /** Accessible name, rendered as visually-hidden text ONLY when `children` carry no text this
+   *  binding can read — the settings-row placement, where the row's own heading is the visible
+   *  label. Defaults to the card's "Dark mode". */
   label?: string;
   className?: string;
-  /** Visible text inside the label. Omit in a settings row whose heading already says it. */
+  /** Visible text inside the label. Omit in a settings row whose heading already says it. Plain
+   *  text (and arrays of it) IS the control's name, through the wrapping <label>. Richer markup is
+   *  opaque to a render-only binding, so the hidden fallback name is added alongside it; pass
+   *  `label` when that rich text says something other than the default. */
   children?: ReactNode;
 }
 
@@ -259,7 +263,9 @@ export interface ThemeToggleSwitchProps {
  * member is the default.
  *
  * A real `<input type="checkbox">` inside a `<label>`: the input carries the role, the checked
- * state, focus and the space bar, and the wrapper gives it its name when there is visible text.
+ * state, focus and the space bar, and the wrapper names it. When the caller renders no text this
+ * binding can read, a visually-hidden name joins the label's contents — never an `aria-label`,
+ * which would override visible words rather than stand in for absent ones.
  * `aria-disabled` on the label is the card's PAINT hook only; the disabled semantics are the
  * input's own native `disabled`, so the look can never appear without the behaviour.
  */
@@ -273,7 +279,6 @@ export function ThemeToggleSwitch(props: ThemeToggleSwitchProps) {
         className={THEME_SWITCH_PARTS.input}
         checked={checked}
         disabled={disabled}
-        aria-label={hasText ? undefined : themeLabel(props.label, THEME_SWITCH_LABEL)}
         onChange={(e) => onChange(e.currentTarget.checked)}
       />
       <span className={THEME_SWITCH_PARTS.track}>
@@ -282,6 +287,12 @@ export function ThemeToggleSwitch(props: ThemeToggleSwitchProps) {
         </span>
       </span>
       {props.children}
+      {/* The name, when the caller renders no text this binding can read. A hidden sibling rather
+          than an aria-label, so it ADDS to any visible words instead of overriding them — see
+          themeSwitchHasReadableText for the three cases. */}
+      {hasText ? null : (
+        <span className={THEME_SWITCH_PARTS.name}>{themeLabel(props.label, THEME_SWITCH_LABEL)}</span>
+      )}
     </label>
   );
 }

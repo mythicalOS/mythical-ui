@@ -383,61 +383,86 @@ describe("ThemeToggleSwitch — the settings-row member", () => {
     }
   });
 
-  test("with visible text the label names it; without, it falls back to the card's name", () => {
+  test("with visible text the label names it; without, a hidden name stands in", () => {
     const withText = renderToString(
       <ThemeToggleSwitch checked={false} onChange={noop}>
         Dark mode
       </ThemeToggleSwitch>,
     );
-    // the wrapping <label> already names the input — a second name would win and could disagree
+    // The wrapping <label> already names the input. Nothing is added, and no aria-label is used
+    // ANYWHERE in this component — it would replace the visible words rather than stand in for
+    // absent ones, which is exactly the failure the hidden sibling avoids.
     expect(withText).not.toContain("aria-label=");
+    expect(withText).not.toContain(THEME_SWITCH_PARTS.name);
     expect(withText).toContain("Dark mode");
 
     const bare = renderToString(<ThemeToggleSwitch checked={false} onChange={noop} />);
-    expect(bare).toContain(`aria-label="${THEME_SWITCH_LABEL}"`);
+    expect(bare).not.toContain("aria-label=");
+    expect(bare).toContain(`<span class="${THEME_SWITCH_PARTS.name}">${THEME_SWITCH_LABEL}</span>`);
     expect(
       renderToString(<ThemeToggleSwitch checked={false} onChange={noop} label="Appearance" />),
-    ).toContain('aria-label="Appearance"');
+    ).toContain(`<span class="${THEME_SWITCH_PARTS.name}">Appearance</span>`);
+  });
+
+  test("the hidden name is CLIPPED, not removed — it has to stay on the a11y tree", () => {
+    const css = readFileSync(join(import.meta.dir, "..", "ui-core", "styles.css"), "utf8");
+    const rule = css.match(/\.my-tt-switch__name\s*\{([^}]*)\}/);
+    expect(rule).not.toBeNull();
+    expect(rule?.[1]).not.toMatch(/display:\s*none/);
+    expect(rule?.[1]).not.toMatch(/visibility:\s*hidden/);
+    expect(rule?.[1]).toMatch(/clip-path/);
   });
 
   test("children that render NOTHING are not visible text either", () => {
     // `children=""`, whitespace, or an array of nothing all leave the checkbox with no text. Being
     // fooled by any of them would ship a nameless control.
+    const wanted = `<span class="${THEME_SWITCH_PARTS.name}">${THEME_SWITCH_LABEL}</span>`;
     for (const empty of ["", "   ", [], [false, null]] as const) {
       const html = renderToString(
         <ThemeToggleSwitch checked={false} onChange={noop}>
           {empty}
         </ThemeToggleSwitch>,
       );
-      expect({ empty, named: html.includes(`aria-label="${THEME_SWITCH_LABEL}"`) }).toEqual({
-        empty,
-        named: true,
-      });
+      expect({ empty, named: html.includes(wanted) }).toEqual({ empty, named: true });
     }
   });
 
-  test("children this binding cannot READ do not suppress the name", () => {
+  test("children this binding cannot READ get the fallback ALONGSIDE, never instead", () => {
     // An element is opaque to a render-only binding: `<></>`, a component returning null and a
-    // <span> full of words are indistinguishable. Trusting one to name the input is what would
-    // ship a nameless checkbox; keeping the explicit name at worst names it twice.
-    for (const opaque of [<></>, <span />, <b>Dark mode</b>]) {
+    // <span> full of words are indistinguishable. Trusting one to name the input would ship a
+    // nameless checkbox; an aria-label would erase the words it does render. A hidden sibling adds
+    // to the label's contents, so the accessible name still CONTAINS the visible text (WCAG 2.5.3)
+    // and is never empty (WCAG 4.1.2).
+    for (const opaque of [<></>, <span />, <b>Use light theme</b>]) {
       const html = renderToString(
         <ThemeToggleSwitch checked={false} onChange={noop}>
           {opaque}
         </ThemeToggleSwitch>,
       );
-      expect(html).toContain(`aria-label="${THEME_SWITCH_LABEL}"`);
+      expect(html).not.toContain("aria-label=");
+      expect(html).toContain(`<span class="${THEME_SWITCH_PARTS.name}">${THEME_SWITCH_LABEL}</span>`);
     }
+    // …and the visible words survive
+    const rich = renderToString(
+      <ThemeToggleSwitch checked={false} onChange={noop}>
+        <b>Use light theme</b>
+      </ThemeToggleSwitch>,
+    );
+    expect(rich).toContain("Use light theme");
   });
 
-  test("plain text DOES name it — no aria-label, so the visible words are the name", () => {
+  test("plain text DOES name it — nothing is added, so the visible words are the name", () => {
     for (const text of ["Dark mode", ["Dark ", "mode"], 0] as const) {
       const html = renderToString(
         <ThemeToggleSwitch checked={false} onChange={noop}>
           {text}
         </ThemeToggleSwitch>,
       );
-      expect({ text, named: html.includes("aria-label=") }).toEqual({ text, named: false });
+      expect({ text, added: html.includes(THEME_SWITCH_PARTS.name) }).toEqual({
+        text,
+        added: false,
+      });
+      expect({ text, aria: html.includes("aria-label=") }).toEqual({ text, aria: false });
     }
   });
 
@@ -446,11 +471,9 @@ describe("ThemeToggleSwitch — the settings-row member", () => {
       const html = renderToString(
         <ThemeToggleSwitch checked={false} onChange={noop} label={junk} />,
       );
-      expect({ junk, named: html.includes(`aria-label="${THEME_SWITCH_LABEL}"`) }).toEqual({
-        junk,
-        named: true,
-      });
-      expect(html).not.toContain('aria-label=""');
+      const wanted = `<span class="${THEME_SWITCH_PARTS.name}">${THEME_SWITCH_LABEL}</span>`;
+      expect({ junk, named: html.includes(wanted) }).toEqual({ junk, named: true });
+      expect(html).not.toContain(`<span class="${THEME_SWITCH_PARTS.name}"></span>`);
     }
   });
 
@@ -462,7 +485,7 @@ describe("ThemeToggleSwitch — the settings-row member", () => {
         {false}
       </ThemeToggleSwitch>,
     );
-    expect(html).toContain(`aria-label="${THEME_SWITCH_LABEL}"`);
+    expect(html).toContain(`<span class="${THEME_SWITCH_PARTS.name}">${THEME_SWITCH_LABEL}</span>`);
   });
 
   test("disabled is ANNOUNCED by the input, not merely painted on the label", () => {
@@ -509,6 +532,7 @@ describe("the family emits no inline styles (CSP style-src 'self')", () => {
       renderToString(<ThemeToggle mode={"auto" as ThemeMode} onModeChange={noop} />),
       renderToString(<ThemeToggleIcon isDark onToggle={noop} bordered />),
       renderToString(<ThemeToggleSwitch checked onChange={noop} disabled />),
+      renderToString(<ThemeToggleSwitch checked={false} onChange={noop} />),
     ];
     const emitted = new Set<string>();
     for (const html of renders) {

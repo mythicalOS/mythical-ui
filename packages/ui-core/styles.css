@@ -1386,6 +1386,15 @@ button.my-session-card { cursor: pointer; }
   transition: left var(--my-t-base), color var(--my-t-base);
 }
 .my-tt-switch__knob svg { width: 9px; height: 9px; display: block; }
+/* The fallback name, when the caller renders no text this package can read. Clipped, NOT hidden:
+   `display:none` / `visibility:hidden` would take it off the accessibility tree, which is the one
+   thing it exists to be on. It sits inside the <label>, so it names the input the ordinary way and
+   ADDS to any visible words rather than overriding them the way an aria-label would. */
+.my-tt-switch__name {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
 /* Checked = the inputs Toggle's on/off vocabulary: a soft accent track with an accent boundary,
    so a theme switch is not a special case. */
 .my-tt-switch__input:checked + .my-tt-switch__track {

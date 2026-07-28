@@ -275,6 +275,7 @@ describe("class derivation — the icon and switch members", () => {
       input: "my-tt-switch__input",
       track: "my-tt-switch__track",
       knob: "my-tt-switch__knob",
+      name: "my-tt-switch__name",
     });
   });
 

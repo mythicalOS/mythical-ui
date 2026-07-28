@@ -177,25 +177,28 @@ export function themeLabel(supplied: unknown, fallback: string): string {
 /**
  * Does the switch's `children` slot carry text this module can actually READ?
  *
- * It decides whether the input gets its own `aria-label`, so being wrong in either direction is an
- * accessibility defect — a false positive leaves the checkbox nameless (WCAG 4.1.2), a false
- * negative overrides visible text with a name that may not contain it (WCAG 2.5.3).
+ * It decides whether the binding renders a visually-hidden fallback NAME beside the children, so
+ * being wrong in either direction used to be an accessibility defect. The hidden-name approach is
+ * what removes that: the name is a sibling INSIDE the <label>, not an `aria-label`, so it ADDS to
+ * the accessible name instead of replacing it. Every case now lands somewhere correct:
  *
- * So it answers the narrower, answerable question. Strings and numbers (and arrays of them) are
- * text: they become the input's name through the wrapping <label>, and no `aria-label` is needed
- * or wanted. EVERYTHING ELSE IS OPAQUE — a render-only binding cannot look inside a framework
- * element to see what, or whether, it renders, so `<></>`, a component returning null, and a
- * `<span>` full of words are indistinguishable here. Opaque therefore counts as NO readable text
- * and the input keeps an explicit name, because a control that is merely named redundantly is
- * recoverable and a control with no name at all is not.
+ *   readable text  →  nothing added; the name is exactly the visible words.
+ *   provably empty →  the fallback alone; "Dark mode" rather than a nameless checkbox.
+ *   opaque         →  the fallback PLUS whatever the element renders. Verbose, but it still
+ *                     contains the visible text (WCAG 2.5.3) and is never empty (WCAG 4.1.2) —
+ *                     which an `aria-label` could not manage, since it would have overridden the
+ *                     visible words outright.
+ *
+ * So this answers the narrow, answerable question. Strings and numbers (and arrays of them) are
+ * text. EVERYTHING ELSE IS OPAQUE — a render-only binding cannot look inside a framework element
+ * to see what, or whether, it renders, so `<></>`, a component returning null, and a `<span>` full
+ * of words are indistinguishable here, and all three take the belt-and-braces branch.
  *
  * `undefined`/`null`/`true`/`false` are nothing, so the idiomatic conditional slot
  * (`{showLabel && "Dark mode"}`, which passes `false`) is handled. So are `""`, whitespace, and
  * arrays that add up to nothing.
  *
- * DOCUMENTED RESIDUAL, and the escape hatch for it: a caller whose visible label is rich markup
- * saying something OTHER than the default gets a name that does not contain that visible text.
- * Pass `label` in that case — it is exactly what it is for.
+ * A caller who wants the terse name in the opaque case passes `label` — that is what it is for.
  */
 export function themeSwitchHasReadableText(children: unknown): boolean {
   return readableText(children).length > 0;
@@ -290,6 +293,10 @@ export const THEME_SWITCH_PARTS = {
   track: "my-tt-switch__track",
   /** Carries the sun/moon glyph. */
   knob: "my-tt-switch__knob",
+  /** A visually-hidden name, rendered ONLY when the caller supplies no text this module can read.
+   *  Inside the <label>, so it names the input the ordinary way — see `themeSwitchHasReadableText`
+   *  for why the name is a hidden sibling of the children rather than an `aria-label`. */
+  name: "my-tt-switch__name",
 } as const;
 
 // ── copy ───────────────────────────────────────────────────────────────────────────────────────
