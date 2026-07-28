@@ -5,7 +5,7 @@
 //     <NavTabs items={…} active={…} onSelect={…} />
 //     <TopBar.Right>
 //       <StatusLine tone="ok">engine ok</StatusLine>   {/* StatusLine is from @mythicalos/preact-ui */}
-//       <button class="my-iconbtn">☾</button>
+//       <ThemeControl />                               {/* this package — wired theme toggle, last item */}
 //     </TopBar.Right>
 //   </TopBar>
 //

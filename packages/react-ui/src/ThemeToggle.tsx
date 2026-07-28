@@ -220,7 +220,8 @@ export interface ThemeToggleIconProps {
 /**
  * The icon member. Both glyphs are always in the DOM, stacked in one grid cell — that is what makes
  * the cross-fade a cross-fade rather than a swap, and it is why the visible one is chosen in CSS
- * from `aria-pressed` rather than here. The button shows the theme you would GET.
+ * from `aria-pressed` rather than here. The button shows the theme you are IN — sun on light,
+ * moon on dark (the revised card corrected its own caption to match this CSS).
  */
 export function ThemeToggleIcon(props: ThemeToggleIconProps) {
   const { isDark, onToggle, bordered = false, className: cls = "" } = props;

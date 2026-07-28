@@ -49,8 +49,12 @@ export {
 export { PRODUCTS, ASGARD, FAMILY_NOTE, type Product, type ProductState } from "./products.js";
 export {
   useTheme,
+  useThemeMode,
   DEFAULT_THEME_STORAGE_KEY,
   type Theme,
+  type ThemeMode,
   type UseThemeOptions,
   type UseThemeResult,
+  type UseThemeModeResult,
 } from "./hooks/useTheme.js";
+export { ThemeControl, type ThemeControlProps } from "./ThemeControl.js";
