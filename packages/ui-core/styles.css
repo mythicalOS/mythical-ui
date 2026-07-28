@@ -202,13 +202,23 @@ a:focus-visible, .link:focus-visible, .is-focus {
    through a token — see the Task 3 report for the full before/after list.
    ══════════════════════════════════════════════════════════════════════════════════════════ */
 
-/* chip (chipClass's 6 tones: neutral has no modifier, the other 5 add my-chip--{tone}) */
+/* chip — the base rule and the five soft status tones (neutral has no modifier; the other five add
+   my-chip--{tone}). The rest of the family — the `outline`/`empty` tones, the `xs`/`md` size steps,
+   the dot/count/remove elements, .my-chip-flag and .my-chip-dd — lives in the chip-family block at
+   the foot of this sheet; it EXTENDS this rule rather than restating it.
+
+   METRICS UPDATED to the design system's Chip card v2 (2026-07-28), a deliberate visual change to
+   every existing consumer: gap 5px → 6px, padding 2px 9px → 3px 11px, and `letter-spacing: .3px`
+   dropped (the card has none). The transparent 1px border is new and load-bearing — it keeps every
+   tone the same box, so `--outline`/`--empty`, which do paint a border, cannot reflow the chips
+   beside them. The face is unchanged: --my-fs-micro (the card's 11px, exact) at --my-fw-bold.
+   The neutral default rides --my-surface-hover, NOT --my-disabled-bg: a chip at rest reads as
+   furniture, not as a disabled control. */
 .my-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); /* export: 10px, no exact token step */
-  border-radius: var(--my-r-pill); padding: 2px 9px; /* export: literal 99px — the pill token */
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  border: 1px solid transparent; border-radius: var(--my-r-pill); padding: 3px 11px;
   background: var(--my-surface-hover); color: var(--my-muted);
-  letter-spacing: .3px;
 }
 .my-chip--accent { background: var(--my-accent-soft); color: var(--my-accent-strong); }
 .my-chip--ok { background: var(--my-ok-soft); color: var(--my-ok); }
@@ -1081,75 +1091,69 @@ button.my-session-card { cursor: pointer; }
 .my-term__title { color: var(--my-term-dim); }
 
 /* ══════════════════════════════════════════════════════════════════════════════════════════
-   TAGS & CHIPS — the design system's "Tags & chips" card. One family, three jobs, and the
-   SHAPE carries the affordance so a user never has to guess whether a label is a button:
-     .my-tag     pill + soft fill + no hover — a human label that is never clickable,
-     .my-flag    squared + mono + uppercase — machine facts (kinds, counters, diff letters),
-     .my-chipdd  the ONE interactive member — control radius, --my-control-border, hover.
+   CHIP FAMILY — the design system's Chip card (v2). One family, three jobs, and the SHAPE
+   carries the affordance so a user never has to guess whether a label is a button:
+     .my-chip       pill + soft fill + no hover — a human label that is never clickable,
+     .my-chip-flag  squared + mono — machine facts (kinds, counters, diff letters),
+     .my-chip-dd    the ONE interactive member — control radius, --my-control-border, hover.
    That split is canonical token rule #10, so it is an invariant rather than a preference.
 
+   SUPERSESSION. An earlier revision of the card shipped this family under a second name, `.my-tag`,
+   beside the older `.my-chip` atom — two pill badges with soft tone fills and no rule for which to
+   reach for. v2 retires that split: Chip absorbs the family, and `.my-tag` / `.my-flag` are gone.
+
+   The BASE `.my-chip` rule and its five soft status tones live in the additions section higher up,
+   where the atom was first extracted, and v2's metrics were applied there. This block adds
+   everything the atom GREW — the two bordered tones, the two size steps, the three element
+   variants — plus the two siblings. Nothing here restates the base.
+
    Values come from the card. Four documented normalizations, all following the standing rules
-   of this sheet (and pinned by test/css-tags.test.ts so none of them can be quietly undone):
+   of this sheet (and pinned by test/css-chip.test.ts so none of them can be quietly undone):
 
      1. Every font-size resolves through a --my-fs-* token, as the additions header above
         requires. The card's 11px is --my-fs-micro exactly; its 12.5px snaps to --my-fs-caption
         (12px), the same normalization .my-search__icon / .my-pop-trigger / .my-gitchip already
-        made; its 10px is --my-fs-nano exactly (minted in tokens 0.5.15 for this family —
-        before that it snapped up to --my-fs-micro, as .my-chip and .my-gitchip__flag did).
-     2. (Resolved 2026-07-28.) The card's `.xs` step is a genuinely smaller face again:
-        --my-fs-nano carries it, so `.my-tag--xs` is tighter AND smaller, per the card.
+        made; its 10px is --my-fs-nano exactly (minted in tokens 0.5.15 for this family).
+     2. The card's `.xs` step is a genuinely smaller face, not merely a tighter one:
+        --my-fs-nano carries it, so `.my-chip--xs` is tighter AND smaller, per the card.
      3. The card's literal `font-weight: 700` on the flag rides --my-fw-bold (650) instead —
         there is no 700 step on the --my-fw-* scale, and .my-gitchip__flag set this precedent
         (650 resolves up to the mono family's 700 face per CSS font matching, so the rendered
         weight is unchanged).
-     4. The tag's count AND the flag carry `font-variant-numeric: tabular-nums` (token rule #5:
+     4. The chip's count AND the flag carry `font-variant-numeric: tabular-nums` (token rule #5:
         tabular-nums on all counters), which the card's own CSS omits on both. Flags are
         counters — "2↓ behind" beside "10↓ behind" has to align — and .my-stat-tile__value set
         the precedent. It is belt-and-braces under the mono family, which is already
         fixed-width, and it is what keeps the column honest under any fallback face.
 
-   --my-border on `.my-tag--outline` is a CORRECT use of that token under rule #11: a tag is
+   --my-border on `.my-chip--outline` is a CORRECT use of that token under rule #11: a chip is
    non-interactive, and --my-border is exactly for dividers, cards and non-interactive
    outlines. The interactive member below is the one that takes --my-control-border. */
 
-/* ── tag: the canonical non-interactive label ───────────────────────────────────────────── */
-.my-tag {
-  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
-  /* shape rule 10 — a tag is NOT clickable, so it is the pill. The transparent border keeps every
-     tone the same box, so --outline/--empty cannot reflow the tags beside them. */
-  border: 1px solid transparent; border-radius: var(--my-r-pill);
-  padding: 3px 11px;
-  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
-  background: var(--my-accent-soft); color: var(--my-accent-strong);
-}
-/* tones — `accent` IS the base rule above and has no modifier (as .my-chip's `neutral` does) */
-.my-tag--ok      { background: var(--my-ok-soft);       color: var(--my-ok); }
-.my-tag--warn    { background: var(--my-warn-soft);     color: var(--my-warn); }
-.my-tag--error   { background: var(--my-error-soft);    color: var(--my-error); }
-.my-tag--info    { background: var(--my-info-soft);     color: var(--my-info); }
-.my-tag--neutral { background: var(--my-disabled-bg);   color: var(--my-muted); }
-.my-tag--outline { background: var(--my-surface);       color: var(--my-muted); border-color: var(--my-border); }
-.my-tag--empty   { background: var(--my-disabled-bg);   color: var(--my-muted); border: 1px dashed var(--my-control-border); }
-/* sizes — nano/caption steps; see normalization (1)-(2) */
-.my-tag--xs { padding: 2px 8px; gap: 5px; font-size: var(--my-fs-nano); }
-.my-tag--md { padding: 5px 13px; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); }
-/* variants */
-.my-tag__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
-.my-tag__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; }
+/* ── chip: the two bordered tones. Both ride the base rule's transparent 1px border, so neither
+      changes the box the five soft tones occupy. ─────────────────────────────────────────── */
+.my-chip--outline { background: var(--my-surface);     color: var(--my-muted); border-color: var(--my-border); }
+.my-chip--empty   { background: var(--my-disabled-bg); color: var(--my-muted); border: 1px dashed var(--my-control-border); }
+/* ── chip: sizes — nano/caption steps; see normalizations (1)-(2) ────────────────────────── */
+.my-chip--xs { padding: 2px 8px; gap: 5px; font-size: var(--my-fs-nano); }
+.my-chip--md { padding: 5px 13px; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); }
+/* ── chip: variants ──────────────────────────────────────────────────────────────────────── */
+.my-chip__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.my-chip__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; }
   /* no opacity dimming: the ok/warn soft pairs sit at ~4.4:1 undimmed, so ANY dimming puts
      small mono digits below AA on the tones that carry counts most — the mono face is the
-     hierarchy. Card updated to match (tokens 0.5.15). */
-/* The removable × — the one thing inside a tag that may be clicked. It is a focusable CHILD with
-   its own focus ring; the tag itself never becomes a control. Rendered as a real <button>, so the
+     hierarchy. The card's own caption says the same. */
+/* The removable × — the one thing inside a chip that may be clicked. It is a focusable CHILD with
+   its own focus ring; the chip itself never becomes a control. Rendered as a real <button>, so the
    element resets (border/background/font) are part of the rule.
 
    TARGET SIZE. The card's caption binds a removal target at ≥24px, and the glyph's own box is
    nowhere near that: at caption size with line-height 1 and 2px of side padding it is roughly
-   12×11px, and a roomier tag grows the TAG, not this button. The ::after below is the standard
+   12×11px, and a roomier chip grows the CHIP, not this button. The ::after below is the standard
    fix — a transparent, non-painting overlay centred on the button that carries the hit test
    (a pseudo-element hit-tests as its originating element), so the target is a real 24×24 while
-   the painted glyph and the tag's own geometry are untouched. It stays within the tag's padding
-   at the default and md steps, and overhangs an xs tag by ~1.5px, well inside the gap any tag
+   the painted glyph and the chip's own geometry are untouched. It stays within the chip's padding
+   at the default and md steps, and overhangs an xs chip by ~1.5px, well inside the gap any chip
    row leaves between neighbours.
 
    ON THE RADIUS. This is a clickable element carrying --my-r-pill, which looks like a rule 10
@@ -1159,7 +1163,7 @@ button.my-session-card { cursor: pointer; }
    focus ring, where following the round glyph is the right read, and the sheet already settled
    this species of control the same way: `.my-search__clear`, a glyph-only button nested inside
    an input, is `border-radius: 50%`. The card specifies the pill here for the same reason. */
-.my-tag__x {
+.my-chip__x {
   position: relative;
   margin-left: 1px; margin-right: -3px; padding: 0 2px;
   border: 0; background: none; color: currentColor; opacity: .8; /* rest ≥3:1 every tone (was .6 ≈2.3:1 worst) */
@@ -1167,15 +1171,15 @@ button.my-session-card { cursor: pointer; }
   border-radius: var(--my-r-pill); cursor: pointer;
   transition: opacity var(--my-t-fast);
 }
-.my-tag__x::after {
+.my-chip__x::after {
   content: ""; position: absolute; top: 50%; left: 50%;
   width: 24px; height: 24px; transform: translate(-50%, -50%);
 }
-.my-tag__x:hover { opacity: 1; }
-.my-tag__x:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-chip__x:hover { opacity: 1; }
+.my-chip__x:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
 
-/* ── flag: squared, mono, uppercase — machine facts ─────────────────────────────────────── */
-.my-flag {
+/* ── chip-flag: squared, mono — machine facts ───────────────────────────────────────────── */
+.my-chip-flag {
   display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
   font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; /* normalization (4) */
   font-size: var(--my-fs-nano); /* card: 10px — exact since tokens 0.5.15 */
@@ -1183,13 +1187,13 @@ button.my-session-card { cursor: pointer; }
   letter-spacing: .4px; border-radius: 4px; padding: 2px 7px;
   background: var(--my-accent-soft); color: var(--my-accent-strong);
 }
-.my-flag--ok      { background: var(--my-ok-soft);     color: var(--my-ok); }
-.my-flag--warn    { background: var(--my-warn-soft);   color: var(--my-warn); }
-.my-flag--error   { background: var(--my-error-soft);  color: var(--my-error); }
-.my-flag--neutral { background: var(--my-disabled-bg); color: var(--my-muted); }
+.my-chip-flag--ok      { background: var(--my-ok-soft);     color: var(--my-ok); }
+.my-chip-flag--warn    { background: var(--my-warn-soft);   color: var(--my-warn); }
+.my-chip-flag--error   { background: var(--my-error-soft);  color: var(--my-error); }
+.my-chip-flag--neutral { background: var(--my-disabled-bg); color: var(--my-muted); }
 
 /* ── chip dropdown: the interactive member ──────────────────────────────────────────────── */
-.my-chipdd {
+.my-chip-dd {
   display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
   /* shape rule 10 — this one IS clickable, so it is squared and takes the control border
      (rule 11), which is the whole point of the family: shape carries the affordance. */
@@ -1199,25 +1203,25 @@ button.my-session-card { cursor: pointer; }
   background: var(--my-surface); color: var(--my-ink); cursor: pointer;
   transition: background var(--my-t-fast);
 }
-/* The hover invite deliberately skips the SELECTED chip, matching the card, where `.chipdd.sel`
-   outranks `.chipdd:hover` and a selected chip therefore keeps its accent fill under the pointer.
+/* The hover invite deliberately skips the SELECTED chip, matching the card, where `.chip-dd.sel`
+   outranks `.chip-dd:hover` and a selected chip therefore keeps its accent fill under the pointer.
    Excluding it here reproduces that without a specificity arms race. */
-.my-chipdd:hover:not(:disabled):not([aria-disabled="true"]):not(.my-chipdd--sel) {
+.my-chip-dd:hover:not(:disabled):not([aria-disabled="true"]):not(.my-chip-dd--sel) {
   background: var(--my-surface-hover);
 }
-.my-chipdd:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
-.my-chipdd--sel { border-color: var(--my-accent); background: var(--my-accent-soft); color: var(--my-accent-strong); }
-.my-chipdd__value { font-weight: var(--my-fw-medium); }
-.my-chipdd__caret { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+.my-chip-dd:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-chip-dd--sel { border-color: var(--my-accent); background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-chip-dd__value { font-weight: var(--my-fw-medium); }
+.my-chip-dd__caret { color: var(--my-muted); font-size: var(--my-fs-nano); flex: none; } /* card v2: the caret face is the nano step */
 /* Disabled (token rule #8: disabled-bg/-ink + not-allowed, never opacity on text). Both spellings
    are honored — the card's `aria-disabled="true"`, which the bindings render because it keeps the
    chip focusable and announced, and a native `:disabled` for a consumer who hands the class to a
    plain disabled <button>. Same pairing as `.my-pop-trigger:disabled, .my-pop-trigger.is-disabled`
    above. Higher specificity than `--sel`, so a disabled selected chip reads as disabled. */
-.my-chipdd:disabled,
-.my-chipdd[aria-disabled="true"] {
+.my-chip-dd:disabled,
+.my-chip-dd[aria-disabled="true"] {
   background: var(--my-disabled-bg); color: var(--my-disabled-ink);
   border-color: var(--my-border); cursor: not-allowed;
 }
-.my-chipdd:disabled .my-chipdd__caret,
-.my-chipdd[aria-disabled="true"] .my-chipdd__caret { color: var(--my-disabled-ink); }
+.my-chip-dd:disabled .my-chip-dd__caret,
+.my-chip-dd[aria-disabled="true"] .my-chip-dd__caret { color: var(--my-disabled-ink); }

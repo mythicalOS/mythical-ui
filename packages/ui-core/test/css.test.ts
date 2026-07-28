@@ -28,9 +28,10 @@ import {
   chipClass,
   gaugeTone,
   statusLineClass,
+  CHIP_SIZES,
+  CHIP_TONES,
   type BannerTone,
   type BtnVariant,
-  type ChipTone,
   type StatusTone,
 } from "../src/index.ts";
 
@@ -182,9 +183,14 @@ describe("styles.css — (e) every class Task 2's logic emits exists as a select
     }
   });
 
-  test("chipClass — all 6 tones", () => {
-    const tones: ChipTone[] = ["neutral", "accent", "ok", "warn", "error", "info"];
-    for (const tone of tones) expectSelectorsFor(chipClass(tone));
+  test("chipClass — every tone × every size, enumerated from the exported vocabulary", () => {
+    // Enumerated rather than restated: the v2 card grew the atom two tones and a size axis, and a
+    // hard-coded list here would have kept passing while the new modifiers had no rules at all.
+    // (test/css-chip.test.ts owns the family's detailed coverage; this is the sheet-wide sweep.)
+    for (const tone of CHIP_TONES) {
+      expectSelectorsFor(chipClass(tone));
+      for (const size of CHIP_SIZES) expectSelectorsFor(chipClass(tone, { size }));
+    }
   });
 
   test("statusLineClass — all 6 tones", () => {

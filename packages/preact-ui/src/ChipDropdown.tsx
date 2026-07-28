@@ -1,7 +1,10 @@
 /** @jsxImportSource preact */
-// @mythicalos/preact-ui — ChipDropdown: the ONE interactive member of the design system's
-// "Tags & chips" card. Squared control radius + --my-control-border + a hover invite, which under
-// canonical token rule #10 is exactly what marks it as clickable where Tag and Flag are not.
+// @mythicalos/preact-ui — ChipDropdown: the ONE interactive member of the design system's Chip
+// card (v2). Squared control radius + --my-control-border + a hover invite, which under canonical
+// token rule #10 is exactly what marks it as clickable where Chip and ChipFlag are not.
+//
+// v2 changed nothing about this component's behaviour. Its root class moved from `.my-chipdd` to
+// `.my-chip-dd` (and its elements with it), which the core owns — this file never spells them.
 //
 // Two deliberate deviations from the card's static markup, both toward the platform:
 //   - it renders a real <button type="button">, not a `<span role="button" tabindex="0">`. The

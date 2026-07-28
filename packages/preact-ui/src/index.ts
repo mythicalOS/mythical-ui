@@ -56,7 +56,7 @@ export {
 } from "./hooks.js";
 
 // ── the 7 new atoms (design-export's "proposed additions" — Task 6 graduation) ──
-export { Chip, chipClass, type ChipProps, type ChipTone } from "./Chip.js";
+// `Chip` graduated here, then grew into the whole family — see the chip-family block below.
 export { Card, type CardProps } from "./Card.js";
 export { Avatar, type AvatarProps } from "./Avatar.js";
 export { StatusLine, statusLineClass, type StatusLineProps, type StatusTone } from "./StatusLine.js";
@@ -115,22 +115,29 @@ export {
   type GitFlagTone,
 } from "./GitChip.js";
 
-// ── tags & chips (the design system's "Tags & chips" card): Tag · Flag · ChipDropdown ──
+// ── the chip family (the design system's Chip card, v2): Chip · ChipFlag · ChipDropdown ──
 export {
-  Tag,
-  tagClass,
-  tagCountText,
-  tagRemoveLabel,
-  TAG_PARTS,
-  TAG_REMOVE_GLYPH,
-  TAG_REMOVE_LABEL,
-  TAG_TONES,
-  TAG_SIZES,
-  type TagProps,
-  type TagTone,
-  type TagSize,
-} from "./Tag.js";
-export { Flag, flagClass, FLAG_TONES, FLAG_PARTS, type FlagProps, type FlagTone } from "./Flag.js";
+  Chip,
+  chipClass,
+  chipCountText,
+  chipRemoveLabel,
+  CHIP_PARTS,
+  CHIP_REMOVE_GLYPH,
+  CHIP_REMOVE_LABEL,
+  CHIP_TONES,
+  CHIP_SIZES,
+  type ChipProps,
+  type ChipTone,
+  type ChipSize,
+} from "./Chip.js";
+export {
+  ChipFlag,
+  chipFlagClass,
+  CHIP_FLAG_TONES,
+  CHIP_FLAG_PARTS,
+  type ChipFlagProps,
+  type ChipFlagTone,
+} from "./ChipFlag.js";
 export {
   ChipDropdown,
   chipDropdownActivate,

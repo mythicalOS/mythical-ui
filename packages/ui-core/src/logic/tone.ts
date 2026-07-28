@@ -1,16 +1,15 @@
-// @mythicalos/ui-core — tone axis and class derivation for chip/status/banner + shared gauge/dialog
+// @mythicalos/ui-core — tone axis and class derivation for status/banner + shared gauge/dialog
 // tri-state (ds/tokens rule #4 and rule #7: status never relies on color alone — an icon/glyph
 // always rides along). Both the Preact and React bindings import from here so they derive identical
 // class strings from one source.
+//
+// `chipClass` / `ChipTone` USED to live here. The design system's v2 Chip card grew the atom a
+// size axis, two more tones and three element variants, so the whole family — Chip, ChipFlag,
+// ChipDropdown — now lives in ./chip.ts, and that module is its ONLY derivation. Nothing here
+// re-derives a chip class: two spellings of the same class string is precisely the drift the
+// consolidation removes.
 
 export type Tone = "ok" | "warn" | "error";
-
-// Chip tone (design-export/packages/preact-ui/src/components/Chip.jsx): supports 6 tones.
-// Class derivation: base "my-chip" + tone modifier (neutral has no modifier).
-export type ChipTone = "neutral" | "accent" | "ok" | "warn" | "error" | "info";
-export function chipClass(tone: ChipTone): string {
-  return tone === "neutral" ? "my-chip" : `my-chip my-chip--${tone}`;
-}
 
 // StatusLine tone (design-export/packages/preact-ui/src/components/Status.jsx): supports 6 tones.
 // Class derivation: base "my-status" + always-present tone modifier.

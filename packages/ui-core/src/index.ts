@@ -80,42 +80,40 @@ export {
 export { gaugeTone, gaugeGeom, type GaugeGeom } from "./logic/gauge.js";
 
 export {
-  chipClass,
   statusLineClass,
   bannerClass,
   BANNER_ICON,
   type Tone,
-  type ChipTone,
   type StatusTone,
   type BannerTone,
 } from "./logic/tone.js";
 
-// ── tags & chips (the design system's "Tags & chips" card): Tag · Flag · ChipDropdown ──
+// ── the chip family (the design system's Chip card, v2): Chip · ChipFlag · ChipDropdown ──
 export {
-  tagClass,
-  tagCountText,
-  tagRemoveLabel,
-  flagClass,
+  chipClass,
+  chipCountText,
+  chipRemoveLabel,
+  chipFlagClass,
   chipDropdownClass,
   chipDropdownValueText,
   chipDropdownActivate,
-  TAG_TONES,
-  TAG_SIZES,
-  TAG_PARTS,
-  TAG_REMOVE_GLYPH,
-  TAG_REMOVE_LABEL,
-  FLAG_TONES,
-  FLAG_PARTS,
+  CHIP_TONES,
+  CHIP_SIZES,
+  CHIP_PARTS,
+  CHIP_REMOVE_GLYPH,
+  CHIP_REMOVE_LABEL,
+  CHIP_FLAG_TONES,
+  CHIP_FLAG_PARTS,
   CHIP_DROPDOWN_PARTS,
   CHIP_DROPDOWN_CARET,
   CHIP_DROPDOWN_EMPTY_VALUE,
-  type TagTone,
-  type TagSize,
-  type TagState,
-  type FlagTone,
+  type ChipTone,
+  type ChipSize,
+  type ChipState,
+  type ChipFlagTone,
   type ChipDropdownState,
   type ChipDropdownActivation,
-} from "./logic/tag.js";
+} from "./logic/chip.js";
 
 // ── small atoms graduated out of a single product: save-bar, stat-tiles, git-chip ──
 export {

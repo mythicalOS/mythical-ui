@@ -1,43 +1,30 @@
 // test/logic/tone.test.ts — tone type derivation and class/glyph generation.
-// Ports from design-export reference components (Chip, StatusLine, Banner).
+// Ports from design-export reference components (StatusLine, Banner).
+//
+// `chipClass` used to be tested here too. The v2 Chip card grew it a size axis, two more tones and
+// three element variants, so the whole chip family moved to src/logic/chip.ts and its coverage
+// moved with it — see test/logic/chip.test.ts. This file must not re-derive a chip class: one
+// source of truth, one suite.
 
 import { describe, expect, test } from "bun:test";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
-  chipClass,
   statusLineClass,
   bannerClass,
   BANNER_ICON,
-  type ChipTone,
   type StatusTone,
   type BannerTone,
 } from "../../src/logic/tone.ts";
 
-describe("chipClass — chip tone to class string derivation", () => {
-  test("neutral tone has no modifier suffix", () => {
-    expect(chipClass("neutral")).toBe("my-chip");
-  });
-
-  test("non-neutral tones include the tone modifier", () => {
-    expect(chipClass("accent")).toBe("my-chip my-chip--accent");
-    expect(chipClass("ok")).toBe("my-chip my-chip--ok");
-    expect(chipClass("warn")).toBe("my-chip my-chip--warn");
-    expect(chipClass("error")).toBe("my-chip my-chip--error");
-    expect(chipClass("info")).toBe("my-chip my-chip--info");
-  });
-
-  test("all 6 chip tones are supported", () => {
-    const tones: ChipTone[] = [
-      "neutral",
-      "accent",
-      "ok",
-      "warn",
-      "error",
-      "info",
-    ];
-    tones.forEach((tone) => {
-      const cls = chipClass(tone);
-      expect(cls).toMatch(/^my-chip/);
-    });
+describe("tone.ts owns no chip derivation", () => {
+  test("the module never spells a chip class — chip.ts is the only source", () => {
+    // A second `my-chip` derivation here is the exact drift the consolidation removed: the two
+    // could disagree, and the disagreement would only ever surface in a browser.
+    const src = readFileSync(join(import.meta.dir, "..", "..", "src", "logic", "tone.ts"), "utf8");
+    const code = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    expect(code).not.toContain("my-chip");
+    expect(code).not.toContain("chipClass");
   });
 });
 
