@@ -171,3 +171,27 @@ export function chipDropdownValueText(value?: string): string {
   const trimmed = typeof value === "string" ? value.trim() : "";
   return trimmed.length > 0 ? trimmed : CHIP_DROPDOWN_EMPTY_VALUE;
 }
+
+/** The minimum an activation event has to offer for the gate below to do its job. Both bindings'
+ *  click events satisfy it (Preact's native event, React's synthetic one). */
+export interface ChipDropdownActivation {
+  preventDefault(): void;
+  stopPropagation(): void;
+}
+
+/** Activation gate. Returns `true` when the caller's `onClick` should run.
+ *
+ *  A disabled chip is announced with `aria-disabled` and therefore stays FOCUSABLE — which means
+ *  the platform still dispatches a real click on pointer or keyboard activation. Simply not
+ *  attaching the component's own handler is not enough: that click still BUBBLES, so a disabled
+ *  chip sitting inside a clickable row would activate the row. "Disabled" has to stop the event,
+ *  not just decline it. Both bindings route through here, so neither can lose the suppression. */
+export function chipDropdownActivate(
+  event: ChipDropdownActivation,
+  state: { disabled?: boolean } = {},
+): boolean {
+  if (state?.disabled !== true) return true;
+  if (typeof event?.preventDefault === "function") event.preventDefault();
+  if (typeof event?.stopPropagation === "function") event.stopPropagation();
+  return false;
+}

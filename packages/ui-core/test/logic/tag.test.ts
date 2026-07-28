@@ -14,6 +14,7 @@ import {
   TAG_REMOVE_LABEL,
   TAG_SIZES,
   TAG_TONES,
+  chipDropdownActivate,
   chipDropdownClass,
   chipDropdownValueText,
   flagClass,
@@ -202,6 +203,52 @@ describe("chipDropdownClass", () => {
       caret: "my-chipdd__caret",
     });
     expect(CHIP_DROPDOWN_CARET).toBe("▾");
+  });
+});
+
+describe("chipDropdownActivate", () => {
+  function fakeEvent() {
+    const seen = { prevented: 0, stopped: 0 };
+    return {
+      seen,
+      event: {
+        preventDefault: () => {
+          seen.prevented += 1;
+        },
+        stopPropagation: () => {
+          seen.stopped += 1;
+        },
+      },
+    };
+  }
+
+  test("an enabled chip activates and the event is left alone", () => {
+    const { event, seen } = fakeEvent();
+    expect(chipDropdownActivate(event)).toBe(true);
+    expect(chipDropdownActivate(event, {})).toBe(true);
+    expect(chipDropdownActivate(event, { disabled: false })).toBe(true);
+    expect(seen).toEqual({ prevented: 0, stopped: 0 });
+  });
+
+  test("a disabled chip does NOT activate, and the event is SUPPRESSED", () => {
+    // The whole point: `aria-disabled` keeps the chip focusable, so the platform still dispatches
+    // a click. Declining to handle it is not enough — an unstopped click bubbles, and a disabled
+    // chip inside a clickable row would activate the row.
+    const { event, seen } = fakeEvent();
+    expect(chipDropdownActivate(event, { disabled: true })).toBe(false);
+    expect(seen).toEqual({ prevented: 1, stopped: 1 });
+  });
+
+  test("only a real `true` disables — a truthy non-boolean does not silently deaden the chip", () => {
+    const { event, seen } = fakeEvent();
+    expect(chipDropdownActivate(event, { disabled: 1 as unknown as boolean })).toBe(true);
+    expect(chipDropdownActivate(event, null as never)).toBe(true);
+    expect(seen).toEqual({ prevented: 0, stopped: 0 });
+  });
+
+  test("a malformed event cannot crash the disabled path (it still refuses to activate)", () => {
+    expect(chipDropdownActivate({} as never, { disabled: true })).toBe(false);
+    expect(chipDropdownActivate(null as never, { disabled: true })).toBe(false);
   });
 });
 

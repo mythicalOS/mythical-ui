@@ -133,6 +133,7 @@ export {
 export { Flag, flagClass, FLAG_TONES, FLAG_PARTS, type FlagProps, type FlagTone } from "./Flag.js";
 export {
   ChipDropdown,
+  chipDropdownActivate,
   chipDropdownClass,
   chipDropdownValueText,
   CHIP_DROPDOWN_PARTS,
@@ -140,6 +141,7 @@ export {
   CHIP_DROPDOWN_EMPTY_VALUE,
   type ChipDropdownProps,
   type ChipDropdownState,
+  type ChipDropdownActivation,
 } from "./ChipDropdown.js";
 
 // ── dropdown popover (ds/components-popover — registry row `popover` v1) ──

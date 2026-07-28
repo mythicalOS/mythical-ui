@@ -161,27 +161,41 @@ describe("ChipDropdown", () => {
     expect(renderToString(<ChipDropdown value="main" />)).not.toContain("aria-disabled");
   });
 
-  test("disabled DETACHES the handler — the chip is inert, not merely repainted", () => {
-    // There is no DOM in this package's bun:test environment, so the vnode's props are inspected
-    // directly: that IS the wiring a click would travel through.
+  test("disabled SUPPRESSES the activation — inert AND non-bubbling, not merely repainted", () => {
+    // There is no DOM in this package's bun:test environment, so the element's own click handler
+    // is invoked with a stub event: that IS the wiring a real click would travel through.
     let calls = 0;
     const bump = () => (calls += 1);
+    const stub = () => {
+      const seen = { prevented: 0, stopped: 0 };
+      return {
+        seen,
+        event: {
+          preventDefault: () => void (seen.prevented += 1),
+          stopPropagation: () => void (seen.stopped += 1),
+        },
+      };
+    };
 
     const enabled = ChipDropdown({ value: "main", onClick: bump }) as {
       props: Record<string, unknown>;
     };
-    expect(typeof enabled.props.onClick).toBe("function");
-    (enabled.props.onClick as () => void)();
+    const a = stub();
+    (enabled.props.onClick as (e: unknown) => void)(a.event);
     expect(calls).toBe(1);
+    expect(a.seen).toEqual({ prevented: 0, stopped: 0 });
 
     const disabled = ChipDropdown({ value: "main", disabled: true, onClick: bump }) as {
       props: Record<string, unknown>;
     };
-    expect(disabled.props.onClick).toBeUndefined();
     expect(disabled.props["aria-disabled"]).toBe("true");
+    const b = stub();
+    (disabled.props.onClick as (e: unknown) => void)(b.event);
     expect(calls).toBe(1); // untouched — a disabled chip cannot fire
+    // …and the click is stopped, so an ancestor row handler never sees it either.
+    expect(b.seen).toEqual({ prevented: 1, stopped: 1 });
 
-    // …and it stays focusable/announced rather than dropping out of the tab order.
+    // It stays focusable/announced rather than dropping out of the tab order.
     expect(disabled.props.disabled).toBeUndefined();
   });
 });

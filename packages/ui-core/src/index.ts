@@ -98,6 +98,7 @@ export {
   flagClass,
   chipDropdownClass,
   chipDropdownValueText,
+  chipDropdownActivate,
   TAG_TONES,
   TAG_SIZES,
   TAG_PARTS,
@@ -113,6 +114,7 @@ export {
   type TagState,
   type FlagTone,
   type ChipDropdownState,
+  type ChipDropdownActivation,
 } from "./logic/tag.js";
 
 // ── small atoms graduated out of a single product: save-bar, stat-tiles, git-chip ──
