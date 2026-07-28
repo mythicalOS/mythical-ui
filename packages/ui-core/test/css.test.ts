@@ -224,7 +224,20 @@ describe("styles.css — (e) every class Task 2's logic emits exists as a select
     const tones = new Set(pctSamples.map((pct) => gaugeTone(pct)));
     expect(tones).toEqual(new Set(["ok", "warn", "error"]));
     for (const tone of tones) {
-      expect(hasClassSelector(css, `my-gauge__fill--${tone}`)).toBe(true);
+      // `cssCode`, not `css`: same reason as expectSelectorsFor above — a prose mention is not
+      // a rule, and this is the one other call site in check (e) that resolves a selector.
+      const cls = `my-gauge__fill--${tone}`;
+      expect({ cls, found: hasClassSelector(cssCode, cls) }).toEqual({ cls, found: true });
     }
+  });
+
+  test("check (e) resolves selectors ONLY against the stripped sheet", () => {
+    // Belt for the fix: the raw sheet must never be handed to hasClassSelector anywhere inside
+    // this describe. Asserted on the source text, because a future call site added with `css`
+    // would otherwise reintroduce the comment-satisfies-coverage hole silently.
+    const self = readFileSync(join(import.meta.dir, "css.test.ts"), "utf8");
+    const checkE = self.slice(self.indexOf('describe("styles.css — (e)'));
+    expect(checkE.length).toBeGreaterThan(500);
+    expect(checkE).not.toMatch(/hasClassSelector\(\s*css\s*,/);
   });
 });
