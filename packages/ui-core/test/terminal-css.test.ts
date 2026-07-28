@@ -55,15 +55,18 @@ function stripComments(text: string): string {
  * anything inside the terminal resolving one of them would follow the app theme. Deriving it is the
  * point — a hand-maintained allowlist silently stops covering tokens added upstream later.
  *
- * The fallback is the same set as of tokens v0.5, so the guard still runs when the sibling design
- * repo is not checked out beside this one; `flippingIsDerived` records which source was used.
+ * The fallback is a SNAPSHOT of that set (tokens v0.5.16), so the guard still runs when the sibling
+ * design repo is not checked out beside this one; `flippingIsDerived` records which source was
+ * used. A snapshot goes stale by doing nothing, and a stale one silently narrows the guard in
+ * exactly the checkout that cannot notice — so "the snapshot still matches the canonical set" is
+ * itself a test below, run whenever the sibling IS present.
  */
 const FALLBACK_FLIPPING = [
   "--my-bg", "--my-surface", "--my-border", "--my-control-border", "--my-track", "--my-ink",
   "--my-muted", "--my-accent", "--my-accent-strong", "--my-accent-soft", "--my-ok", "--my-warn",
   "--my-error", "--my-info", "--my-ink-hover", "--my-accent-hover", "--my-surface-hover",
   "--my-disabled-bg", "--my-disabled-ink", "--my-ok-soft", "--my-warn-soft", "--my-error-soft",
-  "--my-info-soft", "--my-scrim", "--my-shadow-modal",
+  "--my-info-soft", "--my-scrim", "--my-shadow-modal", "--my-shadow-knob",
 ];
 const flippingIsDerived = existsSync(tokensPath);
 const FLIPPING: Set<string> = (() => {
@@ -95,6 +98,20 @@ describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", ()
   test("the terminal surface class has a real rule", () => {
     expect(TERM_CLASS).toBe("my-term");
     expect(hasClassSelector(TERM_CLASS)).toBe(true);
+  });
+
+  test("the FALLBACK snapshot still matches the canonical set", () => {
+    // The snapshot is what this guard runs on in a standalone checkout, where nothing else can
+    // notice it has gone stale — a token added upstream would simply stop being covered, and a
+    // future `.my-term` rule using it would sail through. This is the one moment anyone CAN
+    // notice, so it fails here instead. The fix is always the same: add the named token to
+    // FALLBACK_FLIPPING (and decide whether `.my-term` must pin it or it joins the residual).
+    if (!flippingIsDerived) return; // nothing to compare against
+    const snapshot = new Set(FALLBACK_FLIPPING);
+    expect({
+      missingFromSnapshot: [...FLIPPING].filter((t) => !snapshot.has(t)).sort(),
+      goneFromCanonical: FALLBACK_FLIPPING.filter((t) => !FLIPPING.has(t)).sort(),
+    }).toEqual({ missingFromSnapshot: [], goneFromCanonical: [] });
   });
 
   test("the flipping-token set is real and non-trivial", () => {
