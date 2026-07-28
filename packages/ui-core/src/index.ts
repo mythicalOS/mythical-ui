@@ -137,7 +137,7 @@ export {
   nextThemeMode,
   themeToggleTabStop,
   themeLabel,
-  themeSwitchHasText,
+  themeSwitchHasReadableText,
   themeToggleClass,
   themeIconClass,
   type ThemeMode,

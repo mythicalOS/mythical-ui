@@ -95,7 +95,11 @@ describe("ThemeToggle — the segmented member", () => {
     // claim to be selected when none of them is.
     const html = renderToString(<ThemeToggle mode={"auto" as ThemeMode} onModeChange={noop} />);
     expect(html).not.toContain('aria-checked="true"');
+    // …and the PAINT agrees: the class is the `nothing selected` state, whose rule hides the knob,
+    // not `--sel-system`, which would show System raised while the ARIA denied it.
     expect(html).toContain(`class="${themeToggleClass("auto" as ThemeMode)} "`);
+    expect(html).toContain("my-tt-seg--sel-none");
+    expect(html).not.toContain("my-tt-seg--sel-system");
   });
 
   test("…and stays REACHABLE: the first option keeps the tab stop when nothing is checked", () => {
@@ -412,6 +416,31 @@ describe("ThemeToggleSwitch — the settings-row member", () => {
     }
   });
 
+  test("children this binding cannot READ do not suppress the name", () => {
+    // An element is opaque to a render-only binding: `<></>`, a component returning null and a
+    // <span> full of words are indistinguishable. Trusting one to name the input is what would
+    // ship a nameless checkbox; keeping the explicit name at worst names it twice.
+    for (const opaque of [<></>, <span />, <b>Dark mode</b>]) {
+      const html = renderToString(
+        <ThemeToggleSwitch checked={false} onChange={noop}>
+          {opaque}
+        </ThemeToggleSwitch>,
+      );
+      expect(html).toContain(`aria-label="${THEME_SWITCH_LABEL}"`);
+    }
+  });
+
+  test("plain text DOES name it — no aria-label, so the visible words are the name", () => {
+    for (const text of ["Dark mode", ["Dark ", "mode"], 0] as const) {
+      const html = renderToString(
+        <ThemeToggleSwitch checked={false} onChange={noop}>
+          {text}
+        </ThemeToggleSwitch>,
+      );
+      expect({ text, named: html.includes("aria-label=") }).toEqual({ text, named: false });
+    }
+  });
+
   test("a blank `label` falls back — the control is never announced as nothing", () => {
     for (const junk of ["", "   ", undefined]) {
       const html = renderToString(
@@ -476,6 +505,8 @@ describe("the family emits no inline styles (CSP style-src 'self')", () => {
         renderToString(<ThemeToggle mode={mode} onModeChange={noop} />),
         renderToString(<ThemeToggle mode={mode} onModeChange={noop} labelled />),
       ]),
+      // the degraded `nothing selected` state emits a class of its own, so it is swept too
+      renderToString(<ThemeToggle mode={"auto" as ThemeMode} onModeChange={noop} />),
       renderToString(<ThemeToggleIcon isDark onToggle={noop} bordered />),
       renderToString(<ThemeToggleSwitch checked onChange={noop} disabled />),
     ];

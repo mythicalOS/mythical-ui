@@ -300,7 +300,7 @@ export {
   themeIconTarget,
   themeLabel,
   themeModeIndex,
-  themeSwitchHasText,
+  themeSwitchHasReadableText,
   themeToggleClass,
   themeToggleKeyAction,
   themeToggleTabStop,

@@ -73,6 +73,14 @@ describe("(1) every class the logic emits has a real selector", () => {
     }
     expectSelectorsFor(THEME_TOGGLE_PARTS.knob);
     expectSelectorsFor(THEME_TOGGLE_PARTS.option);
+    // …and the state an unrecognised mode degrades to
+    expectSelectorsFor(themeToggleClass("auto" as never));
+  });
+
+  test("`nothing selected` hides the knob rather than parking it under System", () => {
+    // Parking it there would paint a selection that every option's aria-checked="false" denies.
+    expect(themeToggleClass("auto" as never)).toContain("my-tt-seg--sel-none");
+    expect(ruleBody(".my-tt-seg--sel-none .my-tt-seg__knob")).toMatch(/display:\s*none/);
   });
 
   test("icon — bare and bordered, plus the stacked glyphs", () => {

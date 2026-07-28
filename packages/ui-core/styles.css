@@ -1312,6 +1312,11 @@ button.my-session-card { cursor: pointer; }
 .my-tt-seg--sel-system .my-tt-seg__knob { left: 3px; }
 .my-tt-seg--sel-light .my-tt-seg__knob { left: 35px; }
 .my-tt-seg--sel-dark .my-tt-seg__knob { left: 67px; }
+/* NOTHING selected — what an unrecognised mode degrades to. The knob is hidden rather than parked
+   under System, because parking it there would paint a selection that every option's
+   `aria-checked="false"` denies, telling a sighted user and a screen-reader user two different
+   things about the same control. */
+.my-tt-seg--sel-none .my-tt-seg__knob { display: none; }
 /* ── theme toggle: the LABELLED variant — the raised look moves onto the checked button ────── */
 /* The knob is still rendered (the two variants share one piece of markup, exactly as the card's
    does) and hidden here, because a fixed-offset knob cannot track content-width options. */

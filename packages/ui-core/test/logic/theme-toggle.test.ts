@@ -24,7 +24,7 @@ import {
   themeIconTarget,
   themeLabel,
   themeModeIndex,
-  themeSwitchHasText,
+  themeSwitchHasReadableText,
   themeToggleClass,
   themeToggleKeyAction,
   themeToggleTabStop,
@@ -221,12 +221,22 @@ describe("class derivation — the segmented member", () => {
     expect(themeToggleClass("system", {})).toBe(themeToggleClass("system"));
   });
 
-  test("an unrecognised mode parks the knob at rest rather than emitting a dead modifier", () => {
-    // `my-tt-seg--sel-auto` has no rule, so the knob would sit at index 0 anyway — but with a
-    // class that silently means nothing. Degrading to `system` says the same thing out loud.
+  test("an unrecognised mode selects NOTHING, and paints nothing", () => {
+    // Not `--sel-system`: parking the knob under System would paint a selection that every
+    // option's `aria-checked="false"` denies, telling a sighted user and a screen-reader user two
+    // different things. `--sel-none` hides the knob, so the paint and the ARIA agree.
     for (const junk of ["auto", "", "Dark"]) {
-      expect(themeToggleClass(junk as ThemeMode)).toBe("my-tt-seg my-tt-seg--sel-system");
+      expect(themeToggleClass(junk as ThemeMode)).toBe("my-tt-seg my-tt-seg--sel-none");
     }
+    // and it is a real, defined modifier — never `--sel-<junk>`, which would have no rule at all
+    expect(themeToggleClass("auto" as ThemeMode)).not.toContain("auto");
+    expect(themeToggleClass("auto" as ThemeMode, { labelled: true })).toBe(
+      "my-tt-seg my-tt-seg--lab my-tt-seg--sel-none",
+    );
+  });
+
+  test("no real mode ever emits the `nothing selected` state", () => {
+    for (const m of THEME_MODES) expect(themeToggleClass(m)).not.toContain("--sel-none");
   });
 
   test("every mode gets its OWN root class — no two selections paint the same", () => {
@@ -387,25 +397,33 @@ describe("themeLabel — a name override may never blank a control's name", () =
   });
 });
 
-describe("themeSwitchHasText — deciding whether the input needs its own name", () => {
-  test("real text counts", () => {
-    expect(themeSwitchHasText("Dark mode")).toBe(true);
-    expect(themeSwitchHasText(0)).toBe(true); // a 0 renders as "0"
-    expect(themeSwitchHasText(["Dark mode"])).toBe(true);
-    expect(themeSwitchHasText([false, null, "Dark mode"])).toBe(true);
+describe("themeSwitchHasReadableText — deciding whether the input needs its own name", () => {
+  test("text this module can READ counts: strings, numbers, and arrays of them", () => {
+    expect(themeSwitchHasReadableText("Dark mode")).toBe(true);
+    expect(themeSwitchHasReadableText(0)).toBe(true); // a 0 renders as "0"
+    expect(themeSwitchHasReadableText(["Dark mode"])).toBe(true);
+    expect(themeSwitchHasReadableText([false, null, "Dark ", "mode"])).toBe(true);
+    expect(themeSwitchHasReadableText([["Dark"], " mode"])).toBe(true);
   });
 
   test("nothing-shaped children are nothing — including the ones a conditional produces", () => {
     // `{showLabel && "Dark mode"}` passes `false`, not `undefined`. Reading that as text would
     // leave the checkbox with no accessible name at all.
-    for (const empty of [undefined, null, false, true, "", "   ", [], [false, null], [[]]]) {
-      expect({ empty, has: themeSwitchHasText(empty) }).toEqual({ empty, has: false });
+    for (const empty of [undefined, null, false, true, "", "   ", [], [false, null], [[]], [" ", ""]]) {
+      expect({ empty, has: themeSwitchHasReadableText(empty) }).toEqual({ empty, has: false });
     }
+    expect(themeSwitchHasReadableText(NaN)).toBe(false);
+    expect(themeSwitchHasReadableText(Infinity)).toBe(false);
   });
 
-  test("a framework element reads as content — the documented residual", () => {
-    // A render-only binding cannot look inside an element to see whether it renders anything, so
-    // an element is taken at face value. A caller who renders nothing should pass nothing.
-    expect(themeSwitchHasText({ type: "span", props: {} })).toBe(true);
+  test("a framework element is OPAQUE, so it does not count — the control keeps a name", () => {
+    // A render-only binding cannot look inside an element to see what, or whether, it renders:
+    // `<></>`, a component returning null, and a <span> full of words are indistinguishable here.
+    // Counting them as text is what would leave the checkbox nameless (WCAG 4.1.2); not counting
+    // them at worst names it redundantly, which is recoverable.
+    for (const opaque of [{ type: "span", props: {} }, { type: () => null, props: {} }, () => {}]) {
+      expect(themeSwitchHasReadableText(opaque)).toBe(false);
+    }
+    expect(themeSwitchHasReadableText([{ type: "b", props: {} }])).toBe(false);
   });
 });

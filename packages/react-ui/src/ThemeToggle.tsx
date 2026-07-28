@@ -37,7 +37,7 @@ import {
   themeIconTarget,
   themeLabel,
   themeModeIndex,
-  themeSwitchHasText,
+  themeSwitchHasReadableText,
   themeToggleClass,
   themeToggleKeyAction,
   themeToggleTabStop,
@@ -65,7 +65,7 @@ export {
   themeIconTarget,
   themeLabel,
   themeModeIndex,
-  themeSwitchHasText,
+  themeSwitchHasReadableText,
   themeToggleClass,
   themeToggleKeyAction,
   themeToggleTabStop,
@@ -265,7 +265,7 @@ export interface ThemeToggleSwitchProps {
  */
 export function ThemeToggleSwitch(props: ThemeToggleSwitchProps) {
   const { checked, onChange, disabled = false, className: cls = "" } = props;
-  const hasText = themeSwitchHasText(props.children);
+  const hasText = themeSwitchHasReadableText(props.children);
   return (
     <label className={`${THEME_SWITCH_PARTS.root} ${cls}`} aria-disabled={disabled ? "true" : undefined}>
       <input

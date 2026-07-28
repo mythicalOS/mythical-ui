@@ -175,27 +175,37 @@ export function themeLabel(supplied: unknown, fallback: string): string {
 }
 
 /**
- * Does the switch's `children` slot render text a screen reader can use as the control's name?
+ * Does the switch's `children` slot carry text this module can actually READ?
  *
- * This decides whether the input carries its own `aria-label`, so getting it wrong in either
- * direction is an accessibility defect: a false positive leaves the checkbox nameless, a false
- * negative overrides visible text with a name that may disagree with it (WCAG 2.5.3).
+ * It decides whether the input gets its own `aria-label`, so being wrong in either direction is an
+ * accessibility defect — a false positive leaves the checkbox nameless (WCAG 4.1.2), a false
+ * negative overrides visible text with a name that may not contain it (WCAG 2.5.3).
  *
- * `undefined`/`null`/`true`/`false` are all "nothing" — the idiomatic conditional slot is
- * `{showLabel && "Dark mode"}`, which passes `false`, not `undefined`. `""` and whitespace are
- * nothing too, and an array is judged by its members, so `{[]}` and `{[false, null]}` are nothing
- * as well. This is `popoverHasSlotContent`'s rule extended down through arrays.
+ * So it answers the narrower, answerable question. Strings and numbers (and arrays of them) are
+ * text: they become the input's name through the wrapping <label>, and no `aria-label` is needed
+ * or wanted. EVERYTHING ELSE IS OPAQUE — a render-only binding cannot look inside a framework
+ * element to see what, or whether, it renders, so `<></>`, a component returning null, and a
+ * `<span>` full of words are indistinguishable here. Opaque therefore counts as NO readable text
+ * and the input keeps an explicit name, because a control that is merely named redundantly is
+ * recoverable and a control with no name at all is not.
  *
- * DOCUMENTED RESIDUAL: a framework element that happens to render nothing — `<></>`, or a
- * component returning `null` — reads as content here, because a render-only binding cannot look
- * inside it without invoking it. A caller in that position should pass no children at all (the
- * settings-row placement the card draws), which is unambiguous.
+ * `undefined`/`null`/`true`/`false` are nothing, so the idiomatic conditional slot
+ * (`{showLabel && "Dark mode"}`, which passes `false`) is handled. So are `""`, whitespace, and
+ * arrays that add up to nothing.
+ *
+ * DOCUMENTED RESIDUAL, and the escape hatch for it: a caller whose visible label is rich markup
+ * saying something OTHER than the default gets a name that does not contain that visible text.
+ * Pass `label` in that case — it is exactly what it is for.
  */
-export function themeSwitchHasText(children: unknown): boolean {
-  if (children === undefined || children === null || typeof children === "boolean") return false;
-  if (typeof children === "string") return children.trim().length > 0;
-  if (Array.isArray(children)) return children.some((child) => themeSwitchHasText(child));
-  return true;
+export function themeSwitchHasReadableText(children: unknown): boolean {
+  return readableText(children).length > 0;
+}
+
+function readableText(node: unknown): string {
+  if (typeof node === "string") return node.trim();
+  if (typeof node === "number") return Number.isFinite(node) ? String(node) : "";
+  if (Array.isArray(node)) return node.map(readableText).join("").trim();
+  return "";
 }
 
 // ── class derivation ───────────────────────────────────────────────────────────────────────────
@@ -227,13 +237,19 @@ export interface ThemeToggleState {
  * back up from `[aria-checked="true"]` to a preceding sibling without `:has()`, which nothing in
  * this sheet uses yet.
  *
- * An unrecognised mode degrades to `system`: the knob parks at rest (index 0) rather than emitting
- * a `--sel-<junk>` modifier with no rule behind it, which would strand the knob at index 0 anyway
- * but with a class that silently means nothing. Same degradation contract as `chipClass`.
+ * An unrecognised mode selects NOTHING, and says so: it emits `--sel-none`, whose rule HIDES the
+ * knob. Parking the knob at index 0 instead would paint System as chosen while every option
+ * announced `aria-checked="false"` — a sighted user and a screen-reader user would be told
+ * different things about the same control, which is exactly the split this family's "a state may
+ * not be painted unless it is announced" rule exists to prevent. Nothing selected is a real state;
+ * it renders as one.
+ *
+ * (Degrading to a defined class rather than emitting `--sel-<junk>` is the same contract as
+ * `chipClass`: a modifier with no rule behind it silently means nothing.)
  */
 export function themeToggleClass(mode: ThemeMode, state: ThemeToggleState = {}): string {
   const base = THEME_TOGGLE_PARTS.root;
-  const selected = isThemeMode(mode) ? mode : "system";
+  const selected = isThemeMode(mode) ? mode : "none";
   let cls = base;
   if (state?.labelled === true) cls += ` ${base}--lab`;
   return `${cls} ${base}--sel-${selected}`;
