@@ -23,8 +23,10 @@ import {
   themeGlyph,
   themeIconClass,
   themeIconTarget,
+  themeLabel,
   themeToggleClass,
   themeToggleKeyAction,
+  themeToggleTabStop,
   type ThemeMode,
 } from "@mythicalos/ui-core/logic";
 import { ThemeToggle, ThemeToggleIcon, ThemeToggleSwitch } from "./src/index.ts";
@@ -96,11 +98,28 @@ describe("ThemeToggle — the segmented member", () => {
     expect(html).toContain(`class="${themeToggleClass("auto" as ThemeMode)} "`);
   });
 
-  test("roving tabindex — the group is ONE tab stop", () => {
+  test("…and stays REACHABLE: the first option keeps the tab stop when nothing is checked", () => {
+    // Deriving the roving tabindex from `aria-checked` would put every option at -1 here, and a
+    // keyboard user could not tab into the control to fix the very state that broke it.
+    const html = renderToString(<ThemeToggle mode={"auto" as ThemeMode} onModeChange={noop} />);
+    expect(html.match(/tabindex="0"/g)?.length).toBe(1);
+    expect(html.match(/tabindex="-1"/g)?.length).toBe(THEME_MODES.length - 1);
+    // it is the FIRST option that holds it
+    expect(html.indexOf('tabindex="0"')).toBeLessThan(html.indexOf('tabindex="-1"'));
+    expect(themeToggleTabStop("auto" as ThemeMode)).toBe(0);
+  });
+
+  test("roving tabindex — the group is ONE tab stop, and it is themeToggleTabStop's", () => {
     for (const mode of THEME_MODES) {
       const html = renderToString(<ThemeToggle mode={mode} onModeChange={noop} />);
       expect(html.match(/tabindex="0"/g)?.length).toBe(1);
       expect(html.match(/tabindex="-1"/g)?.length).toBe(THEME_MODES.length - 1);
+      // …on the option the core names, not merely on some option
+      const before = html.slice(0, html.indexOf('tabindex="0"'));
+      expect({ mode, at: before.split("<button").length - 2 }).toEqual({
+        mode,
+        at: themeToggleTabStop(mode),
+      });
     }
   });
 
@@ -154,10 +173,31 @@ describe("ThemeToggle — the segmented member", () => {
     }
   });
 
+  test("a truthy non-boolean `labelled` is NOT the labelled variant — class and markup agree", () => {
+    // The core reads this opt-in flag with `=== true`. If the markup used raw truthiness instead,
+    // `labelled={1}` would render words into the icon-only variant's 30px cells, with the class
+    // string saying icon-only and the options silently losing their aria-label.
+    const junk = renderToString(
+      <ThemeToggle mode="system" onModeChange={noop} labelled={1 as unknown as boolean} />,
+    );
+    const plain = renderToString(<ThemeToggle mode="system" onModeChange={noop} />);
+    expect(junk).toBe(plain);
+    expect(junk).toContain(`class="${themeToggleClass("system")} "`);
+    for (const m of THEME_MODES) expect(junk).toContain(`aria-label="${THEME_MODE_LABELS[m]}"`);
+  });
+
   test("the group's name is overridable, but never blank by accident", () => {
     expect(
       renderToString(<ThemeToggle mode="dark" onModeChange={noop} label="Appearance" />),
     ).toContain('aria-label="Appearance"');
+    // An unusable override falls back rather than emitting `aria-label=""`, which would leave the
+    // group announced as nothing at all.
+    for (const junk of ["", "   ", undefined]) {
+      expect({ junk, html: renderToString(
+        <ThemeToggle mode="dark" onModeChange={noop} label={junk} />,
+      ).includes(`aria-label="${THEME_TOGGLE_GROUP_LABEL}"`) }).toEqual({ junk, html: true });
+    }
+    expect(themeLabel("", THEME_TOGGLE_GROUP_LABEL)).toBe(THEME_TOGGLE_GROUP_LABEL);
   });
 
   test("the passthrough class is appended, never replaced", () => {
@@ -279,6 +319,17 @@ describe("ThemeToggleIcon — the compact member", () => {
     }
   });
 
+  test("its name is overridable, but a blank override falls back rather than erasing it", () => {
+    expect(
+      renderToString(<ThemeToggleIcon isDark={false} onToggle={noop} label="Switch theme" />),
+    ).toContain('aria-label="Switch theme"');
+    for (const junk of ["", "  ", undefined]) {
+      expect({ junk, ok: renderToString(
+        <ThemeToggleIcon isDark={false} onToggle={noop} label={junk} />,
+      ).includes(`aria-label="${THEME_ICON_LABEL}"`) }).toEqual({ junk, ok: true });
+    }
+  });
+
   test("clicking asks for the OPPOSITE theme — never System", () => {
     for (const isDark of [true, false]) {
       const seen: string[] = [];
@@ -343,6 +394,35 @@ describe("ThemeToggleSwitch — the settings-row member", () => {
     expect(
       renderToString(<ThemeToggleSwitch checked={false} onChange={noop} label="Appearance" />),
     ).toContain('aria-label="Appearance"');
+  });
+
+  test("children that render NOTHING are not visible text either", () => {
+    // `children=""`, whitespace, or an array of nothing all leave the checkbox with no text. Being
+    // fooled by any of them would ship a nameless control.
+    for (const empty of ["", "   ", [], [false, null]] as const) {
+      const html = renderToString(
+        <ThemeToggleSwitch checked={false} onChange={noop}>
+          {empty}
+        </ThemeToggleSwitch>,
+      );
+      expect({ empty, named: html.includes(`aria-label="${THEME_SWITCH_LABEL}"`) }).toEqual({
+        empty,
+        named: true,
+      });
+    }
+  });
+
+  test("a blank `label` falls back — the control is never announced as nothing", () => {
+    for (const junk of ["", "   ", undefined]) {
+      const html = renderToString(
+        <ThemeToggleSwitch checked={false} onChange={noop} label={junk} />,
+      );
+      expect({ junk, named: html.includes(`aria-label="${THEME_SWITCH_LABEL}"`) }).toEqual({
+        junk,
+        named: true,
+      });
+      expect(html).not.toContain('aria-label=""');
+    }
   });
 
   test("a falsy child is not visible text — the fallback name still applies", () => {

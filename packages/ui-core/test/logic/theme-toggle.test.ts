@@ -22,9 +22,12 @@ import {
   themeGlyph,
   themeIconClass,
   themeIconTarget,
+  themeLabel,
   themeModeIndex,
+  themeSwitchHasText,
   themeToggleClass,
   themeToggleKeyAction,
+  themeToggleTabStop,
   type ThemeMode,
 } from "../../src/index.ts";
 
@@ -341,5 +344,68 @@ describe("icon geometry — one source, drawn by both bindings", () => {
       Object.values(THEME_ICONS).flatMap((s) => s.shapes.map((shape) => shape.kind)),
     );
     expect([...kinds].sort()).toEqual(["circle", "path", "rect"]);
+  });
+});
+
+describe("themeToggleTabStop — the group stays reachable even with nothing selected", () => {
+  test("normally the tab stop IS the selection", () => {
+    for (const [i, m] of THEME_MODES.entries()) expect(themeToggleTabStop(m)).toBe(i);
+  });
+
+  test("an unrecognised mode puts it on the FIRST option, not on none of them", () => {
+    // Deriving the roving tabindex straight from `aria-checked` would leave every option at -1
+    // when nothing is checked: the whole control would drop out of the tab order, and a keyboard
+    // user could not reach it to fix the very state that broke it.
+    for (const junk of ["auto", "", "Dark"]) {
+      expect({ junk, stop: themeToggleTabStop(junk as ThemeMode) }).toEqual({ junk, stop: 0 });
+    }
+  });
+
+  test("it always names a real option", () => {
+    for (const m of [...THEME_MODES, "auto" as ThemeMode]) {
+      const stop = themeToggleTabStop(m);
+      expect(stop).toBeGreaterThanOrEqual(0);
+      expect(stop).toBeLessThan(THEME_MODES.length);
+    }
+  });
+});
+
+describe("themeLabel — a name override may never blank a control's name", () => {
+  test("a usable override wins", () => {
+    expect(themeLabel("Appearance", THEME_SWITCH_LABEL)).toBe("Appearance");
+    expect(themeLabel("  Appearance  ", THEME_SWITCH_LABEL)).toBe("  Appearance  ");
+  });
+
+  test("an unusable one falls back — an empty name is worse than no override", () => {
+    // A control named "" is announced as nothing at all; the default at least says what it is.
+    for (const junk of [undefined, null, "", "   ", "\t\n", 0, 1, {}, [], true]) {
+      expect({ junk, name: themeLabel(junk, THEME_SWITCH_LABEL) }).toEqual({
+        junk,
+        name: THEME_SWITCH_LABEL,
+      });
+    }
+  });
+});
+
+describe("themeSwitchHasText — deciding whether the input needs its own name", () => {
+  test("real text counts", () => {
+    expect(themeSwitchHasText("Dark mode")).toBe(true);
+    expect(themeSwitchHasText(0)).toBe(true); // a 0 renders as "0"
+    expect(themeSwitchHasText(["Dark mode"])).toBe(true);
+    expect(themeSwitchHasText([false, null, "Dark mode"])).toBe(true);
+  });
+
+  test("nothing-shaped children are nothing — including the ones a conditional produces", () => {
+    // `{showLabel && "Dark mode"}` passes `false`, not `undefined`. Reading that as text would
+    // leave the checkbox with no accessible name at all.
+    for (const empty of [undefined, null, false, true, "", "   ", [], [false, null], [[]]]) {
+      expect({ empty, has: themeSwitchHasText(empty) }).toEqual({ empty, has: false });
+    }
+  });
+
+  test("a framework element reads as content — the documented residual", () => {
+    // A render-only binding cannot look inside an element to see whether it renders anything, so
+    // an element is taken at face value. A caller who renders nothing should pass nothing.
+    expect(themeSwitchHasText({ type: "span", props: {} })).toBe(true);
   });
 });

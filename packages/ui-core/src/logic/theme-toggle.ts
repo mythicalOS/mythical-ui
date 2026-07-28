@@ -144,6 +144,60 @@ export function nextThemeMode(mode: ThemeMode, action: ThemeToggleKeyAction): Th
   return THEME_MODES[(((at + dir) % n) + n) % n] as ThemeMode;
 }
 
+/**
+ * Which option index is the group's single tab stop.
+ *
+ * The selected one — except when the mode is not one of the three, where NOTHING is selected and
+ * the first option takes it. That is the WAI-ARIA radio-group rule for a group with no checked
+ * radio, and it is the only answer that keeps the control REACHABLE without lying: a roving
+ * tabindex derived straight from `aria-checked` would leave every option at -1, so a keyboard user
+ * could not tab to the group at all and would have no way to fix the very state that broke it.
+ * `aria-checked` stays false everywhere — being focusable is not a claim to be selected.
+ */
+export function themeToggleTabStop(mode: ThemeMode): number {
+  const at = themeModeIndex(mode);
+  return at >= 0 ? at : 0;
+}
+
+// ── accessible names ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * A caller-supplied accessible name, or the fallback when it is not a usable one.
+ *
+ * Runtime-checked, because these are public props of a published package and TypeScript is not
+ * there at the call site. `label=""` (or whitespace, or a non-string from a JS consumer) would
+ * otherwise emit an EMPTY accessible name, which is strictly worse than no override: a control
+ * named "" is announced as nothing at all, where the default at least says what it is. Same
+ * contract, and the same reasoning, as `revealName` in the Input atom's reveal affordance.
+ */
+export function themeLabel(supplied: unknown, fallback: string): string {
+  return typeof supplied === "string" && supplied.trim().length > 0 ? supplied : fallback;
+}
+
+/**
+ * Does the switch's `children` slot render text a screen reader can use as the control's name?
+ *
+ * This decides whether the input carries its own `aria-label`, so getting it wrong in either
+ * direction is an accessibility defect: a false positive leaves the checkbox nameless, a false
+ * negative overrides visible text with a name that may disagree with it (WCAG 2.5.3).
+ *
+ * `undefined`/`null`/`true`/`false` are all "nothing" — the idiomatic conditional slot is
+ * `{showLabel && "Dark mode"}`, which passes `false`, not `undefined`. `""` and whitespace are
+ * nothing too, and an array is judged by its members, so `{[]}` and `{[false, null]}` are nothing
+ * as well. This is `popoverHasSlotContent`'s rule extended down through arrays.
+ *
+ * DOCUMENTED RESIDUAL: a framework element that happens to render nothing — `<></>`, or a
+ * component returning `null` — reads as content here, because a render-only binding cannot look
+ * inside it without invoking it. A caller in that position should pass no children at all (the
+ * settings-row placement the card draws), which is unambiguous.
+ */
+export function themeSwitchHasText(children: unknown): boolean {
+  if (children === undefined || children === null || typeof children === "boolean") return false;
+  if (typeof children === "string") return children.trim().length > 0;
+  if (Array.isArray(children)) return children.some((child) => themeSwitchHasText(child));
+  return true;
+}
+
 // ── class derivation ───────────────────────────────────────────────────────────────────────────
 
 /** Every class the segmented member renders. The bindings import these rather than spelling the

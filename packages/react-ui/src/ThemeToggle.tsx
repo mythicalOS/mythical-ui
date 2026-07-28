@@ -35,9 +35,12 @@ import {
   themeGlyph,
   themeIconClass,
   themeIconTarget,
+  themeLabel,
   themeModeIndex,
+  themeSwitchHasText,
   themeToggleClass,
   themeToggleKeyAction,
+  themeToggleTabStop,
   type ResolvedTheme,
   type ThemeIconName,
   type ThemeMode,
@@ -60,9 +63,12 @@ export {
   themeGlyph,
   themeIconClass,
   themeIconTarget,
+  themeLabel,
   themeModeIndex,
+  themeSwitchHasText,
   themeToggleClass,
   themeToggleKeyAction,
+  themeToggleTabStop,
   type ResolvedTheme,
   type ThemeIconName,
   type ThemeMode,
@@ -122,7 +128,9 @@ export interface ThemeToggleProps {
  * Roving tabindex, per the WAI-ARIA radio-group pattern: the group is ONE tab stop and the arrows
  * move within it, so Tab does not have to walk three buttons to leave a preference control. The
  * card's demo leaves all three natively focusable; that is a demo, and this is the component every
- * product will use.
+ * product will use. When the mode is not one of the three, NOTHING is checked — no option may
+ * claim a selection the caller never made — but the first one still holds the tab stop, because a
+ * group nobody can tab into is a worse answer than a group with no selection yet.
  *
  * Focus follows selection on an arrow key, which is what makes selection-follows-focus honest: the
  * mode reported and the option focused are always the same one. It moves synchronously in the
@@ -134,7 +142,15 @@ export interface ThemeToggleProps {
  * exercise these handlers in a package whose test runtime has no DOM.
  */
 export function ThemeToggle(props: ThemeToggleProps) {
-  const { mode, onModeChange, labelled = false, className: cls = "" } = props;
+  const { mode, onModeChange, className: cls = "" } = props;
+  // Normalized ONCE. The core reads `labelled` with `=== true` (an opt-in flag must not
+  // switch variants on a truthy accident), so deriving the markup from raw truthiness would
+  // let a JS consumer's `labelled={1}` render words into the icon-only variant's 30px cells,
+  // with the class string saying otherwise and the options losing their aria-label.
+  const labelled = props.labelled === true;
+  // The group's one tab stop. Normally the selected option; with an unrecognised mode nothing is
+  // checked, and the first option takes it so the control stays reachable at all.
+  const tabStop = themeToggleTabStop(mode);
 
   const select = (next: ThemeMode) => {
     // Re-selecting the mode already in force is not a change: reporting it would make a controlled
@@ -160,12 +176,12 @@ export function ThemeToggle(props: ThemeToggleProps) {
     <div
       className={`${themeToggleClass(mode, { labelled })} ${cls}`}
       role="radiogroup"
-      aria-label={props.label ?? THEME_TOGGLE_GROUP_LABEL}
+      aria-label={themeLabel(props.label, THEME_TOGGLE_GROUP_LABEL)}
       onKeyDown={onKeyDown}
     >
       {/* Decorative: the selection is announced by aria-checked below, never by this <span>. */}
       <span className={THEME_TOGGLE_PARTS.knob} aria-hidden="true" />
-      {THEME_MODES.map((m) => (
+      {THEME_MODES.map((m, i) => (
         <button
           key={m}
           type="button"
@@ -176,7 +192,7 @@ export function ThemeToggle(props: ThemeToggleProps) {
           // The labelled variant's visible word IS the name; naming it twice would have a reader
           // announce "Light Light". Icon-only has no text at all, so it must carry one.
           aria-label={labelled ? undefined : THEME_MODE_LABELS[m]}
-          tabIndex={m === mode ? 0 : -1}
+          tabIndex={i === tabStop ? 0 : -1}
           onClick={() => select(m)}
         >
           <ThemeIcon name={THEME_MODE_ICONS[m]} />
@@ -212,7 +228,7 @@ export function ThemeToggleIcon(props: ThemeToggleIconProps) {
     <button
       type="button"
       className={`${themeIconClass({ bordered })} ${cls}`}
-      aria-label={props.label ?? THEME_ICON_LABEL}
+      aria-label={themeLabel(props.label, THEME_ICON_LABEL)}
       aria-pressed={isDark ? "true" : "false"}
       onClick={() => onToggle(themeIconTarget(isDark))}
     >
@@ -249,7 +265,7 @@ export interface ThemeToggleSwitchProps {
  */
 export function ThemeToggleSwitch(props: ThemeToggleSwitchProps) {
   const { checked, onChange, disabled = false, className: cls = "" } = props;
-  const hasText = props.children !== undefined && props.children !== null && props.children !== false;
+  const hasText = themeSwitchHasText(props.children);
   return (
     <label className={`${THEME_SWITCH_PARTS.root} ${cls}`} aria-disabled={disabled ? "true" : undefined}>
       <input
@@ -257,7 +273,7 @@ export function ThemeToggleSwitch(props: ThemeToggleSwitchProps) {
         className={THEME_SWITCH_PARTS.input}
         checked={checked}
         disabled={disabled}
-        aria-label={hasText ? undefined : (props.label ?? THEME_SWITCH_LABEL)}
+        aria-label={hasText ? undefined : themeLabel(props.label, THEME_SWITCH_LABEL)}
         onChange={(e) => onChange(e.currentTarget.checked)}
       />
       <span className={THEME_SWITCH_PARTS.track}>
