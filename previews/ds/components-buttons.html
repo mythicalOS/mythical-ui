@@ -33,32 +33,36 @@ h3{font-size:12px;font-weight:650;margin:0 0 10px;color:#5A5F6A;text-transform:u
 /* danger — outline; fills only on interaction */
 .dan{background:#FFF;border-color:#B3261E;color:#B3261E}
 .dan:hover,.dan.h{background:#FAE9E8}.dan.a{background:#F5DBD9}
-/* tone — status fill via data-tone (ok/warn/error/info; bare = accent, with accent's hand-tuned
-   steps). No new metrics or colour values: fills ARE the status tokens; hover/active mix toward
-   ink (88%/76%), so heritage — where ink is cream — steps LIGHTER, matching its hover grammar.
-   Ink = --my-tone-ink: #fff in light, --my-bg in heritage (heritage status hues are too light
-   for white). Error fills stay rule-9-scoped: lifecycle confirm flows only. */
-.tone{background:#0F6B66;color:#fff}
-.tone:hover,.tone.h{background:#0C5A56}.tone.a{background:#0B5450}
-.tone[data-tone=ok]{background:#197C4A}
-.tone[data-tone=ok]:hover,.tone[data-tone=ok].h{background:color-mix(in oklab,#197C4A 88%,#16181D)}
-.tone[data-tone=ok].a{background:color-mix(in oklab,#197C4A 76%,#16181D)}
-.tone[data-tone=warn]{background:#B05109}
-.tone[data-tone=warn]:hover,.tone[data-tone=warn].h{background:color-mix(in oklab,#B05109 88%,#16181D)}
-.tone[data-tone=warn].a{background:color-mix(in oklab,#B05109 76%,#16181D)}
-.tone[data-tone=error]{background:#B3261E}
-.tone[data-tone=error]:hover,.tone[data-tone=error].h{background:color-mix(in oklab,#B3261E 88%,#16181D)}
-.tone[data-tone=error].a{background:color-mix(in oklab,#B3261E 76%,#16181D)}
-.tone[data-tone=info]{background:#2B5FAA}
-.tone[data-tone=info]:hover,.tone[data-tone=info].h{background:color-mix(in oklab,#2B5FAA 88%,#16181D)}
-.tone[data-tone=info].a{background:color-mix(in oklab,#2B5FAA 76%,#16181D)}
-.tone.d,.tone:disabled,.tone[data-tone].d,.tone[data-tone]:disabled{background:#F1EFE9;color:#9AA0AC;border-color:transparent;cursor:not-allowed}
 /* shared states */
 .btn:focus-visible,.btn.f{outline:2px solid #0F6B66;outline-offset:2px}
 .btn.d,.btn:disabled{background:#F1EFE9;color:#9AA0AC;border-color:transparent;cursor:not-allowed}
 .spin{width:13px;height:13px;border-radius:50%;border:2px solid currentColor;border-top-color:transparent;animation:r .8s linear infinite;opacity:.85}
 @keyframes r{to{transform:rotate(360deg)}}
 .cap{font-size:11px;color:#5A5F6A;margin-top:16px;max-width:640px}
+/* tone-filled — fill modifier only; inherits every .btn metric. --t = the status token,
+   --ti = label ink (--my-tone-ink: #fff light, --my-bg heritage), --ink = the theme's ink —
+   the mix partner, so hovers step toward ink: darker on light, LIGHTER in heritage. */
+.tone{border-color:transparent;background:var(--t);color:var(--ti)}
+.tone:hover,.tone.h{background:color-mix(in oklab,var(--t) 88%,var(--ink))}
+.tone.a{background:color-mix(in oklab,var(--t) 76%,var(--ink))}
+.tone.d,.tone:disabled,.tone[data-tone].d,.tone[data-tone]:disabled{background:#F1EFE9;color:#9AA0AC}
+.sm{padding:6px 12px;font-size:12.5px}
+.tones{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}
+.pane{padding:16px;border-radius:8px;display:grid;gap:10px;align-content:start}
+.pane h4{font-size:10px;font-weight:650;text-transform:uppercase;letter-spacing:.4px;color:#5A5F6A}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.pl{background:#FAF9F6;--ti:#FFFFFF;--ink:#16181D}
+.pl [data-tone=accent]{--t:#0F6B66}.pl [data-tone=ok]{--t:#197C4A}.pl [data-tone=warn]{--t:#B05109}.pl [data-tone=error]{--t:#B3261E}.pl [data-tone=info]{--t:#2B5FAA}
+/* accent-as-tone keeps accent's hand-tuned steps (bare/accent fall-through in canonical) */
+.pl .tone[data-tone=accent]:hover,.pl .tone[data-tone=accent].h{background:#0C5A56}
+.pl .tone[data-tone=accent].a{background:#0B5450}
+/* heritage flips ink to --my-bg: the heritage status hues are light, so #fff-on-tone drops below AA */
+.ph{background:#0B0C0F;--ti:#0B0C0F;--ink:#ECE7DE}
+.ph h4,.ph .ch{color:#9AA0AC}
+.ph [data-tone=accent]{--t:#3FB8AE}.ph [data-tone=ok]{--t:#4CC38A}.ph [data-tone=warn]{--t:#EFA443}.ph [data-tone=error]{--t:#E5484D}.ph [data-tone=info]{--t:#7AA7E8}
+.ph .tone[data-tone=accent]:hover,.ph .tone[data-tone=accent].h{background:#55C4BA}
+.ph .tone[data-tone=accent].a{background:#7FD1C9}
+.ph .btn.d,.ph .btn:disabled{background:#1A1C22;color:#5C616C}
 </style></head><body>
 <h3>Button state matrix — hover/active are live too (transition 120ms)</h3>
 <div class="matrix">
@@ -98,30 +102,36 @@ h3{font-size:12px;font-weight:650;margin:0 0 10px;color:#5A5F6A;text-transform:u
 <button class="btn dan f">Good-night</button>
 <button class="btn dan d">Good-night</button>
 <button class="btn dan" aria-busy="true"><span class="spin"></span>Stopping…</button>
-<span class="rh">tone</span>
-<button class="btn tone" data-tone="warn">Open advisory</button>
-<button class="btn tone h" data-tone="warn">Open advisory</button>
-<button class="btn tone a" data-tone="warn">Open advisory</button>
-<button class="btn tone f" data-tone="warn">Open advisory</button>
-<button class="btn tone d" data-tone="warn">Open advisory</button>
-<button class="btn tone" data-tone="warn" aria-busy="true"><span class="spin"></span>Opening…</button>
-</div>
-<div style="display:flex;gap:12px;margin-top:20px;align-items:center;flex-wrap:wrap">
-<span class="rh">tone fills</span>
-<button class="btn tone">Spawn team</button>
-<button class="btn tone" data-tone="ok">Mark resolved</button>
-<button class="btn tone" data-tone="warn">Open advisory</button>
-<button class="btn tone" data-tone="error">Yes, delete it</button>
-<button class="btn tone" data-tone="info">View details</button>
 </div>
 <div class="cap">Rules: focus is always the petrol 2px outline, offset 2 — both themes, never removed without
 replacement. Disabled = <b>disabled-bg/-ink</b> tokens + not-allowed cursor, never text opacity. Loading keeps
 the label (width stays stable), 13px 2px-stroke spinner in currentColor, .8s linear; the control is
 <code>aria-busy</code> and inert. Accent appears at most once per view; danger stays an outline until interaction.
 Ghost has no loading state — promote to secondary if it triggers async work.</div>
-<div class="cap">Tone fills (ui-core 0.6): <code>data-tone</code> picks ok/warn/error/info; bare tone = accent with
-accent's hand-tuned steps. Hover/active are derived — <code>color-mix(in oklab, tone 88%/76%, --my-ink)</code> — so
-heritage, where ink is cream, steps <b>lighter</b>, matching its hover grammar. Label ink is <code>--my-tone-ink</code>:
-#fff in light, <code>--my-bg</code> in heritage (the heritage status hues are too light for white to clear AA). The
-error fill stays rule-9-scoped — lifecycle confirm flows only; everywhere else danger remains the outline row above.</div>
+<h3>Tone-filled — <code>.btn.btn--tone[data-tone]</code></h3>
+<div class="tones">
+<div class="pane pl">
+<h4>light — ink is #FFF</h4>
+<div class="row"><button class="btn tone" data-tone="accent">Accent</button><button class="btn tone" data-tone="ok">OK</button><button class="btn tone" data-tone="warn">Warn</button><button class="btn tone" data-tone="error">Error</button><button class="btn tone" data-tone="info">Info</button></div>
+<div class="row"><button class="btn tone sm" data-tone="accent">Accent</button><button class="btn tone sm" data-tone="ok">OK</button><button class="btn tone sm" data-tone="warn">Warn</button><button class="btn tone sm" data-tone="error">Error</button><button class="btn tone sm" data-tone="info">Info</button></div>
+<div class="row"><button class="btn tone d" data-tone="warn" disabled>Open advisory</button><span class="ch">disabled — tone ignored</span></div>
+</div>
+<div class="pane ph">
+<h4>heritage — ink flips to bg (#0B0C0F)</h4>
+<div class="row"><button class="btn tone" data-tone="accent">Accent</button><button class="btn tone" data-tone="ok">OK</button><button class="btn tone" data-tone="warn">Warn</button><button class="btn tone" data-tone="error">Error</button><button class="btn tone" data-tone="info">Info</button></div>
+<div class="row"><button class="btn tone sm" data-tone="accent">Accent</button><button class="btn tone sm" data-tone="ok">OK</button><button class="btn tone sm" data-tone="warn">Warn</button><button class="btn tone sm" data-tone="error">Error</button><button class="btn tone sm" data-tone="info">Info</button></div>
+<div class="row"><button class="btn tone d" data-tone="warn" disabled>Open advisory</button><span class="ch">disabled — tone ignored</span></div>
+</div>
+</div>
+<div class="cap">Use when the fill must carry the <b>severity of the thing being acted on</b> — a warn-tinted advisory
+row gets a warn button (Open advisory, Review seal). Fill modifier only: geometry, gap, focus ring and disabled come
+from <code>.btn</code>, so no new metrics. Every fill is an existing status token and hover/active are derived —
+<code>color-mix(in oklab, tone 88%/76%, --my-ink)</code> — so an upstream retint carries, and heritage, where ink is
+cream, steps <b>lighter</b>, matching its hover grammar; accent-as-tone keeps accent's hand-tuned steps. Label ink
+rides the <code>--my-tone-ink</code> token (tokens 0.5.17): #fff on light, <code>--my-bg</code> in heritage — the
+heritage hues are light enough that white-on-tone fails AA. No <code>data-tone</code> = accent, so it degrades to
+<code>.btn--acc</code> rather than rendering unstyled. Focus stays the shared petrol outline on every tone. The error
+fill remains rule-9-scoped — lifecycle confirm flows only, typed-name match; everywhere else danger stays the outline
+row above. Accent-as-tone still obeys the one-accent-per-view rule; status tones are exempt. The draft spec's
+<code>.btn--danf</code> alias was dropped — zero consumers anywhere; use <code>data-tone=&quot;error&quot;</code>.</div>
 </body></html>
