@@ -252,11 +252,11 @@ describe("(4) a state may not be painted unless it is announced", () => {
   });
 });
 
-describe("(5) the shape decisions are pinned, because two of them are unresolved", () => {
+describe("(5) the shape decisions are pinned, by maintainer ruling", () => {
   test("the card's pill geometry is what shipped — track, options, knob, switch track", () => {
-    // In tension with canonical token rule 10 ("everything clickable … is squared"), which the
-    // sibling `.tog` atom followed. The sheet's own banner records the reasoning and flags the
-    // labelled checked option and the switch track as the genuinely unreconciled cases.
+    // Ruled 2026-07-28: the theme-toggle family keeps the card's pill as a scoped exception to
+    // canonical token rule 10 (recorded there), with the sibling `.tog` atom staying squared.
+    // The pin makes any future departure from the ruling a deliberate act.
     for (const sel of [".my-tt-seg", ".my-tt-seg__knob", ".my-tt-seg__opt", ".my-tt-switch__track"]) {
       expect({ sel, pill: /border-radius:\s*var\(--my-r-pill\)/.test(ruleBody(sel)) }).toEqual({
         sel,

@@ -1248,24 +1248,17 @@ button.my-session-card { cursor: pointer; }
    That matters beyond tidiness: this image runs under `style-src 'self'`, so the inline style a
    measured layout would have to write is a CSP violation, and the bindings are render-only.
 
-   ── ON THE PILL RADIUS, AND WHY THIS IS NOT SETTLED ──
+   ── ON THE PILL RADIUS — SETTLED BY MAINTAINER RULING (2026-07-28) ──
    The card draws the segmented track, its options, the knob and the switch track at
-   --my-r-pill. Canonical token rule 10 says the opposite in as many words: "--my-r-pill is for
-   NON-interactive status chips/labels only. Everything clickable — buttons, inputs, selects,
-   editable chips, toggles — is squared --my-r-control." It even names toggles, and the base
-   `.tog` atom near the top of this sheet was deliberately squared for exactly that reason.
-
-   The port follows the CARD, because the card is the live spec for this component and post-dates
-   the rule (tokens 0.5.16 minted --my-shadow-knob for it). The icon-only options are defensible
-   on the rule's own terms — the rationale is "a pill never invites a click, so an interactive
-   control must never look like one", and they paint no resting shape at all (no fill, no border,
-   only a glyph; the pill shows solely in the focus ring, the same reasoning that already settled
-   `.my-chip__x`), while the track and the knob are a non-interactive container and a decorative
-   <span>. Two cases ARE genuinely unreconciled: the labelled variant's checked option, which
-   paints a real pill-shaped fill on a button, and the switch track, where the sibling `.tog`
-   answered the identical question the other way. Those are design decisions, not styling ones,
-   so they are recorded here and flagged rather than quietly settled in either direction.
-   test/css-theme-toggle.test.ts pins the current answer so a change has to be deliberate.
+   --my-r-pill, while canonical token rule 10 squares everything clickable at --my-r-control
+   (the base `.tog` atom near the top of this sheet follows the rule). The conflict was put to
+   the maintainer as a side-by-side render and ruled: the theme-toggle family KEEPS the card's
+   pill, recorded in tokens.css rule 10 as a scoped exception — not a precedent — with the
+   inputs Toggle staying squared. The icon-only options were defensible on the rule's own terms
+   even before the ruling (they paint no resting shape; the pill shows solely in the focus ring,
+   the reasoning that settled `.my-chip__x`); the labelled variant's checked fill and the switch
+   track are covered by the ruling itself. test/css-theme-toggle.test.ts pins the answer so any
+   future change has to be equally deliberate.
 
    Normalizations, per the standing rules of this section:
      1. The card's 12px option label and its 12.5px switch label both ride --my-fs-caption
