@@ -18,14 +18,20 @@ export function statusLineClass(tone: StatusTone): string {
   return `my-status my-status--${tone}`;
 }
 
-// Banner tone + glyph map (design-export/packages/preact-ui/src/components/Banner.jsx): 4 tones,
-// each with a required glyph (token rule #7: status softs never rely on color alone).
-export type BannerTone = "warn" | "info" | "ok" | "error";
+// Banner tone + glyph map (design-export/packages/preact-ui/src/components/Banner.jsx): the
+// status quartet (warn/info/ok/error — token rule #7: status softs never rely on color alone,
+// each has a required glyph) plus two non-status SURFACE variants ported from the SAGA mockup
+// rewire: `accent` (emphasis/brand — privacy posture, credential guidance) and `neutral` (a
+// quiet notice — "deactivated"). The surface variants keep a default glyph for structure, but
+// consumers usually override it with their own inline SVG via the binding's `glyph` prop.
+export type BannerTone = "warn" | "info" | "ok" | "error" | "accent" | "neutral";
 export const BANNER_ICON: Record<BannerTone, string> = {
   warn: "▲",
   info: "ℹ",
   ok: "✓",
   error: "✕",
+  accent: "◆",
+  neutral: "○",
 };
 export function bannerClass(tone: BannerTone): string {
   return `my-banner my-banner--${tone}`;

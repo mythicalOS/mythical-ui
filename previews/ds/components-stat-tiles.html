@@ -16,6 +16,9 @@
   --my-border:#E7E3DB;
   --my-muted:#5A5F6A;
   --my-accent-strong:#0B5450;
+  --my-ok:#197C4A;
+  --my-warn:#B05109;
+  --my-error:#B3261E;
   --my-font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --my-fw-bold:650;
   --my-r-card:10px;
@@ -30,6 +33,11 @@ h3{font-size:12px;font-weight:650;margin:0 0 10px;color:#5A5F6A;text-transform:u
 .tile .v{font-family:var(--my-font-mono);font-size:17px;font-weight:var(--my-fw-bold);font-variant-numeric:tabular-nums;margin-top:2px}
 .tile .d{font-size:10.5px;color:var(--my-muted);font-family:var(--my-font-mono)}
 .tile.save .v{color:var(--my-accent-strong)}
+.tile.ok .v{color:var(--my-ok)}
+.tile.warn{border-color:var(--my-warn)}
+.tile.warn .v{color:var(--my-warn)}
+.tile.err{border-color:var(--my-error)}
+.tile.err .v{color:var(--my-error)}
 .cap{font-size:11px;color:#5A5F6A;margin-top:14px;max-width:640px}
 </style></head><body>
 <h3>Stat tiles — session detail header</h3>
@@ -43,4 +51,13 @@ h3{font-size:12px;font-weight:650;margin:0 0 10px;color:#5A5F6A;text-transform:u
 <div class="cap">Detail-pane header metrics next to the arc gauge: tokens in/out (same box size), prompt-cache %, cost, spine
 savings — the accent-colored "brag" number (<code>--my-accent-strong</code>). All values mono, tabular-nums, with a
 micro-label uppercase key and a mono sub-caption.</div>
+<h3>Tone axis — voice vs band</h3>
+<div class="panel tiles">
+  <div class="tile ok"><div class="k">Index health</div><div class="v">healthy</div><div class="d">no unused, no bloat</div></div>
+  <div class="tile warn"><div class="k">Context</div><div class="v">78%</div><div class="d">of 200k window</div></div>
+  <div class="tile err"><div class="k">Context</div><div class="v">93%</div><div class="d">of 200k window</div></div>
+</div>
+<div class="cap">The ok tone is voice, not band — a healthy value reads <code>--my-ok</code> on the default
+border (ported upstream from the Sága mockups); only trouble gets the border band. warn/error are the
+gauge-band tint — border and value together; the thresholds themselves live with the caller (token rule #4).</div>
 </body></html>

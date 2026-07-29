@@ -18,8 +18,10 @@
 //     (token rule #4) — the thresholds themselves stay with the caller, only the tint is here.
 
 /** Tile tone. `accent` is the design card's "brag" number (`.tile.save .v`); `warn`/`error` are the
- *  gauge-band tint. Absent ⇒ a plain tile. */
-export type StatTileTone = "accent" | "warn" | "error";
+ *  gauge-band tint; `ok` (ported from the SAGA mockup rewire) is voice-only — the healthy value
+ *  reads `--my-ok` on the default border, only trouble gets the border band. Absent ⇒ a plain
+ *  tile. */
+export type StatTileTone = "accent" | "warn" | "error" | "ok";
 
 export interface StatTile {
   /** Uppercase micro key, e.g. `tokens in`. */

@@ -89,7 +89,7 @@ describe("stat tiles", () => {
   test("statTilesClass / statTileClass output — every tone — has selectors", () => {
     expectSelectorsFor(statTilesClass());
     expectSelectorsFor(statTileClass());
-    for (const tone of ["accent", "warn", "error"] as StatTileTone[]) {
+    for (const tone of ["accent", "warn", "error", "ok"] as StatTileTone[]) {
       expectSelectorsFor(statTileClass(tone));
     }
   });
@@ -97,6 +97,18 @@ describe("stat tiles", () => {
     for (const c of Object.values(STAT_TILE_PARTS)) {
       expect({ c, found: hasClassSelector(c) }).toEqual({ c, found: true });
     }
+  });
+  test("ok tone is voice, not band — value reads --my-ok, no --ok rule touches the border", () => {
+    // strip comments so a commented-out rule can neither satisfy nor trip the checks
+    const bare = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    const okRules = [...bare.matchAll(/\.my-stat-tile--ok[^{]*\{[^}]*\}/g)].map((m) => m[0]);
+    expect(okRules.length).toBeGreaterThan(0);
+    // the value rule exists and colors with the token
+    expect(
+      okRules.some((r) => r.includes(".my-stat-tile__value") && /color:\s*var\(--my-ok\)/.test(r)),
+    ).toBe(true);
+    // no --ok rule sets any border property — warn/error are the band tones, ok stays voice-only
+    for (const r of okRules) expect(r).not.toMatch(/border/);
   });
   test("values are mono + tabular-nums (the card's whole point)", () => {
     const rule = css.match(/\.my-stat-tile__value\s*\{([^}]*)\}/);

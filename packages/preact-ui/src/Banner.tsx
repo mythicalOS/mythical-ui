@@ -1,5 +1,6 @@
 /** @jsxImportSource preact */
-// @mythicalos/preact-ui — inline banner. tone: warn | info | ok | error. Always carries a glyph +
+// @mythicalos/preact-ui — inline banner. tone: the status quartet (warn | info | ok | error) +
+// the accent/neutral surface variants. Always carries a glyph +
 // text (token rule #7: status softs never rely on color alone).
 //
 // Ported from design-export's packages/preact-ui/src/components/Banner.jsx (JSX→TSX, typed props).

@@ -297,6 +297,15 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-banner--ok    .my-banner__glyph { color: var(--my-ok); }
 .my-banner--error { background: var(--my-error-soft); border: 1px solid var(--my-error); }
 .my-banner--error .my-banner__glyph { color: var(--my-error); }
+/* non-status surface variants (ported from the SAGA mockup rewire): accent = an emphasis/brand
+   surface (privacy posture, credential guidance), neutral = a quiet notice ("deactivated").
+   Not part of the rule-#7 status quartet, but the glyph still rides along for structure —
+   consumers usually supply their own inline SVG via the binding's `glyph` prop. Ink on
+   accent-soft follows the page precedent: --my-accent-strong, never bare --my-accent. */
+.my-banner--accent  { background: var(--my-accent-soft);   border: 1px solid var(--my-accent); }
+.my-banner--accent  .my-banner__glyph { color: var(--my-accent-strong); }
+.my-banner--neutral { background: var(--my-surface-hover); border: 1px solid var(--my-border); }
+.my-banner--neutral .my-banner__glyph { color: var(--my-muted); }
 
 /* gauge (context / usage) — fill thresholds per token rule #4 */
 .my-gauge { display: inline-flex; }
@@ -396,6 +405,9 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-stat-tile--warn .my-stat-tile__value { color: var(--my-warn); }
 .my-stat-tile--error { border-color: var(--my-error); }
 .my-stat-tile--error .my-stat-tile__value { color: var(--my-error); }
+/* ok is voice, not band (ported from the SAGA mockup rewire: "indexes fresh", "index health") —
+   a healthy value reads --my-ok on the default border; only trouble gets the border band. */
+.my-stat-tile--ok .my-stat-tile__value { color: var(--my-ok); }
 
 /* git status chip (ds/components-git-chip.html `.gitchip`/`.gitflag`) — a bordered inline mono
    chip. The flags are the card's own squared 4px badge, NOT the pill `.my-chip`: inside a mono

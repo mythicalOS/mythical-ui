@@ -72,17 +72,19 @@ describe("bannerClass — banner tone to class string derivation", () => {
 });
 
 describe("BANNER_ICON — glyph map for banner tones", () => {
-  test("all 4 banner tones have glyphs", () => {
+  test("all 6 banner tones have glyphs", () => {
     expect(BANNER_ICON.warn).toBe("▲");
     expect(BANNER_ICON.info).toBe("ℹ");
     expect(BANNER_ICON.ok).toBe("✓");
     expect(BANNER_ICON.error).toBe("✕");
+    expect(BANNER_ICON.accent).toBe("◆");
+    expect(BANNER_ICON.neutral).toBe("○");
   });
 
-  test("has exactly 4 entries (no accidental extras)", () => {
+  test("has exactly 6 entries (no accidental extras)", () => {
     const keys = Object.keys(BANNER_ICON);
-    expect(keys.length).toBe(4);
-    expect(keys.sort()).toEqual(["error", "info", "ok", "warn"]);
+    expect(keys.length).toBe(6);
+    expect(keys.sort()).toEqual(["accent", "error", "info", "neutral", "ok", "warn"]);
   });
 
   test("glyphs are non-empty strings", () => {

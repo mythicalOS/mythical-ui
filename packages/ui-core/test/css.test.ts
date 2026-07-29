@@ -214,8 +214,8 @@ describe("styles.css — (e) every class Task 2's logic emits exists as a select
     for (const tone of tones) expectSelectorsFor(statusLineClass(tone));
   });
 
-  test("bannerClass — all 4 tones", () => {
-    const tones: BannerTone[] = ["warn", "info", "ok", "error"];
+  test("bannerClass — all 6 tones", () => {
+    const tones: BannerTone[] = ["warn", "info", "ok", "error", "accent", "neutral"];
     for (const tone of tones) expectSelectorsFor(bannerClass(tone));
   });
 

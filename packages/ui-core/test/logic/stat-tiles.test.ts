@@ -26,7 +26,7 @@ describe("class derivation", () => {
     expect(statTileClass()).toBe("my-stat-tile");
     expect(statTileClass(undefined)).toBe("my-stat-tile");
   });
-  test.each(["accent", "warn", "error"] as StatTileTone[])("tone=%s adds its modifier", (tone) => {
+  test.each(["accent", "warn", "error", "ok"] as StatTileTone[])("tone=%s adds its modifier", (tone) => {
     expect(statTileClass(tone)).toBe(`my-stat-tile my-stat-tile--${tone}`);
   });
 });

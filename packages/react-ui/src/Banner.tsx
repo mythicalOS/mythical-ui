@@ -1,4 +1,5 @@
-// @mythicalos/react-ui — inline banner. tone: warn | info | ok | error. Always carries a glyph +
+// @mythicalos/react-ui — inline banner. tone: the status quartet (warn | info | ok | error) +
+// the accent/neutral surface variants. Always carries a glyph +
 // text (token rule #7: status softs never rely on color alone).
 //
 // React twin of packages/preact-ui/src/Banner.tsx. `bannerClass`/`BANNER_ICON` (tone→class + glyph
