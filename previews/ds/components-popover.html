@@ -12,11 +12,17 @@
 <!-- /@dsFonts -->
 <title>Dropdown popover</title><style>
 :root{
+  --my-bg:#FAF9F6;
   --my-surface:#FFFFFF;
   --my-border:#E7E3DB;
   --my-control-border:#878E9B; /* v0.5.4 #21 — interactive resting boundaries (≥3:1, WCAG 1.4.11) */
   --my-muted:#5A5F6A;
+  --my-accent:#0F6B66;
   --my-accent-strong:#0B5450;
+  --my-disabled-ink:#9AA0AC;
+  --my-fw-bold:650;
+  --my-fs-micro:11px;
+  --my-fs-nano:10px;
   --my-font-mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   --my-fw-medium:500;
   --my-r-control:6px;
@@ -39,6 +45,19 @@ code{font-family:var(--my-font-mono);font-size:12px;background:var(--my-disabled
 .pop .it{display:flex;justify-content:space-between;gap:14px;padding:7px 10px;border-radius:6px;font-size:12.5px;cursor:pointer}
 .pop .it:hover{background:var(--my-surface-hover)}
 .pop .it.on{color:var(--my-accent-strong);font-weight:var(--my-fw-medium)}
+/* rich rows — elements on the same __item, never a fork */
+.pop .it.rich{align-items:flex-start;justify-content:flex-start;gap:9px}
+.pop .av{width:26px;height:26px;flex:none;border-radius:var(--my-r-control);display:inline-flex;align-items:center;justify-content:center;background:var(--my-bg);color:var(--my-muted);font-weight:var(--my-fw-bold);font-size:12px}
+.pop .it.on .av{background:var(--my-accent);color:var(--my-surface)}
+.pop .bd{min-width:0;flex:1}
+.pop .nm{display:block;font-size:13px;font-weight:var(--my-fw-bold);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pop .sb{display:block;font-size:var(--my-fs-micro);color:var(--my-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pop .ld{width:15px;flex:none;color:var(--my-accent-strong);font-weight:var(--my-fw-bold);font-size:12px}
+.pop .grp{display:flex;align-items:center;gap:7px;padding:8px 9px 3px;font-family:var(--my-font-mono);font-size:var(--my-fs-nano);font-weight:var(--my-fw-bold);color:var(--my-muted);text-transform:uppercase;letter-spacing:.5px}
+.pop .grp::after{content:"";flex:1;height:1px;background:var(--my-border)}
+.pop .it.dim{color:var(--my-disabled-ink)}
+.pop .it.dim .sb{color:var(--my-disabled-ink)}
+.cap{font-size:11px;color:var(--my-muted);margin-top:14px;max-width:680px}
 </style></head><body>
 <div class="note">Anchored below its chip; <code>--my-shadow-modal</code>, high z-index; ✓ marks current. Ancestors must never clip it.</div>
 <div class="panel" style="min-height:190px">
@@ -51,4 +70,29 @@ code{font-family:var(--my-font-mono);font-size:12px;background:var(--my-disabled
     </div>
   </div>
 </div>
+<div class="note" style="margin-top:14px">Rich rows — the same <code>__item</code>, grown elements: a leading avatar tile OR the fixed-width <code>__lead</code> check column, two-line <code>__body</code>, <code>__group</code> section rulers, <code>is-dim</code>.</div>
+<div class="panel" style="min-height:330px">
+  <div class="popwrap">
+    <span class="chipdd">workspace: <b>control-room</b> <span class="car">▾</span></span>
+    <div class="pop" style="min-width:250px">
+      <div class="grp">◈ Workspaces</div>
+      <div class="it rich on"><span class="av">C</span><span class="bd"><span class="nm">control-room</span><span class="sb">4 sessions · 2 running</span></span></div>
+      <div class="it rich"><span class="av">D</span><span class="bd"><span class="nm">daemon</span><span class="sb">1 session</span></span></div>
+      <div class="it rich dim"><span class="av">A</span><span class="bd"><span class="nm">archive</span><span class="sb">0 memories</span></span></div>
+      <div class="grp">Role</div>
+      <div class="it rich on"><span class="ld">✓</span><span class="bd"><span class="nm">worker</span><span class="sb">implements, tests, lands</span></span></div>
+      <div class="it rich"><span class="ld"></span><span class="bd"><span class="nm">reviewer</span><span class="sb">reads the diff — never mutates</span></span></div>
+    </div>
+  </div>
+</div>
+<div class="cap">Rich rows LEAD with the fixed-width check column (<code>__lead</code>) — alignment survives mixed
+selected/unselected rows; only the plain single-line item keeps its trailing <code>__check</code> (3 of 4 mockup pickers
+lead). The avatar tile is the other leading slot: selection flips it to an accent fill with <code>--my-surface</code>
+initials (the mockups' <code>#fff</code> literal loses to the standing remap) — row ink turns accent-strong, the
+<code>__name</code> is always bold. <code>__group</code> is a mono-uppercase section ruler splitting the list into named
+runs — a different job than <code>__head</code>, which titles the whole panel. <code>is-dim</code> marks an empty entity
+in <code>--my-disabled-ink</code> (never text opacity — rule 8) and is NOT disabled — the shipped binding renders
+every selectable row as a real <code>&lt;button&gt;</code> (these panes are static card examples). Avatar
+dress is a consumer choice — the atom ships the neutral default only (status/terminal hues are not popover
+vocabulary).</div>
 </body></html>
