@@ -170,11 +170,14 @@ describe("chipFlagClass", () => {
     expect(chipFlagClass("warn")).toBe("my-chip-flag my-chip-flag--warn");
     expect(chipFlagClass("error")).toBe("my-chip-flag my-chip-flag--error");
     expect(chipFlagClass("neutral")).toBe("my-chip-flag my-chip-flag--neutral");
+    expect(chipFlagClass("info")).toBe("my-chip-flag my-chip-flag--info");
   });
 
-  test("the card's flag set is exactly these five — there is no info flag", () => {
-    expect([...CHIP_FLAG_TONES]).toEqual(["accent", "ok", "warn", "error", "neutral"]);
-    expect((CHIP_FLAG_TONES as readonly string[]).includes("info")).toBe(false);
+  test("the flag set is exactly these six — info joined with the mockup gap wave", () => {
+    // An earlier revision pinned "there is no info flag"; the product mockups showed that was not
+    // the working distinction (info-MEANING facts sat beside genuinely neutral ones in one row),
+    // so the arm shipped and the doctrine text in chip.ts was rewritten with it.
+    expect([...CHIP_FLAG_TONES]).toEqual(["accent", "ok", "warn", "error", "neutral", "info"]);
     expect(CHIP_FLAG_PARTS.root).toBe("my-chip-flag");
   });
 

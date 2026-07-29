@@ -115,9 +115,14 @@ export function chipRemoveLabel(name?: string): string {
 
 /** Chip-flag tones, in card order. `accent` is the DEFAULT and emits no modifier. Flags are honest
  *  counters, never decoration: warn-soft for behind/uncommitted, error-soft ONLY for something
- *  that can be lost, ok-soft for a clean tree. There is no `info` flag — the card does not have
- *  one, and a machine fact that is merely informational is a `neutral`. */
-export const CHIP_FLAG_TONES = ["accent", "ok", "warn", "error", "neutral"] as const;
+ *  that can be lost, ok-soft for a clean tree. `info` joined with the mockup gap wave: an earlier
+ *  revision here ruled "a machine fact that is merely informational is a `neutral`", but that is
+ *  not the distinction the product mockups actually draw — they render info-MEANING facts (a
+ *  review pass, an on-done delivery class, an observation kind) side-by-side with genuinely
+ *  neutral ones (boot, reference, dim) in the same row, and collapsing both onto neutral loses a
+ *  distinction the pages depend on. `neutral` remains the arm for facts with no status meaning
+ *  at all. */
+export const CHIP_FLAG_TONES = ["accent", "ok", "warn", "error", "neutral", "info"] as const;
 export type ChipFlagTone = (typeof CHIP_FLAG_TONES)[number];
 
 export const CHIP_FLAG_PARTS = {

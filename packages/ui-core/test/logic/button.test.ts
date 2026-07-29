@@ -17,6 +17,12 @@ describe("buttonClass", () => {
     expect(buttonClass("tone")).toBe("btn btn--tone");
     expect(buttonClass("tone", { small: true, disabled: true })).toBe("btn btn--tone btn--sm is-disabled");
   });
+  test("tone-line is the outline mirror — same derivation grammar, tone rides the attribute", () => {
+    expect(buttonClass("tone-line")).toBe("btn btn--tone-line");
+    expect(buttonClass("tone-line", { small: true, disabled: true })).toBe(
+      "btn btn--tone-line btn--sm is-disabled",
+    );
+  });
   test("loading and disabled both mark inert", () => {
     expect(buttonClass("acc", { loading: true })).toContain("is-disabled");
     expect(buttonClass("acc", { disabled: true })).toContain("is-disabled");

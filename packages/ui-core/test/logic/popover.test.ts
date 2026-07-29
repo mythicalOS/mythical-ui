@@ -25,6 +25,7 @@ import {
   popoverIds,
   popoverItemAria,
   popoverItemClass,
+  popItemClass,
   popoverAppliesToFocus,
   popoverKeyHandled,
   popoverMenuAria,
@@ -401,6 +402,28 @@ describe("trigger text composition — never names an item that is not actually 
   });
 });
 
+describe("popItemClass — the rich-row derivation (mockup gap wave)", () => {
+  test("the base is the plain item, and modifiers compose in a fixed order: --rich, is-selected, is-dim", () => {
+    expect(popItemClass()).toBe("my-pop__item");
+    expect(popItemClass({ rich: true })).toBe("my-pop__item my-pop__item--rich");
+    expect(popItemClass({ rich: true, selected: true, dim: true })).toBe(
+      "my-pop__item my-pop__item--rich is-selected is-dim",
+    );
+  });
+
+  test("dim is de-emphasis, never disabled — the two names must not mix", () => {
+    // A dimmed row (an entity with nothing in it) stays clickable and announced; painting it with
+    // the disabled name would let a binding disable it visually without disabling it for real.
+    expect(popItemClass({ dim: true })).toBe("my-pop__item is-dim");
+    expect(popItemClass({ dim: true })).not.toContain("is-disabled");
+  });
+
+  test("agrees with popoverItemClass on the states both derive (one spelling of every class)", () => {
+    expect(popItemClass({})).toBe(popoverItemClass({}));
+    expect(popItemClass({ selected: true })).toBe(popoverItemClass({ selected: true }));
+  });
+});
+
 describe("popoverHasSlotContent — an optional slot only earns its chrome when it renders something", () => {
   test("the values both frameworks render as NOTHING never earn a separator or an empty box", () => {
     // `footer={enabled && <Action />}` passes FALSE when disabled — not undefined. Testing
@@ -449,6 +472,9 @@ describe("styles.css ships a real selector for every class this logic emits", ()
   }
   for (const s of [{}, { selected: true }, { disabled: true }]) {
     for (const c of popoverItemClass(s).split(" ")) emitted.add(c);
+  }
+  for (const s of [{}, { rich: true }, { selected: true }, { dim: true }, { rich: true, selected: true, dim: true }]) {
+    for (const c of popItemClass(s).split(" ")) emitted.add(c);
   }
 
   test("the emitted set actually covers every class in POPOVER_CLASS (no silently unstyled name)", () => {

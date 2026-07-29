@@ -166,6 +166,45 @@ export {
   type PopoverItem,
   type PopoverPosition,
 } from "./Popover.js";
+// the rich-row derivation (mockup gap wave) — consumed straight from core; the packaged Popover
+// keeps rendering the plain single-line menu rows
+export { popItemClass } from "@mythicalos/ui-core/logic";
+
+// ── mockup gap wave: stepper · seg · callout + help opener ──
+export {
+  Stepper,
+  STEPPER_PARTS,
+  STEP_DONE_GLYPH,
+  stepperClass,
+  stepClass,
+  stepBadge,
+  stepState,
+  type StepperProps,
+  type StepperStep,
+  type StepState,
+} from "./Stepper.js";
+export {
+  Seg,
+  SEG_PARTS,
+  segClass,
+  segOptionClass,
+  segCountText,
+  type SegProps,
+  type SegOption,
+} from "./Seg.js";
+export {
+  Callout,
+  HelpButton,
+  CALLOUT_PARTS,
+  CALLOUT_TONES,
+  HELP_GLYPH,
+  HELP_LABEL,
+  calloutClass,
+  helpClass,
+  type CalloutProps,
+  type HelpButtonProps,
+  type CalloutTone,
+} from "./Callout.js";
 
 // ── file explorer & markdown preview (ds/components-file-explorer) ──
 export {

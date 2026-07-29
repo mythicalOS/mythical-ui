@@ -535,6 +535,50 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-pop__div { height: 1px; margin: var(--my-sp-1) 0; background: var(--my-border); }
 .my-pop__foot { display: block; }
 
+/* ── popover rich rows — ported upstream from the product mockups' hand-rolled pickers (project
+   switcher, role/model/effort pickers, the grouped entity picker). Elements on the SAME
+   `.my-pop__item` row, never a fork: `--rich` top-aligns the taller row; the leading slot is an
+   avatar tile OR the fixed-width `__lead` check column (alignment survives mixed
+   selected/unselected rows — the plain single-line item keeps its existing trailing `__check`).
+   Normalizations: the pages' selected-avatar `#fff` → --my-surface (the standing accent-fill
+   remap), opacity-dimmed rows → --my-disabled-ink (token rule 8: never opacity on text),
+   13/11.5/9.5px → the mono/micro/nano steps, row radii 6-7px → the item's own --my-r-control.
+   The pages' terminal-dressed agent avatars are a CONSUMER color choice via their own class —
+   the atom ships the neutral default only (status/term hues are not popover vocabulary). */
+.my-pop__item--rich { align-items: flex-start; gap: 9px; justify-content: flex-start; }
+.my-pop__av {
+  width: 26px; height: 26px; flex: none; border-radius: var(--my-r-control);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--my-bg); color: var(--my-muted);
+  font-weight: var(--my-fw-bold); font-size: var(--my-fs-caption);
+}
+.my-pop__item.is-selected .my-pop__av { background: var(--my-accent); color: var(--my-surface); }
+.my-pop__body { min-width: 0; flex: 1; }
+.my-pop__name {
+  display: block; font-size: var(--my-fs-mono); font-weight: var(--my-fw-bold);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.my-pop__sub {
+  display: block; font-size: var(--my-fs-micro); color: var(--my-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* the LEADING fixed-width check column of the rich rows */
+.my-pop__lead {
+  width: 15px; flex: none; color: var(--my-accent-strong);
+  font-weight: var(--my-fw-bold); font-size: var(--my-fs-caption);
+}
+/* group header — mono-uppercase with a trailing rule line. A distinct job from `__head`, which
+   titles the whole panel; this one splits the row list into named runs. */
+.my-pop__group {
+  display: flex; align-items: center; gap: 7px; padding: 8px 9px 3px;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-nano); font-weight: var(--my-fw-bold);
+  color: var(--my-muted); text-transform: uppercase; letter-spacing: .5px;
+}
+.my-pop__group::after { content: ""; flex: 1; height: 1px; background: var(--my-border); }
+/* de-emphasis (an entity with nothing in it) — NOT disabled: the row stays clickable */
+.my-pop__item.is-dim { color: var(--my-disabled-ink); }
+.my-pop__item.is-dim .my-pop__sub { color: var(--my-disabled-ink); }
+
 /* design rule 6 — the shared focus ring, identical in both themes, on every interactive control
    here (restated locally for the same reason the input-reveal rules above are) */
 .my-pop-trigger:focus-visible, .my-pop__item:focus-visible {
@@ -1211,6 +1255,11 @@ button.my-session-card { cursor: pointer; }
 .my-chip-flag--warn    { background: var(--my-warn-soft);   color: var(--my-warn); }
 .my-chip-flag--error   { background: var(--my-error-soft);  color: var(--my-error); }
 .my-chip-flag--neutral { background: var(--my-disabled-bg); color: var(--my-muted); }
+/* info — added with the mockup gap wave. The pages render info-MEANING machine facts (review
+   events, on-done delivery classes, observation kinds) beside genuinely neutral ones in the same
+   row; the card's earlier "no info flag" doctrine collapsed a distinction the mockups draw —
+   the doctrine text in chip.ts is rewritten with this arm, not quietly contradicted. */
+.my-chip-flag--info    { background: var(--my-info-soft);   color: var(--my-info); }
 
 /* ── chip dropdown: the interactive member ──────────────────────────────────────────────── */
 .my-chip-dd {
@@ -1439,6 +1488,35 @@ button.my-session-card { cursor: pointer; }
 }
 
 
+/* ── tone-outlined button (ds/components-buttons; ported upstream from the product mockups'
+   review rows, which drew it as `.btn--sec` + an inline per-tone border/ink override) ────
+   The outline mirror of `.btn--tone` below, sharing the same `data-tone` axis: the `.btn--dan`
+   recipe copied per tone — surface fill, tone border, tone ink, tone-soft hover, no separate
+   :active. Bare `.btn--tone-line` (or data-tone="accent") degrades to an accent outline, the
+   same degrade grammar as `.btn--tone` → `.btn--acc`. The `data-tone="error"` arm is EQUIVALENT
+   to `.btn--dan` — it ships anyway so the axis is uniform (one derivation path for a view-model
+   mapping tones to buttons); `.btn--dan` remains the standing danger-outline contract (rule 9).
+   This block deliberately sits BEFORE the fill block: the fill block's disabled override must
+   stay the last interactive `.btn--tone*` rule in the sheet (its ordering is gate-pinned by
+   test/css-button-tone.test.ts). */
+.btn--tone-line { background: var(--my-surface); border-color: var(--my-accent); color: var(--my-accent-strong); }
+.btn--tone-line:hover, .btn--tone-line.is-hover { background: var(--my-accent-soft); }
+.btn--tone-line[data-tone="ok"]    { border-color: var(--my-ok);    color: var(--my-ok); }
+.btn--tone-line[data-tone="warn"]  { border-color: var(--my-warn);  color: var(--my-warn); }
+.btn--tone-line[data-tone="info"]  { border-color: var(--my-info);  color: var(--my-info); }
+.btn--tone-line[data-tone="error"] { border-color: var(--my-error); color: var(--my-error); } /* ≡ .btn--dan */
+.btn--tone-line[data-tone="ok"]:hover,    .btn--tone-line[data-tone="ok"].is-hover    { background: var(--my-ok-soft); }
+.btn--tone-line[data-tone="warn"]:hover,  .btn--tone-line[data-tone="warn"].is-hover  { background: var(--my-warn-soft); }
+.btn--tone-line[data-tone="info"]:hover,  .btn--tone-line[data-tone="info"].is-hover  { background: var(--my-info-soft); }
+.btn--tone-line[data-tone="error"]:hover, .btn--tone-line[data-tone="error"].is-hover { background: var(--my-error-soft); }
+/* disabled parity with the fill block's specificity fix below: the per-tone hover selectors are
+   (0,3,0) and :hover matches a disabled button under a pointer, so the override needs the
+   [data-tone] forms AND last position within this block */
+.btn--tone-line:disabled, .btn--tone-line.is-disabled,
+.btn--tone-line[data-tone]:disabled, .btn--tone-line[data-tone].is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink); border-color: transparent;
+}
+
 /* ── tone-filled button (ds/components-buttons; spec originated pane-side as SPEC-btn-tone
    during the mockup rewire) ─────────────────────────────────────────────────────────────
    A fill modifier on .btn whose fill is a status tone rather than the accent-only .btn--acc:
@@ -1473,3 +1551,144 @@ button.my-session-card { cursor: pointer; }
 .btn--tone[data-tone]:disabled, .btn--tone[data-tone].is-disabled {
   background: var(--my-disabled-bg); color: var(--my-disabled-ink);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   MOCKUP GAP WAVE — stepper · seg · callout/help · pulse. Four families ported upstream from
+   the product mockups, which hand-rolled each of them repeatedly (four steppers, five segment
+   rows, a dozen callouts plus nine "?" openers, two page-local pulse utilities). Values come
+   from the pages, normalized onto canonical tokens per this sheet's standing rules: hex white
+   on an accent fill → --my-surface (the package's standing fidelity remap), literal px font sizes →
+   the nearest --my-fs-* step, 700 weights → --my-fw-bold, opacity dimming on text → the
+   muted/disabled inks (token rule 8). Class derivation lives in
+   src/logic/{stepper,seg,callout}.ts; `.my-pulse` is a bare rider class and has no module.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── wizard stepper (ds/components-stepper) — todo/current/done rows with numbered dots ──
+   One atom over the pages' four hand-rolled variants: 20px dots (default) / 17px (`--sm`).
+   Done is the ACCENT family — accent-soft ✓ with an accent ring — never an `ok` recipe: a
+   completed step is progress/selection vocabulary, not a status verdict (token rule 2; cf. the
+   session-card spine's filled petrol done-nodes). Current = accent fill + --my-surface ink.
+   Clickability rides the ELEMENT: a binding renders a <button> only for steps the caller allows
+   (the pages allow back-nav, i <= current) and a plain <span> otherwise — the same grammar as
+   button.my-session-card vs div. `__bar` is an OPTIONAL connector the caller places between
+   steps: the page-level steppers draw it, the card-head dot rows do not. */
+.my-stepper { display: flex; align-items: center; gap: var(--my-sp-2); flex-wrap: wrap; }
+.my-stepper__step {
+  display: inline-flex; gap: 7px; align-items: center;
+  border: 0; background: none; padding: 2px 4px; font-family: inherit;
+  font-size: var(--my-fs-caption); color: var(--my-muted);
+}
+button.my-stepper__step { cursor: pointer; }
+button.my-stepper__step:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule 6 */
+.my-stepper__dot {
+  width: 20px; height: 20px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  background: var(--my-surface-hover); color: var(--my-muted);
+  border: 1.5px solid transparent; /* transparent rest border: state changes cannot reflow (chip-v2 grammar) */
+}
+.my-stepper__step--current { color: var(--my-ink); font-weight: var(--my-fw-bold); }
+.my-stepper__step--current .my-stepper__dot { background: var(--my-accent); color: var(--my-surface); }
+.my-stepper__step--done { color: var(--my-accent-strong); }
+.my-stepper__step--done .my-stepper__dot {
+  background: var(--my-accent-soft); color: var(--my-accent-strong); border-color: var(--my-accent);
+}
+.my-stepper__bar { width: 16px; height: 1.5px; background: var(--my-border); flex: none; }
+.my-stepper--sm { gap: var(--my-sp-1); }
+.my-stepper--sm .my-stepper__dot { width: 17px; height: 17px; font-size: var(--my-fs-nano); }
+.my-stepper--sm .my-stepper__step { font-size: var(--my-fs-micro); }
+
+/* ── tab segments (ds/components-seg) — squared segmented tabs; NOT the theme-toggle pill
+   (that family's look is a scoped rule-10 exception, not a precedent) ─────────────────────
+   Track = surface + --my-border (a track is furniture, not a control boundary) at the pages'
+   own drawn 8px radius (option 6 + 3px padding − 1 optical); options are squared
+   --my-r-control (rule 10). Selection = accent-soft + accent-strong + bold — the house
+   selection grammar (scope pickers, send-bar class segments and current popover rows all read
+   the same way). The pages' two divergent selected looks lose: the raised-surface knob borrows
+   the theme-toggle grammar, and a full accent fill reads as a call to action (the theme-toggle
+   card's don't-panel argument). Chips (`.my-chip--xs`) ride inside an option unchanged. */
+.my-seg {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: 8px;
+}
+.my-seg--grow { display: flex; }
+.my-seg--grow .my-seg__opt { flex: 1; }
+.my-seg__opt {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: var(--my-r-control); padding: 6px 11px;
+  font-family: inherit; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium);
+  background: none; color: var(--my-muted); cursor: pointer;
+  transition: background var(--my-t-fast), color var(--my-t-fast);
+}
+.my-seg__opt:hover:not(.is-on) { color: var(--my-ink); }
+.my-seg__opt.is-on {
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+  font-weight: var(--my-fw-bold);
+}
+.my-seg__opt:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule 6 */
+/* the count slot: tabular digits (rule 5); the pages' opacity dimming normalizes to --my-muted —
+   the chip family's no-opacity-on-small-digits AA note applies to these digits too */
+.my-seg__count { font-variant-numeric: tabular-nums; color: var(--my-muted); }
+.my-seg__opt.is-on .my-seg__count { color: var(--my-accent-strong); }
+
+/* ── callout (ds/components-callout) — the titled tone box, bigger than a banner ──
+   The banner stays the one-line notice; the callout is the titled BLOCK (success panel, titled
+   list box, help paragraph, guidance with actions). `accent` is the DEFAULT (the pages' help
+   callouts) and emits no modifier; `error` is axis-complete with no page site yet. Two title
+   dresses ship, per the pages' own split — `__title` (body-lg, tone ink) and `__kicker`
+   (micro-uppercase, tone ink) — ONE per callout, never both (the bindings enforce it). Glyphs
+   follow the banner's tone-glyph map (tone.ts BANNER_ICON) — the same rule-7 discipline. */
+.my-callout {
+  border-radius: var(--my-r-card); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: var(--my-sp-2);
+  font-size: var(--my-fs-mono); line-height: 1.6; color: var(--my-ink); text-wrap: pretty;
+  background: var(--my-accent-soft); border: 1px solid var(--my-accent);
+}
+.my-callout--ok      { background: var(--my-ok-soft);      border-color: var(--my-ok); }
+.my-callout--warn    { background: var(--my-warn-soft);    border-color: var(--my-warn); }
+.my-callout--info    { background: var(--my-info-soft);    border-color: var(--my-info); }
+.my-callout--error   { background: var(--my-error-soft);   border-color: var(--my-error); } /* axis-complete; no page site yet */
+.my-callout--neutral { background: var(--my-bg);           border-color: var(--my-border); }
+.my-callout__title {
+  display: flex; gap: 9px; align-items: center;
+  font-size: var(--my-fs-body-lg); font-weight: var(--my-fw-bold);
+  color: var(--my-accent-strong); /* accent (default tone) rides -strong, never bare accent */
+}
+.my-callout__kicker {
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  text-transform: uppercase; letter-spacing: .4px;
+  color: var(--my-accent-strong); /* tone ink — the same per-tone rules as __title below */
+}
+.my-callout--ok      .my-callout__title, .my-callout--ok      .my-callout__kicker { color: var(--my-ok); }
+.my-callout--warn    .my-callout__title, .my-callout--warn    .my-callout__kicker { color: var(--my-warn); }
+.my-callout--info    .my-callout__title, .my-callout--info    .my-callout__kicker { color: var(--my-info); }
+.my-callout--error   .my-callout__title, .my-callout--error   .my-callout__kicker { color: var(--my-error); }
+.my-callout--neutral .my-callout__title, .my-callout--neutral .my-callout__kicker { color: var(--my-muted); }
+.my-callout__glyph { font-style: normal; font-weight: var(--my-fw-bold); flex: none; }
+.my-callout__body { font-size: var(--my-fs-mono); }
+.my-callout__acts { display: flex; gap: var(--my-sp-2); margin-top: var(--my-sp-1); flex-wrap: wrap; }
+
+/* the tiny "?" opener that toggles a help callout — 18px unifies the pages' 15/16/18; the 700
+   weight rides --my-fw-bold, the standing normalization. It STAYS ROUND: a proposed rule-10
+   scoped exception (the theme-toggle precedent — the circle is what all nine page sites draw),
+   pending the maintainer's design-book ruling; should the ruling go the other way it squares to
+   --my-r-control. aria-label + aria-expanded come from the binding. */
+.my-help {
+  width: 18px; height: 18px; flex: none; border-radius: 50%;
+  border: 1px solid var(--my-border); background: var(--my-surface); color: var(--my-muted);
+  font-size: var(--my-fs-nano); font-weight: var(--my-fw-bold); line-height: 1;
+  padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.my-help:hover { color: var(--my-ink); border-color: var(--my-control-border); }
+.my-help.is-open { background: var(--my-accent-soft); color: var(--my-accent-strong); border-color: var(--my-accent); }
+.my-help:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule 6 */
+
+/* ── status pulse — a RIDER class on dots/chips/badges, never an atom of its own ──
+   Verbatim the product mockups' page-local utility, whose numbers the two shipped in-family
+   pulses already pin (1s ease-in-out, 50% opacity .4; "transient states only, ≤1/s" — the
+   session-card doctrine). View-models emit it beside the host class
+   (`running ? "my-pulse" : ""`); no logic module. The reduced-motion guard is non-negotiable. */
+.my-pulse { animation: my-pulse 1s ease-in-out infinite; }
+@keyframes my-pulse { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .my-pulse { animation: none; } }

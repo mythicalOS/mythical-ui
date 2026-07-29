@@ -35,6 +35,7 @@ export {
   popoverTriggerClass,
   popoverPanelClass,
   popoverItemClass,
+  popItemClass,
   popoverIds,
   popoverTriggerAria,
   popoverPanelAria,
@@ -276,6 +277,30 @@ export {
   type DeriveFileTreeInput,
   type FileScopeOption,
 } from "./logic/file-explorer.js";
+
+// ── mockup gap wave: stepper · seg · callout + help opener ──
+export {
+  STEPPER_PARTS,
+  STEP_STATES,
+  STEP_DONE_GLYPH,
+  stepperClass,
+  stepClass,
+  stepBadge,
+  stepState,
+  type StepState,
+} from "./logic/stepper.js";
+
+export { SEG_PARTS, segClass, segOptionClass, segCountText } from "./logic/seg.js";
+
+export {
+  CALLOUT_TONES,
+  CALLOUT_PARTS,
+  HELP_GLYPH,
+  HELP_LABEL,
+  calloutClass,
+  helpClass,
+  type CalloutTone,
+} from "./logic/callout.js";
 
 // ── session-card (design registry `session-card` v1) ──
 export {

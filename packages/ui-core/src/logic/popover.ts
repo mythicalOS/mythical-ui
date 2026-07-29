@@ -150,11 +150,23 @@ export const POPOVER_CLASS = {
   item: "my-pop__item",
   itemLabel: "my-pop__label",
   itemCheck: "my-pop__check",
+  /* rich rows (mockup gap wave) — the modifier + elements ported upstream from the product
+   * mockups' hand-rolled pickers (project/role/model/effort/entity). Same `__item` row, richer
+   * anatomy: a leading avatar tile OR fixed-width check column, one-or-two-line body, group
+   * headers. The plain single-line item keeps its existing trailing `itemCheck`. */
+  itemRich: "my-pop__item--rich",
+  avatar: "my-pop__av",
+  body: "my-pop__body",
+  name: "my-pop__name",
+  sub: "my-pop__sub",
+  lead: "my-pop__lead",
+  group: "my-pop__group",
   divider: "my-pop__div",
   foot: "my-pop__foot",
   isOpen: "is-open",
   isSelected: "is-selected",
   isDisabled: "is-disabled",
+  isDim: "is-dim",
 } as const;
 
 export interface PopoverTriggerState {
@@ -184,6 +196,19 @@ export function popoverItemClass(item: Pick<PopoverItem, "selected" | "disabled"
   const cls: string[] = [POPOVER_CLASS.item];
   if (item.selected) cls.push(POPOVER_CLASS.isSelected);
   if (item.disabled) cls.push(POPOVER_CLASS.isDisabled);
+  return cls.join(" ");
+}
+
+/** Rich-row class list (mockup gap wave). `popoverItemClass` above stays the derivation for the
+ * packaged single-line menu row, whose state is a `PopoverItem`; this one composes the SAME map's
+ * names for the rich rows the product mockups hand-rolled — avatar/check-column + one-or-two-line
+ * body — so there is still exactly one spelling of every class. `dim` is a DE-EMPHASIS (an entity
+ * with nothing in it), not disabled: the row stays clickable and announced, it only reads quiet. */
+export function popItemClass(s: { selected?: boolean; rich?: boolean; dim?: boolean } = {}): string {
+  const cls: string[] = [POPOVER_CLASS.item];
+  if (s.rich) cls.push(POPOVER_CLASS.itemRich);
+  if (s.selected) cls.push(POPOVER_CLASS.isSelected);
+  if (s.dim) cls.push(POPOVER_CLASS.isDim);
   return cls.join(" ");
 }
 
