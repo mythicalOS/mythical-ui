@@ -616,6 +616,14 @@ describe("rich spans — model, validation, and the precedence rule", () => {
     expect(rowSpans(richRow({ spans: [null as unknown as TermSpan] }))).toBeNull();
   });
 
+  test("a span run whose content diverges from `text` is disqualified WHOLESALE (gate finding)", () => {
+    // copy, the fallback and termContentRevision all read `text` — a divergent run would render
+    // words those paths never see. Equality is ENFORCED in rowSpans, not just documented.
+    expect(rowSpans(richRow({ text: "safe", spans: [{ t: "bold", s: "different" }] }))).toBeNull();
+    // equality is exact — same letters, different whitespace still disqualifies
+    expect(rowSpans(richRow({ text: spans.map((s) => s.s).join("") + " " }))).toBeNull();
+  });
+
   test("precedence: `block` > `spans` — a block row NEVER renders spans", () => {
     expect(rowSpans(richRow({ block: true }))).toBeNull();
     // the same spans WITHOUT block do render — precedence, not a ban

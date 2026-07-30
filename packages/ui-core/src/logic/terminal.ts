@@ -178,7 +178,11 @@ export function rowSpans(row: TermRow): readonly TermSpan[] | null {
   if (isBlockRow(row)) return null;
   const spans = row.spans;
   if (!Array.isArray(spans) || spans.length === 0) return null;
-  return spans.every(isTermSpan) ? spans : null;
+  if (!spans.every(isTermSpan)) return null;
+  // ENFORCED (not just documented): the span run must be content-identical to `row.text` — copy,
+  // the fallback, and termContentRevision's character accounting all read `text`, so a divergent
+  // run would render words those paths never see. Divergence disqualifies the whole run.
+  return spansText(spans) === row.text ? spans : null;
 }
 
 /** The plain text of a span run — concatenation, verbatim: no separators, no trimming. */
