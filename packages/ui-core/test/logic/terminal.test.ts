@@ -20,6 +20,7 @@ import {
   SEND_PLACEHOLDER,
   TERM_CLASS,
   TERM_CLASSES,
+  TERM_COPIED_ARIA,
   TERM_COPIED_LABEL,
   TERM_COPIED_REVERT_MS,
   TERM_COPY_ARIA,
@@ -38,6 +39,7 @@ import {
   canSend,
   cancelReducer,
   clearDraftOnSend,
+  copyAria,
   copyLabel,
   isFreshSource,
   currentWakeRows,
@@ -72,6 +74,7 @@ import {
   sourceRows,
   stopButtonClass,
   termClipboardWriter,
+  termContentRevision,
   termRowClass,
   termTitleText,
   transcriptView,
@@ -85,6 +88,8 @@ import {
   type QueueUnavailableReason,
   type TermRow,
   type TermSource,
+  type TermView,
+  type TranscriptSegment,
 } from "../../src/index.ts";
 
 const ALL_STATUSES: QueueItemStatus[] = ["queued", "leased", "delivered", "canceled"];
@@ -118,6 +123,7 @@ function allCopy(): string[] {
     TERM_COPY_LABEL,
     TERM_COPIED_LABEL,
     TERM_COPY_ARIA,
+    TERM_COPIED_ARIA,
     TURN_IN_FLIGHT_COPY,
     TURN_IDLE_COPY,
     historyToggleLabel(true, 2),
@@ -535,10 +541,19 @@ describe("block rows — precedence and the copy affordance", () => {
     expect(TERM_COPY_LABEL).toBe("copy");
     expect(TERM_COPIED_LABEL).toBe("copied ✓");
     expect(TERM_COPY_ARIA).toBe("Copy to clipboard");
+    expect(TERM_COPIED_ARIA).toBe("Copied to clipboard");
     expect(copyLabel(false)).toBe(TERM_COPY_LABEL);
     expect(copyLabel(true)).toBe(TERM_COPIED_LABEL);
     expect(copyLabel(true)).not.toBe(copyLabel(false));
     expect(TERM_COPIED_REVERT_MS).toBe(1500);
+  });
+
+  test("the accessible name is state-aware, in lockstep with the visible label", () => {
+    // a screen reader must hear the same state a sighted reader sees — never a control whose
+    // accessible name still offers what it just did
+    expect(copyAria(false)).toBe(TERM_COPY_ARIA);
+    expect(copyAria(true)).toBe(TERM_COPIED_ARIA);
+    expect(copyAria(true)).not.toBe(copyAria(false));
   });
 });
 
@@ -612,6 +627,81 @@ describe("nearBottom — the follow-tail window", () => {
     expect(nearBottom(Number.NaN, 1000, 500, 48)).toBe(true);
     expect(nearBottom(0, Number.NaN, 500, 48)).toBe(true);
     expect(nearBottom(0, 1000, Number.NaN, 48)).toBe(true);
+  });
+});
+
+describe("termContentRevision — ONE key over everything the body renders", () => {
+  // The bindings' follow-tail pin effect depends on this single value: if a content change the
+  // pane should follow does not change the key, the pane silently stops following it.
+  const base = () => ({
+    view: { kind: "log", stale: false } as TermView,
+    rows: [row({ text: "one" }), row({ text: "two" })] as readonly TermRow[],
+    localRows: [] as readonly TermRow[],
+    history: [] as readonly TranscriptSegment[],
+    showHistory: false,
+    wakeUnavailable: false,
+    caret: false,
+    currentWakeOnly: false,
+    noiseFilter: false,
+    expandedCount: 0,
+  });
+
+  test("identical inputs give an identical key — an unchanged poll re-pins nothing", () => {
+    expect(termContentRevision(base())).toBe(termContentRevision(base()));
+  });
+
+  test("a row appended changes the key", () => {
+    const grown = { ...base(), rows: [...base().rows, row({ text: "three" })] };
+    expect(termContentRevision(grown)).not.toBe(termContentRevision(base()));
+  });
+
+  test("a tail row growing IN PLACE changes the key — a streaming update adds no row", () => {
+    const streamed = { ...base(), rows: [row({ text: "one" }), row({ text: "two grew mid-stream" })] };
+    expect(termContentRevision(streamed)).not.toBe(termContentRevision(base()));
+  });
+
+  test("an expanded body growing in place changes the key — detail counts, not just text", () => {
+    const detailGrew = { ...base(), rows: [row({ text: "one" }), row({ text: "two", detail: "a body" })] };
+    expect(termContentRevision(detailGrew)).not.toBe(termContentRevision(base()));
+  });
+
+  test("local rows are covered", () => {
+    const withLocal = { ...base(), localRows: [row({ kind: "local", text: "— turn interrupted (^C) —" })] };
+    expect(termContentRevision(withLocal)).not.toBe(termContentRevision(base()));
+  });
+
+  test("history segments and their disclosure are covered", () => {
+    const seg: TranscriptSegment = { id: "7f3a11c9", rows: [row({ text: "a foreign line" })] };
+    const withHistory = { ...base(), history: [seg] };
+    expect(termContentRevision(withHistory)).not.toBe(termContentRevision(base()));
+    const disclosed = { ...withHistory, showHistory: true };
+    expect(termContentRevision(disclosed)).not.toBe(termContentRevision(withHistory));
+  });
+
+  test("both banners and the caret are covered", () => {
+    expect(termContentRevision({ ...base(), wakeUnavailable: true })).not.toBe(termContentRevision(base()));
+    const stale = { ...base(), view: { kind: "log", stale: true } as TermView };
+    expect(termContentRevision(stale)).not.toBe(termContentRevision(base()));
+    expect(termContentRevision({ ...base(), caret: true })).not.toBe(termContentRevision(base()));
+  });
+
+  test("the current-wake filter is covered by the FLAG itself, even when the visible rows coincide", () => {
+    // the regression this guards: toggling current-wake was missing from the pin effect's inputs
+    expect(termContentRevision({ ...base(), currentWakeOnly: true })).not.toBe(termContentRevision(base()));
+  });
+
+  test("the noise filter is covered by the FLAG itself, even when the visible rows coincide", () => {
+    expect(termContentRevision({ ...base(), noiseFilter: true })).not.toBe(termContentRevision(base()));
+  });
+
+  test("the expand state is covered — expanding a detail row moves the bottom edge", () => {
+    // the regression this guards: the expand state was missing from the pin effect's inputs
+    expect(termContentRevision({ ...base(), expandedCount: 1 })).not.toBe(termContentRevision(base()));
+  });
+
+  test("a log view and a state view never share a key", () => {
+    const state = { ...base(), rows: [] as readonly TermRow[], view: { kind: "state", copy: "loading…" } as TermView };
+    expect(termContentRevision(state)).not.toBe(termContentRevision({ ...base(), rows: [] }));
   });
 });
 

@@ -141,14 +141,23 @@ export function expandLabel(expanded: boolean): string {
 export const TERM_COPY_LABEL = "copy";
 /** Transient label after a clipboard write that actually resolved. */
 export const TERM_COPIED_LABEL = "copied ✓";
-/** The copy control's accessible name — constant; the visible label carries the state. */
+/** The copy control's resting accessible name. */
 export const TERM_COPY_ARIA = "Copy to clipboard";
+/** The copy control's accessible name while the copied feedback shows. The visible label and the
+ *  accessible name flip TOGETHER (`copyLabel`/`copyAria`), so assistive tech announces the same
+ *  state a sighted reader sees — never a control whose name still offers what it just did. */
+export const TERM_COPIED_ARIA = "Copied to clipboard";
 /** How long the copied feedback stays on the control before it reverts. */
 export const TERM_COPIED_REVERT_MS = 1500;
 
 /** Visible label on a block row's copy control, per its current state. */
 export function copyLabel(copied: boolean): string {
   return copied ? TERM_COPIED_LABEL : TERM_COPY_LABEL;
+}
+
+/** Accessible name on a block row's copy control — state-aware, in lockstep with `copyLabel`. */
+export function copyAria(copied: boolean): string {
+  return copied ? TERM_COPIED_ARIA : TERM_COPY_ARIA;
 }
 
 /** The clipboard shape the copy control requires — anything less is treated as absent. */
@@ -203,6 +212,49 @@ export function nearBottom(
   const gap = scrollHeight - clientHeight - scrollTop;
   if (!Number.isFinite(gap)) return true;
   return gap <= threshold;
+}
+
+/**
+ * ONE revision key covering everything the terminal body renders. A binding's follow-tail pin
+ * effect depends on this single derived value instead of enumerating raw inputs at the effect —
+ * an enumeration has to be maintained by hand at every call site, and in practice it silently
+ * dropped cases (the current-wake filter and the expand state), leaving the pane un-pinned on
+ * content changes it should follow. Any change that can move the bottom edge changes the key:
+ * rows appended OR a tail row growing in place mid-stream (hence the character sums, not just
+ * counts — a streaming update often grows the last row without adding one), local rows, history
+ * segments and their disclosure, both banners, the caret, the current-wake and noise filters,
+ * and how many detail rows are expanded. Cheap by construction: lengths, counts and flags only —
+ * no hashing, no serialization of row text. Pure, so it is SSR-safe to compute during render.
+ */
+export function termContentRevision(input: {
+  view: TermView;
+  rows: readonly TermRow[];
+  localRows: readonly TermRow[];
+  history: readonly TranscriptSegment[];
+  showHistory: boolean;
+  wakeUnavailable: boolean;
+  caret: boolean;
+  currentWakeOnly: boolean;
+  noiseFilter: boolean;
+  expandedCount: number;
+}): string {
+  // count + character sum (text AND detail, so an expanded body growing in place counts too)
+  const run = (rows: readonly TermRow[]): string =>
+    `${rows.length}.${rows.reduce((chars, row) => chars + row.text.length + (row.detail?.length ?? 0), 0)}`;
+  const view =
+    input.view.kind === "log" ? (input.view.stale ? "log-stale" : "log") : `state.${input.view.copy.length}`;
+  return [
+    view,
+    run(input.rows),
+    run(input.localRows),
+    `${input.history.length}.${input.history.reduce((n, seg) => n + seg.rows.length, 0)}`,
+    input.showHistory ? "h1" : "h0",
+    input.wakeUnavailable ? "w1" : "w0",
+    input.caret ? "c1" : "c0",
+    input.currentWakeOnly ? "k1" : "k0",
+    input.noiseFilter ? "n1" : "n0",
+    `x${input.expandedCount}`,
+  ].join("|");
 }
 
 /** Stable expand key for a single row — its own id, else its position. */

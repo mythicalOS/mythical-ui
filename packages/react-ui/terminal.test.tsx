@@ -18,6 +18,7 @@ import {
   QUEUE_UNAVAILABLE_COPY,
   TERM_CLASS,
   TERM_CLASSES,
+  TERM_COPIED_ARIA,
   TERM_COPIED_LABEL,
   TERM_COPY_ARIA,
   TERM_COPY_LABEL,
@@ -250,9 +251,10 @@ describe("Terminal — block rows (structured report blocks) and the copy afford
   test("the copy control is feature-guarded: present with a clipboard, NOTHING without one", () => {
     const withOne = withClipboard(() => rts(<Terminal source={{ kind: "ready", rows: [blockRow] }} />));
     expect(withOne).toContain(`class="${TERM_CLASSES.copy}"`);
-    expect(withOne).toContain(`aria-label="${TERM_COPY_ARIA}"`);
+    expect(withOne).toContain(`aria-label="${TERM_COPY_ARIA}"`); // resting accessible name (copyAria(false))
     expect(withOne).toContain(`>${TERM_COPY_LABEL}</button>`); // resting label, from ui-core
     expect(withOne).not.toContain(TERM_COPIED_LABEL); // never claims a copy that has not happened
+    expect(withOne).not.toContain(TERM_COPIED_ARIA); // — not in the accessible name either
     const withoutOne = withoutClipboard(() => rts(<Terminal source={{ kind: "ready", rows: [blockRow] }} />));
     expect(withoutOne).not.toContain(TERM_CLASSES.copy);
     expect(withoutOne).not.toContain(TERM_COPY_ARIA);
@@ -288,16 +290,26 @@ describe("Terminal — follow-tail + copy wiring (source scan, comment-stripped)
     expect(src).toMatch(/el\.scrollTop = el\.scrollHeight/);
   });
 
-  test("the pin effect watches rows, local rows, segments, caret, banners and the filters", () => {
+  test("the pin effect depends on ui-core's ONE content revision — every content input wired", () => {
+    // The revision call must wire EVERY input the body renders from; this scan fails if any field
+    // drops out — in particular `currentWakeOnly` and the expand state, the two an enumerated
+    // dependency list silently lost.
     expect(src).toMatch(
-      /\[\s*followTail,\s*source,\s*props\.localRows,\s*props\.history,\s*props\.caret,\s*props\.wakeUnavailable,\s*noiseFilterEnabled,\s*showHistory,?\s*\]/,
+      /termContentRevision\(\{\s*view,\s*rows,\s*localRows,\s*history,\s*showHistory,\s*wakeUnavailable: props\.wakeUnavailable === true,\s*caret: props\.caret === true,\s*currentWakeOnly: props\.currentWakeOnly === true,\s*noiseFilter: noiseFilterEnabled,\s*expandedCount: expanded\.size,?\s*\}\)/,
     );
+    // and the effect watches that revision — not a re-enumeration of raw inputs
+    expect(src).toMatch(/\[followTail, contentRevision\]\);/);
   });
 
   test("'copied ✓' is claimed only for a write that actually resolved, and reverts on ui-core's clock", () => {
     expect(src).toContain("termClipboardWriter(globalThis)");
     expect(src).toContain("await write(row.text)"); // the row's text, verbatim
     expect(src).toMatch(/setTimeout\(\(\) => setCopied\(false\), TERM_COPIED_REVERT_MS\)/);
+  });
+
+  test("the copy control's accessible name flips WITH the visible label — both from ui-core", () => {
+    expect(src).toContain("aria-label={copyAria(copied)}");
+    expect(src).toContain("{copyLabel(copied)}");
   });
 });
 

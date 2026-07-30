@@ -4,10 +4,10 @@
 //
 // Thin binding: render + wiring only. Every class string (`TERM_CLASSES`), every user-visible
 // string, the six-branch source resolution, the segmentation, the row keying, the Ctrl-C
-// predicate, the block-row precedence (`isBlockRow`/`isExpandable`), the copy labels + clipboard
-// guard (`termClipboardWriter`) and the follow-tail predicate (`nearBottom`) come from
-// `@mythicalos/ui-core` — this file types no class literal and no copy of its own, so it and its
-// Preact sibling cannot drift.
+// predicate, the block-row precedence (`isBlockRow`/`isExpandable`), the copy labels + accessible
+// names + clipboard guard (`copyLabel`/`copyAria`/`termClipboardWriter`) and the follow-tail
+// policy (`nearBottom`, `termContentRevision`) come from `@mythicalos/ui-core` — this file types
+// no class literal and no copy of its own, so it and its Preact sibling cannot drift.
 //
 // Honesty (binding, inherited from ui-core): the wake-unavailable banner says exactly
 // `wake unavailable` — never "reconnecting", never a retry spinner; the turn caption renders ONLY
@@ -22,12 +22,12 @@ import {
   TERM_CLASS,
   TERM_CLASSES,
   TERM_COPIED_REVERT_MS,
-  TERM_COPY_ARIA,
   TERM_NO_EVENTS_COPY,
   TERM_STALE_COPY,
   TERM_STOP_KEY_HINT,
   TERM_STOP_LABEL,
   TERM_WAKE_UNAVAILABLE_COPY,
+  copyAria,
   copyLabel,
   currentWakeRows,
   expandLabel,
@@ -44,6 +44,7 @@ import {
   sourceRows,
   stopButtonClass,
   termClipboardWriter,
+  termContentRevision,
   termRowClass,
   termTitleText,
   transcriptView,
@@ -135,7 +136,7 @@ function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
         <div className={TERM_CLASSES.block}>
           <pre className={TERM_CLASSES.blockPre}>{row.text}</pre>
           {write !== null ? (
-            <button type="button" className={TERM_CLASSES.copy} aria-label={TERM_COPY_ARIA} onClick={onCopy}>
+            <button type="button" className={TERM_CLASSES.copy} aria-label={copyAria(copied)} onClick={onCopy}>
               {copyLabel(copied)}
             </button>
           ) : null}
@@ -239,23 +240,6 @@ export function Terminal(props: TerminalProps) {
     return () => el.removeEventListener("scroll", onScroll);
   }, [followTail]);
 
-  // On mount and on any content change (rows/local rows/segments/caret/banners/filters) while
-  // following, pin the body to the bottom after render. Never when the reader has scrolled up.
-  useEffect(() => {
-    if (!followTail || !followRef.current) return;
-    const el = paneRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [
-    followTail,
-    source,
-    props.localRows,
-    props.history,
-    props.caret,
-    props.wakeUnavailable,
-    noiseFilterEnabled,
-    showHistory,
-  ]);
-
   const view = transcriptView(source);
   const showNoise = noiseShow(noiseFilterEnabled);
   const allRows = props.currentWakeOnly ? currentWakeRows(sourceRows(source)) : sourceRows(source);
@@ -265,6 +249,29 @@ export function Terminal(props: TerminalProps) {
   const segKeys = segmentKeys(history);
   const titleText = termTitleText(props.name, noiseFilterEnabled);
   const caption = turnCaption(props.turnInFlight);
+
+  // On mount and on any change of the RENDERED content while following, pin the body to the
+  // bottom after render — never when the reader has scrolled up. The dependency is ONE derived
+  // value, ui-core's `termContentRevision` over everything the body renders (rows, local rows,
+  // history + its disclosure, both banners, the caret, the current-wake and noise filters, the
+  // expand state), so a content input can never silently drop out of an enumerated list again.
+  const contentRevision = termContentRevision({
+    view,
+    rows,
+    localRows,
+    history,
+    showHistory,
+    wakeUnavailable: props.wakeUnavailable === true,
+    caret: props.caret === true,
+    currentWakeOnly: props.currentWakeOnly === true,
+    noiseFilter: noiseFilterEnabled,
+    expandedCount: expanded.size,
+  });
+  useEffect(() => {
+    if (!followTail || !followRef.current) return;
+    const el = paneRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [followTail, contentRevision]);
 
   return (
     <div className={TERM_CLASS}>
