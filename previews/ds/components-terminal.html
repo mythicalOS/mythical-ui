@@ -45,6 +45,10 @@ h3:first-child{margin-top:0}
 .mini{border-radius:5px;padding:3px 10px;font-size:11px;font-weight:650;border:1px solid transparent;font-family:inherit;cursor:pointer}
 .mini.yes{background:#B3261E;color:#FFF}.mini.no{background:#FFF;border-color:#878E9B;color:#16181D}
 .q.empty{border-style:dashed;color:#5A5F6A;justify-content:center;background:transparent}
+.blk{position:relative;background:#1A1D24;border-radius:6px;margin:6px 0 8px}
+.blk pre{margin:0;padding:8px 10px;font:inherit;color:#ECE7DE;white-space:pre;overflow-x:auto}
+.cpy{position:absolute;top:6px;right:6px;border:1px solid #9AA0AC;border-radius:6px;background:#0B0C0F;color:#9AA0AC;font:11px Inter,sans-serif;padding:1px 7px;cursor:pointer}
+.cpy:hover{color:#ECE7DE}
 .cap{font-size:11px;color:#5A5F6A;margin-top:12px}
 </style></head><body>
 <h3>Terminal — streaming (caret) · hoverable tool rows · always heritage-dark</h3>
@@ -54,6 +58,15 @@ h3:first-child{margin-top:0}
 <span class="user">← user (ASAP)</span> hold the rollout until the envelope test lands<br>
 <span class="tool">▸ tool Bash · bun test src/delivery <span style="text-decoration:underline">(expand)</span></span><br>
 <span class="p">▍assistant</span> ack — parking the rollout, resuming envelope spe<span class="caret"></span>
+</div>
+<h3>Structured report block — alignment preserved verbatim · copy affordance</h3>
+<div class="term">
+<span class="p">▍assistant</span> wake summary:<br>
+<div class="blk"><button class="cpy">copy</button><pre>Handoff(s):        none found — degraded mode
+Pickup point:      cold start; no prior session state
+Queue:             2 waiting (1 ASAP · 1 ON-DONE)</pre></div>
+<span class="dim">block rows render pre-formatted (never wrapped; x-overflow scrolls); the copy control
+copies the block text verbatim and only appears when a clipboard exists</span>
 </div>
 <h3>Disconnected — warn banner above the log, values freeze as stale</h3>
 <div class="term" style="padding-bottom:12px">
