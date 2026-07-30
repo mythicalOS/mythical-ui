@@ -19,6 +19,10 @@ import {
   QUEUE_STALE_COPY,
   QUEUE_UNAVAILABLE_COPY,
   TERM_CLASS,
+  TERM_CLASSES,
+  TERM_COPIED_LABEL,
+  TERM_COPY_ARIA,
+  TERM_COPY_LABEL,
   TERM_FAILED_COPY,
   TERM_LOADING_COPY,
   TERM_MISSING_COPY,
@@ -54,6 +58,41 @@ const rows: TermRow[] = [
   { kind: "tool", label: "▸ tool Bash", text: "bun test src/delivery", detail: "bun test src/delivery", id: "t1" },
   { kind: "system", text: "thinking_tokens", noise: true, id: "n1" },
 ];
+
+/** A hand-aligned report block. `detail` is set ON PURPOSE: block precedence must eat it. */
+const blockRow: TermRow = {
+  kind: "system",
+  label: "report",
+  block: true,
+  detail: "must never grow an expand affordance",
+  text: "Handoff(s):        none found — degraded mode\nPickup point:      cold start; no prior session state",
+  id: "blk1",
+};
+
+/** Run `fn` with a (working) clipboard installed on globalThis, restoring the real one after —
+ *  the copy control is feature-guarded, and bun's environment has no `navigator.clipboard`. */
+function withClipboard<T>(fn: () => T): T {
+  const host = globalThis as { navigator?: unknown };
+  const original = host.navigator;
+  host.navigator = { clipboard: { writeText: async () => {} } };
+  try {
+    return fn();
+  } finally {
+    host.navigator = original;
+  }
+}
+
+/** Run `fn` with the clipboard EXPLICITLY absent (rather than trusting the environment). */
+function withoutClipboard<T>(fn: () => T): T {
+  const host = globalThis as { navigator?: unknown };
+  const original = host.navigator;
+  host.navigator = {};
+  try {
+    return fn();
+  } finally {
+    host.navigator = original;
+  }
+}
 
 describe("Terminal — always heritage-dark (invariant 1)", () => {
   test("the root class is exactly the ui-core surface class, on every branch", () => {
@@ -174,6 +213,87 @@ describe("Terminal — title bar, stop control, history disclosure", () => {
   test("the caret is opt-in", () => {
     expect(renderToString(<Terminal source={{ kind: "ready", rows }} />)).not.toContain("my-term__caret");
     expect(renderToString(<Terminal source={{ kind: "ready", rows }} caret />)).toContain("my-term__caret");
+  });
+});
+
+describe("Terminal — block rows (structured report blocks) and the copy affordance", () => {
+  test("a block row renders its text inside the preformatted inset panel, alignment verbatim", () => {
+    const html = renderToString(<Terminal source={{ kind: "ready", rows: [blockRow] }} />);
+    expect(html).toContain(`class="${TERM_CLASSES.block}"`);
+    expect(html).toContain(`class="${TERM_CLASSES.blockPre}"`);
+    // the hand-aligned run of spaces survives byte-for-byte — the whole point of the block
+    expect(html).toContain("Handoff(s):        none found — degraded mode");
+    expect(html).toContain("Pickup point:      cold start; no prior session state");
+  });
+
+  test("the row keeps its kind class and its label", () => {
+    const html = renderToString(<Terminal source={{ kind: "ready", rows: [blockRow] }} />);
+    expect(html).toContain(termRowClass("system"));
+    expect(html).toContain(`class="${TERM_CLASSES.label}"`);
+    expect(html).toContain("report");
+  });
+
+  test("`block` takes precedence over `detail` — no expand affordance, no detail pane", () => {
+    const html = renderToString(<Terminal source={{ kind: "ready", rows: [blockRow] }} />);
+    expect(html).not.toContain(`class="${TERM_CLASSES.head}"`);
+    expect(html).not.toContain("(expand)");
+    expect(html).not.toContain(`class="${TERM_CLASSES.detail}"`);
+    expect(html).not.toContain("must never grow an expand affordance");
+  });
+
+  test("the copy control is feature-guarded: present with a clipboard, NOTHING without one", () => {
+    const withOne = withClipboard(() => renderToString(<Terminal source={{ kind: "ready", rows: [blockRow] }} />));
+    expect(withOne).toContain(`class="${TERM_CLASSES.copy}"`);
+    expect(withOne).toContain(`aria-label="${TERM_COPY_ARIA}"`);
+    expect(withOne).toContain(`>${TERM_COPY_LABEL}</button>`); // resting label, from ui-core
+    expect(withOne).not.toContain(TERM_COPIED_LABEL); // never claims a copy that has not happened
+    const withoutOne = withoutClipboard(() =>
+      renderToString(<Terminal source={{ kind: "ready", rows: [blockRow] }} />),
+    );
+    expect(withoutOne).not.toContain(TERM_CLASSES.copy);
+    expect(withoutOne).not.toContain(TERM_COPY_ARIA);
+    // the block itself still renders — only the control is clipboard-gated
+    expect(withoutOne).toContain(`class="${TERM_CLASSES.blockPre}"`);
+  });
+});
+
+// The scroll/click wiring cannot run under renderToString (no layout, no events), so — per this
+// package's convention (hooks.test.ts, diff r4-F1) — it is pinned by a BINDING source scan run
+// against the comment-stripped source, so only live code can satisfy a required pattern.
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+}
+
+describe("Terminal — follow-tail + copy wiring (source scan, comment-stripped)", () => {
+  const src = stripComments(readFileSync(join(import.meta.dir, "src", "Terminal.tsx"), "utf8"));
+
+  test("followTail defaults TRUE — scrolling up is the escape, not a prop", () => {
+    expect(src).toContain("props.followTail !== false");
+  });
+
+  test("following-state rides the body's scroll events through ui-core's nearBottom, threshold included", () => {
+    expect(src).toMatch(/addEventListener\("scroll", onScroll\)/);
+    expect(src).toMatch(/removeEventListener\("scroll", onScroll\)/); // and the listener is removed
+    expect(src).toMatch(
+      /nearBottom\(el\.scrollTop, el\.scrollHeight, el\.clientHeight, FOLLOW_TAIL_THRESHOLD_PX\)/,
+    );
+  });
+
+  test("content changes pin the body to the bottom ONLY while following", () => {
+    expect(src).toMatch(/if \(!followTail \|\| !followRef\.current\) return;/);
+    expect(src).toMatch(/el\.scrollTop = el\.scrollHeight/);
+  });
+
+  test("the pin effect watches rows, local rows, segments, caret, banners and the filters", () => {
+    expect(src).toMatch(
+      /\[\s*followTail,\s*source,\s*props\.localRows,\s*props\.history,\s*props\.caret,\s*props\.wakeUnavailable,\s*noiseFilterEnabled,\s*showHistory,?\s*\]/,
+    );
+  });
+
+  test("'copied ✓' is claimed only for a write that actually resolved, and reverts on ui-core's clock", () => {
+    expect(src).toContain("termClipboardWriter(globalThis)");
+    expect(src).toContain("await write(row.text)"); // the row's text, verbatim
+    expect(src).toMatch(/setTimeout\(\(\) => setCopied\(false\), TERM_COPIED_REVERT_MS\)/);
   });
 });
 
@@ -372,6 +492,8 @@ describe("self-containment — every emitted class resolves in ui-core's styles.
         history={[{ id: "7f3a11c9", rows: [{ kind: "dim", text: "x" }] }]}
       />,
     ),
+    // the block row + its copy control (clipboard present, so the control's class is emitted)
+    withClipboard(() => renderToString(<Terminal source={{ kind: "ready", rows: [blockRow] }} />)),
     renderToString(<QueuePanel source={{ kind: "loading" }} />),
     renderToString(<QueuePanel source={{ kind: "unavailable", reason: "error" }} />),
     renderToString(<QueuePanel source={{ kind: "ok", items: [] }} />),

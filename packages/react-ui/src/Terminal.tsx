@@ -3,9 +3,11 @@
 // surface is pinned by ui-core's `.my-term` block, never by a theme-conditional class here.
 //
 // Thin binding: render + wiring only. Every class string (`TERM_CLASSES`), every user-visible
-// string, the six-branch source resolution, the segmentation, the row keying and the Ctrl-C
-// predicate come from `@mythicalos/ui-core` — this file types no class literal and no copy of its
-// own, so it and its Preact sibling cannot drift.
+// string, the six-branch source resolution, the segmentation, the row keying, the Ctrl-C
+// predicate, the block-row precedence (`isBlockRow`/`isExpandable`), the copy labels + clipboard
+// guard (`termClipboardWriter`) and the follow-tail predicate (`nearBottom`) come from
+// `@mythicalos/ui-core` — this file types no class literal and no copy of its own, so it and its
+// Preact sibling cannot drift.
 //
 // Honesty (binding, inherited from ui-core): the wake-unavailable banner says exactly
 // `wake unavailable` — never "reconnecting", never a retry spinner; the turn caption renders ONLY
@@ -16,18 +18,24 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  FOLLOW_TAIL_THRESHOLD_PX,
   TERM_CLASS,
   TERM_CLASSES,
+  TERM_COPIED_REVERT_MS,
+  TERM_COPY_ARIA,
   TERM_NO_EVENTS_COPY,
   TERM_STALE_COPY,
   TERM_STOP_KEY_HINT,
   TERM_STOP_LABEL,
   TERM_WAKE_UNAVAILABLE_COPY,
+  copyLabel,
   currentWakeRows,
   expandLabel,
   historySegmentCaption,
   historyToggleLabel,
+  isBlockRow,
   isExpandable,
+  nearBottom,
   noiseShow,
   ROW_SCOPE,
   scopedRowKeys,
@@ -35,6 +43,7 @@ import {
   shouldStopOnKey,
   sourceRows,
   stopButtonClass,
+  termClipboardWriter,
   termRowClass,
   termTitleText,
   transcriptView,
@@ -84,11 +93,56 @@ export interface TerminalProps {
   stopBusy?: boolean;
   /** VISUAL weight for the stop control only — never a state claim. */
   stopProminent?: boolean;
+  /**
+   * Follow new output: keep the body scrolled to the bottom as content changes — UNLESS the
+   * reader has scrolled up, in which case the pane never force-scrolls; scrolling back near the
+   * bottom (ui-core's `nearBottom`) resumes following. Default TRUE — the expected terminal UX;
+   * scrolling up is the escape.
+   */
+  followTail?: boolean;
 }
 
 function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
   const { row } = props;
+  // Copied feedback for a block row's copy control. The hooks are unconditional (rules of hooks);
+  // they are inert on the two non-block branches.
+  const [copied, setCopied] = useState(false);
+  const revertRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const aliveRef = useRef(true);
+  // the revert timer dies with the row — no set-state after unmount
+  useEffect(
+    () => () => {
+      aliveRef.current = false;
+      clearTimeout(revertRef.current);
+    },
+    [],
+  );
   const label = row.label ? <span className={TERM_CLASSES.label}>{row.label}</span> : null;
+  if (isBlockRow(row)) {
+    // Feature-guarded: with no usable clipboard the control renders NOTHING (never a dead button).
+    const write = termClipboardWriter(globalThis);
+    const onCopy = async () => {
+      // only a write that actually resolved may claim "copied ✓"
+      if (write === null || !(await write(row.text)) || !aliveRef.current) return;
+      setCopied(true);
+      clearTimeout(revertRef.current);
+      revertRef.current = setTimeout(() => setCopied(false), TERM_COPIED_REVERT_MS);
+    };
+    return (
+      <div className={termRowClass(row.kind)}>
+        {label}
+        {label ? " " : null}
+        <div className={TERM_CLASSES.block}>
+          <pre className={TERM_CLASSES.blockPre}>{row.text}</pre>
+          {write !== null ? (
+            <button type="button" className={TERM_CLASSES.copy} aria-label={TERM_COPY_ARIA} onClick={onCopy}>
+              {copyLabel(copied)}
+            </button>
+          ) : null}
+        </div>
+      </div>
+    );
+  }
   if (!isExpandable(row)) {
     return (
       <div className={termRowClass(row.kind)}>
@@ -167,6 +221,40 @@ export function Terminal(props: TerminalProps) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [stopAvailable, onStopTurn, stopBusy]);
+
+  // Follow-tail. The policy (near-bottom window, resume threshold) is ui-core's `nearBottom`;
+  // only the wiring lives here. `followRef` records whether the reader is at the tail — it starts
+  // true (follow on mount, the expected terminal UX) and is re-derived on every scroll of the
+  // body, including the programmatic ones below. Effects do not run under SSR.
+  const followTail = props.followTail !== false;
+  const followRef = useRef(true);
+  useEffect(() => {
+    if (!followTail) return;
+    const el = paneRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      followRef.current = nearBottom(el.scrollTop, el.scrollHeight, el.clientHeight, FOLLOW_TAIL_THRESHOLD_PX);
+    };
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
+  }, [followTail]);
+
+  // On mount and on any content change (rows/local rows/segments/caret/banners/filters) while
+  // following, pin the body to the bottom after render. Never when the reader has scrolled up.
+  useEffect(() => {
+    if (!followTail || !followRef.current) return;
+    const el = paneRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [
+    followTail,
+    source,
+    props.localRows,
+    props.history,
+    props.caret,
+    props.wakeUnavailable,
+    noiseFilterEnabled,
+    showHistory,
+  ]);
 
   const view = transcriptView(source);
   const showNoise = noiseShow(noiseFilterEnabled);

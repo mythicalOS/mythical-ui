@@ -1035,6 +1035,26 @@ button.my-session-card { cursor: pointer; }
   font-family: var(--my-font-mono);
 }
 
+/* structured report blocks — hand-aligned key-value text rendered verbatim. `pre` + x-overflow
+   (NEVER pre-wrap) is the contract: wrapping is what destroys the alignment these rows exist to
+   keep. A quiet inset panel on the term surface — same treatment as .my-term__detail — with the
+   copy control floated top-right by the positioning wrapper. */
+.my-term__block { position: relative; margin: var(--my-sp-1) 0 var(--my-sp-2); }
+.my-term__blockpre {
+  margin: 0; padding: var(--my-sp-2);
+  background: var(--my-surface-hover); border-radius: var(--my-r-control);
+  color: var(--my-term-ink); white-space: pre; overflow-x: auto;
+  font-family: var(--my-font-mono);
+}
+.my-term__copy {
+  position: absolute; top: var(--my-sp-1); right: var(--my-sp-1); cursor: pointer;
+  border: 1px solid var(--my-term-dim); border-radius: var(--my-r-control);
+  background: var(--my-term-bg); color: var(--my-term-dim);
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro); padding: 1px 7px;
+}
+.my-term__copy:hover { color: var(--my-term-ink); }
+.my-term__copy:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+
 /* foreign transcript segments — behind the toggle, captioned, visually separated */
 .my-term__more {
   border: 0; background: none; padding: 0; cursor: pointer;

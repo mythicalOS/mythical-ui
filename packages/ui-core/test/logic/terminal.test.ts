@@ -15,9 +15,15 @@ import {
   QUEUE_LOADING_COPY,
   QUEUE_STALE_COPY,
   QUEUE_UNAVAILABLE_COPY,
+  FOLLOW_TAIL_THRESHOLD_PX,
   SEND_DISABLED_FALLBACK,
   SEND_PLACEHOLDER,
   TERM_CLASS,
+  TERM_CLASSES,
+  TERM_COPIED_LABEL,
+  TERM_COPIED_REVERT_MS,
+  TERM_COPY_ARIA,
+  TERM_COPY_LABEL,
   TERM_FAILED_COPY,
   TERM_LOADING_COPY,
   TERM_MISSING_COPY,
@@ -32,6 +38,7 @@ import {
   canSend,
   cancelReducer,
   clearDraftOnSend,
+  copyLabel,
   isFreshSource,
   currentWakeRows,
   deliveryClassButtonClass,
@@ -39,10 +46,12 @@ import {
   deliveryClassLabel,
   historySegmentCaption,
   historyToggleLabel,
+  isBlockRow,
   isExpandable,
   keyAction,
   lastBoundaryIndex,
   makeSendGate,
+  nearBottom,
   noiseShow,
   queueBadgeClass,
   queueBadgeLabel,
@@ -62,6 +71,7 @@ import {
   showDeliveryHint,
   sourceRows,
   stopButtonClass,
+  termClipboardWriter,
   termRowClass,
   termTitleText,
   transcriptView,
@@ -105,6 +115,9 @@ function allCopy(): string[] {
     TERM_STALE_COPY,
     TERM_NO_EVENTS_COPY,
     TERM_WAKE_UNAVAILABLE_COPY,
+    TERM_COPY_LABEL,
+    TERM_COPIED_LABEL,
+    TERM_COPY_ARIA,
     TURN_IN_FLIGHT_COPY,
     TURN_IDLE_COPY,
     historyToggleLabel(true, 2),
@@ -489,6 +502,116 @@ describe("transcript segmentation", () => {
     expect(historyToggleLabel(true, 2)).toBe("↓ hide other sessions");
     // "earlier"/"older"/"newer" would be untruthful: file order is append order, not wall time
     expect(historyToggleLabel(false, 2)).not.toMatch(/earlier|older|newer|previous/i);
+  });
+});
+
+// ── block rows (structured report blocks) ──
+describe("block rows — precedence and the copy affordance", () => {
+  test("isBlockRow normalizes truthiness — a JS caller cannot split the two bindings", () => {
+    expect(isBlockRow(row({ block: true }))).toBe(true);
+    expect(isBlockRow(row({ block: false }))).toBe(false);
+    expect(isBlockRow(row())).toBe(false);
+    // truthy non-booleans are NOT block rows — the contract is a boolean
+    expect(isBlockRow(row({ block: 1 as unknown as boolean }))).toBe(false);
+    expect(isBlockRow(row({ block: "yes" as unknown as boolean }))).toBe(false);
+  });
+
+  test("`block` takes precedence over `detail` — a block row is NEVER expandable", () => {
+    // hand-aligned report text must stay verbatim; an expand affordance would hide it behind a
+    // collapsed head and re-wrap it in the detail pane
+    expect(isExpandable(row({ block: true, detail: "a body that would otherwise expand" }))).toBe(false);
+    expect(isExpandable(row({ block: true }))).toBe(false);
+    // the same detail WITHOUT block still expands — precedence, not a ban on detail
+    expect(isExpandable(row({ detail: "a body that would otherwise expand" }))).toBe(true);
+  });
+
+  test("the block classes are structural and distinct", () => {
+    expect(TERM_CLASSES.block).toBe("my-term__block");
+    expect(TERM_CLASSES.blockPre).toBe("my-term__blockpre");
+    expect(TERM_CLASSES.copy).toBe("my-term__copy");
+  });
+
+  test("copy labels are verbatim, state-distinct, and the revert window is ~1.5 s", () => {
+    expect(TERM_COPY_LABEL).toBe("copy");
+    expect(TERM_COPIED_LABEL).toBe("copied ✓");
+    expect(TERM_COPY_ARIA).toBe("Copy to clipboard");
+    expect(copyLabel(false)).toBe(TERM_COPY_LABEL);
+    expect(copyLabel(true)).toBe(TERM_COPIED_LABEL);
+    expect(copyLabel(true)).not.toBe(copyLabel(false));
+    expect(TERM_COPIED_REVERT_MS).toBe(1500);
+  });
+});
+
+describe("termClipboardWriter — feature guard + honest outcome", () => {
+  test("anything less than a real writeText is treated as ABSENT (the control renders nothing)", () => {
+    expect(termClipboardWriter(undefined)).toBeNull();
+    expect(termClipboardWriter(null)).toBeNull();
+    expect(termClipboardWriter({})).toBeNull();
+    expect(termClipboardWriter({ navigator: {} })).toBeNull();
+    expect(termClipboardWriter({ navigator: { clipboard: {} } })).toBeNull();
+    // a non-function writeText (a hostile or broken shim) is absent, not a crash waiting to happen
+    expect(termClipboardWriter({ navigator: { clipboard: { writeText: "not a function" } } })).toBeNull();
+  });
+
+  test("a present clipboard yields a writer that hands over the text VERBATIM and resolves true", async () => {
+    const seen: string[] = [];
+    const write = termClipboardWriter({
+      navigator: { clipboard: { writeText: (t: string) => void seen.push(t) } },
+    });
+    expect(write).not.toBeNull();
+    const text = "Handoff(s):        none found — degraded mode";
+    await expect(write!(text)).resolves.toBe(true);
+    expect(seen).toEqual([text]); // verbatim — no prompt glyphs, no trimming, no re-wrapping
+  });
+
+  test("a REJECTED or THROWING write resolves false — never a 'copied' for an empty clipboard", async () => {
+    const rejecting = termClipboardWriter({
+      navigator: { clipboard: { writeText: () => Promise.reject(new Error("not focused")) } },
+    });
+    await expect(rejecting!("x")).resolves.toBe(false);
+    const throwing = termClipboardWriter({
+      navigator: {
+        clipboard: {
+          writeText: () => {
+            throw new Error("denied");
+          },
+        },
+      },
+    });
+    await expect(throwing!("x")).resolves.toBe(false);
+  });
+});
+
+// ── follow-tail ──
+describe("nearBottom — the follow-tail window", () => {
+  test("exactly at the bottom is near", () => {
+    expect(nearBottom(500, 1000, 500, 48)).toBe(true); // gap 0
+    expect(nearBottom(500, 1000, 500, 0)).toBe(true); // even with no window at all
+  });
+
+  test("within the threshold is near; the boundary is inclusive; beyond is not", () => {
+    expect(nearBottom(453, 1000, 500, 48)).toBe(true); // gap 47
+    expect(nearBottom(452, 1000, 500, 48)).toBe(true); // gap 48 — the boundary itself
+    expect(nearBottom(451, 1000, 500, 48)).toBe(false); // gap 49 — scrolled up, never force-scroll
+    expect(nearBottom(0, 1000, 500, 48)).toBe(false); // top of a long log
+  });
+
+  test("the exported default threshold is 48px and is what the 3-arg form uses", () => {
+    expect(FOLLOW_TAIL_THRESHOLD_PX).toBe(48);
+    expect(nearBottom(452, 1000, 500)).toBe(true); // gap 48 under the default
+    expect(nearBottom(451, 1000, 500)).toBe(false); // gap 49 under the default
+  });
+
+  test("degenerate geometry counts as near — a pane that cannot scroll is at its own bottom", () => {
+    expect(nearBottom(0, 100, 500, 48)).toBe(true); // content shorter than the viewport
+    expect(nearBottom(0, 0, 0, 48)).toBe(true); // zero heights (unlaid-out pane)
+    expect(nearBottom(0, 500, 500, 0)).toBe(true); // content exactly fills the viewport
+  });
+
+  test("a non-finite measurement counts as near — following is the safe default", () => {
+    expect(nearBottom(Number.NaN, 1000, 500, 48)).toBe(true);
+    expect(nearBottom(0, Number.NaN, 500, 48)).toBe(true);
+    expect(nearBottom(0, 1000, Number.NaN, 48)).toBe(true);
   });
 });
 

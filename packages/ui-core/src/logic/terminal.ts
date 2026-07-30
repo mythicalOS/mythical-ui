@@ -40,6 +40,9 @@ export const TERM_CLASSES = {
   head: "my-term__head",
   expand: "my-term__expand",
   detail: "my-term__detail",
+  block: "my-term__block",
+  blockPre: "my-term__blockpre",
+  copy: "my-term__copy",
   more: "my-term__more",
   segment: "my-term__hist",
   segmentCaption: "my-term__hist-cap",
@@ -86,6 +89,14 @@ export interface TermRow {
   id?: string;
   /** Noise rows are hidden unless noise is shown (see `noiseShow` / `visibleRows`). */
   noise?: boolean;
+  /**
+   * Structured report block: `text` renders inside a preformatted inset panel — whitespace and
+   * hand-alignment preserved exactly, horizontal overflow scrolled, never wrapped — with a copy
+   * affordance. A block row is NOT expandable: `block` takes precedence over `detail`, which is
+   * ignored when this is set (see `isExpandable`). The row keeps its `kind` class and its
+   * optional `label`.
+   */
+  block?: boolean;
 }
 
 /**
@@ -105,9 +116,16 @@ export function termRowClass(kind: TermRowKind): string {
   return `my-term__row my-term__row--${kind}`;
 }
 
-/** A row is expandable exactly when the caller gave it a body to reveal. */
+/** A block row renders its `text` preformatted (see `TermRow.block`). Normalized here so a JS
+ *  caller passing a truthy non-boolean cannot make the two bindings disagree. */
+export function isBlockRow(row: TermRow): boolean {
+  return row.block === true;
+}
+
+/** A row is expandable exactly when the caller gave it a body to reveal — unless it is a block
+ *  row: `block` takes precedence over `detail`, so a block row never grows an expand affordance. */
 export function isExpandable(row: TermRow): boolean {
-  return typeof row.detail === "string" && row.detail.length > 0;
+  return !isBlockRow(row) && typeof row.detail === "string" && row.detail.length > 0;
 }
 
 /** Label on a row's expand affordance, per its current state. */
@@ -115,6 +133,76 @@ export const ROW_EXPAND_LABEL = "(expand)";
 export const ROW_COLLAPSE_LABEL = "(collapse)";
 export function expandLabel(expanded: boolean): string {
   return expanded ? ROW_COLLAPSE_LABEL : ROW_EXPAND_LABEL;
+}
+
+// ── block copy affordance ──
+
+/** Resting label on a block row's copy control. */
+export const TERM_COPY_LABEL = "copy";
+/** Transient label after a clipboard write that actually resolved. */
+export const TERM_COPIED_LABEL = "copied ✓";
+/** The copy control's accessible name — constant; the visible label carries the state. */
+export const TERM_COPY_ARIA = "Copy to clipboard";
+/** How long the copied feedback stays on the control before it reverts. */
+export const TERM_COPIED_REVERT_MS = 1500;
+
+/** Visible label on a block row's copy control, per its current state. */
+export function copyLabel(copied: boolean): string {
+  return copied ? TERM_COPIED_LABEL : TERM_COPY_LABEL;
+}
+
+/** The clipboard shape the copy control requires — anything less is treated as absent. */
+interface TermClipboardHost {
+  navigator?: { clipboard?: { writeText?: (text: string) => unknown } };
+}
+
+/**
+ * Resolves the copy control's clipboard from `host` (a binding passes `globalThis`), or `null`
+ * when it is absent — the control then renders NOTHING at all, rather than a button that cannot
+ * work. `navigator.clipboard` is not a given: it exists only in a secure context, and every
+ * product in the family is reachable over plain http on a LAN address, where the whole object is
+ * `undefined`. The returned writer resolves to whether the write ACTUALLY happened — a rejected
+ * write (unfocused document, denied permission, a hostile shim) resolves `false`, so a binding
+ * never shows "copied ✓" for a clipboard that stayed empty.
+ */
+export function termClipboardWriter(host: unknown): ((text: string) => Promise<boolean>) | null {
+  const clipboard = (host as TermClipboardHost | null | undefined)?.navigator?.clipboard;
+  const writeText = clipboard?.writeText;
+  if (clipboard === undefined || typeof writeText !== "function") return null;
+  return async (text: string) => {
+    try {
+      // invoked ON the clipboard object on purpose: `writeText` is a native method and throws if
+      // it is torn off its receiver
+      await writeText.call(clipboard, text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+}
+
+// ── follow-tail scroll ──
+
+/** How close to the bottom (px) still counts as "at the tail" — the follow-resume window. */
+export const FOLLOW_TAIL_THRESHOLD_PX = 48;
+
+/**
+ * Whether a scroll position counts as at (or near) the bottom of its pane. This is the whole
+ * follow-tail policy: while the reader is near the bottom the pane follows new output; once they
+ * scroll up past `threshold` it never force-scrolls; scrolling back within `threshold` resumes
+ * following. Degenerate geometry — content no taller than the viewport, or a non-finite
+ * measurement — counts as near: a pane that cannot scroll is at its own bottom, and following is
+ * the safe default.
+ */
+export function nearBottom(
+  scrollTop: number,
+  scrollHeight: number,
+  clientHeight: number,
+  threshold: number = FOLLOW_TAIL_THRESHOLD_PX,
+): boolean {
+  const gap = scrollHeight - clientHeight - scrollTop;
+  if (!Number.isFinite(gap)) return true;
+  return gap <= threshold;
 }
 
 /** Stable expand key for a single row — its own id, else its position. */
