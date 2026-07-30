@@ -77,6 +77,21 @@ const blockRow: TermRow = {
   id: "blk1",
 };
 
+/** A rich-span body. `text` carries the SAME content as plain text — the model's contract: it is
+ *  the fallback and what every text path reads; the spans render INSTEAD of it. */
+const spanRow: TermRow = {
+  kind: "assistant",
+  label: "▍assistant",
+  text: "the frozen surface stays read-only — verify with bun test",
+  spans: [
+    { t: "text", s: "the " },
+    { t: "bold", s: "frozen surface" },
+    { t: "text", s: " stays read-only — verify with " },
+    { t: "code", s: "bun test" },
+  ],
+  id: "sp1",
+};
+
 /** Run `fn` with a (working) clipboard installed on globalThis, restoring the real one after —
  *  the copy control is feature-guarded, and bun's environment has no `navigator.clipboard`. */
 function withClipboard<T>(fn: () => T): T {
@@ -260,6 +275,77 @@ describe("Terminal — block rows (structured report blocks) and the copy afford
     expect(withoutOne).not.toContain(TERM_COPY_ARIA);
     // the block itself still renders — only the control is clipboard-gated
     expect(withoutOne).toContain(`class="${TERM_CLASSES.blockPre}"`);
+  });
+});
+
+describe("Terminal — rich-span rows (the constrained structured body)", () => {
+  test("a mixed bold/code/text run renders <b>, <code> (ui-core's codespan class) and plain text — nothing else", () => {
+    const html = rts(<Terminal source={{ kind: "ready", rows: [spanRow] }} />);
+    expect(html).toContain(
+      `the <b>frozen surface</b> stays read-only — verify with <code class="${TERM_CLASSES.codeSpan}">bun test</code>`,
+    );
+    // the spans render INSTEAD of the plain text, which never appears as one contiguous run
+    expect(html).not.toContain(spanRow.text);
+    // and the raw markdown the model replaces never leaks through
+    expect(html).not.toContain("**");
+    expect(html).not.toContain("`bun test`");
+  });
+
+  test("spans work on EVERY row kind — the kind class still carries the hue", () => {
+    const system: TermRow = { ...spanRow, kind: "system", label: undefined, id: "sp2" };
+    const html = rts(<Terminal source={{ kind: "ready", rows: [system] }} />);
+    expect(html).toContain(termRowClass("system"));
+    expect(html).toContain("<b>frozen surface</b>");
+    expect(html).toContain(`class="${TERM_CLASSES.codeSpan}"`);
+  });
+
+  test("an expandable row renders its spans in the button HEAD; the expand affordance survives", () => {
+    const expandable: TermRow = { ...spanRow, detail: "bun test src/delivery", id: "sp3" };
+    const html = rts(<Terminal source={{ kind: "ready", rows: [expandable] }} />);
+    const head = html.match(new RegExp(`<button[^>]*class="${TERM_CLASSES.head}"[^>]*>[\\s\\S]*?</button>`))?.[0] ?? "";
+    expect(head).toContain("<b>frozen surface</b>");
+    expect(head).toContain(`class="${TERM_CLASSES.codeSpan}"`);
+    expect(head).toContain("(expand)");
+    // collapsed: the detail pane is not rendered
+    expect(html).not.toContain(`class="${TERM_CLASSES.detail}"`);
+  });
+
+  test("a block row IGNORES spans — `block` > `spans`, its text renders preformatted verbatim", () => {
+    const blockWithSpans: TermRow = { ...blockRow, spans: spanRow.spans, id: "sp4" };
+    const html = rts(<Terminal source={{ kind: "ready", rows: [blockWithSpans] }} />);
+    expect(html).toContain(`class="${TERM_CLASSES.blockPre}"`);
+    expect(html).toContain("Handoff(s):        none found — degraded mode");
+    expect(html).not.toContain("<b>");
+    expect(html).not.toContain(TERM_CLASSES.codeSpan);
+  });
+
+  test("span content is TEXT — markup inside a span renders escaped, never parsed", () => {
+    const hostile: TermRow = {
+      kind: "assistant",
+      text: '<img src=x onerror=alert(1)> and <b>y</b>',
+      spans: [
+        { t: "code", s: "<img src=x onerror=alert(1)>" },
+        { t: "text", s: " and " },
+        { t: "bold", s: "<b>y</b>" },
+      ],
+      id: "sp5",
+    };
+    const html = rts(<Terminal source={{ kind: "ready", rows: [hostile] }} />);
+    expect(html).not.toContain("<img");
+    expect(html).not.toContain("<b>y</b>"); // the bold span's CONTENT is escaped text, not markup
+    expect(html).toContain("&lt;img");
+  });
+
+  test("a malformed run falls back to the row's plain text — nothing dropped, nothing guessed", () => {
+    const malformed: TermRow = {
+      ...spanRow,
+      spans: [...spanRow.spans!, { t: "html", s: "<b>x</b>" }] as unknown as TermRow["spans"],
+      id: "sp6",
+    };
+    const html = rts(<Terminal source={{ kind: "ready", rows: [malformed] }} />);
+    expect(html).toContain(spanRow.text); // the contiguous plain text IS the render
+    expect(html).not.toContain("<b>");
+    expect(html).not.toContain(TERM_CLASSES.codeSpan);
   });
 });
 
@@ -506,6 +592,8 @@ describe("self-containment — every emitted class resolves in ui-core's styles.
     ),
     // the block row + its copy control (clipboard present, so the control's class is emitted)
     withClipboard(() => rts(<Terminal source={{ kind: "ready", rows: [blockRow] }} />)),
+    // a rich-span row, so the codespan class joins the scan
+    rts(<Terminal source={{ kind: "ready", rows: [spanRow] }} />),
     rts(<QueuePanel source={{ kind: "loading" }} />),
     rts(<QueuePanel source={{ kind: "unavailable", reason: "error" }} />),
     rts(<QueuePanel source={{ kind: "ok", items: [] }} />),

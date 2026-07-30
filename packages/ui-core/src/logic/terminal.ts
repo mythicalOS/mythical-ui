@@ -47,6 +47,7 @@ export const TERM_CLASSES = {
   segment: "my-term__hist",
   segmentCaption: "my-term__hist-cap",
   caret: "my-term__caret",
+  codeSpan: "my-term__codespan",
 } as const;
 
 /**
@@ -77,10 +78,33 @@ export const TERM_ROW_KINDS: readonly TermRowKind[] = [
   "dim",
 ];
 
+/**
+ * One span of a rich row body. The CONSTRAINED structured model that makes assistant prose
+ * human-readable without ever parsing HTML (the XSS discipline stands: no HTML row exists, and no
+ * binding may grow one): three span kinds — plain `text`, `bold`, `code` — and nothing else. A
+ * span's `s` is always literal text; a binding renders it as a text node (inside `<b>`/`<code>`
+ * for the styled kinds), so markup inside `s` renders escaped, never parsed.
+ */
+export type TermSpan = { readonly t: "text" | "bold" | "code"; readonly s: string };
+
+/** The span kinds, as a runtime list (validation + enumeration — mirrors `TERM_ROW_KINDS`). */
+export const TERM_SPAN_KINDS: readonly TermSpan["t"][] = ["text", "bold", "code"];
+
 export interface TermRow {
   kind: TermRowKind;
   /** The collapsed row's text. */
   text: string;
+  /**
+   * OPTIONAL rich body for the collapsed row: a constrained run of `text` / `bold` / `code`
+   * spans (see `TermSpan`). When present — and valid, see `rowSpans` — the bindings render the
+   * spans INSTEAD of `text` for the collapsed row body, on every row kind, including the button
+   * head of an expandable row. `text` stays REQUIRED and MUST carry the same content as plain
+   * text: it is the fallback when spans are absent or malformed, and it is what every text path
+   * reads (copy paths, tests, `termContentRevision`'s character sums — which is also why a
+   * streaming update that grows `spans` must grow `text` with it). Precedence:
+   * `block` > `spans` > plain text — a block row ignores spans; its `text` renders preformatted.
+   */
+  spans?: readonly TermSpan[];
   /** Optional leading label (`assistant`, a tool name, …). */
   label?: string;
   /** Optional full body revealed by the row's expand affordance. */
@@ -126,6 +150,41 @@ export function isBlockRow(row: TermRow): boolean {
  *  row: `block` takes precedence over `detail`, so a block row never grows an expand affordance. */
 export function isExpandable(row: TermRow): boolean {
   return !isBlockRow(row) && typeof row.detail === "string" && row.detail.length > 0;
+}
+
+// ── rich spans ──
+
+/** Whether `value` is a well-formed `TermSpan` — one of the three kinds, with literal text. */
+export function isTermSpan(value: unknown): value is TermSpan {
+  const span = value as TermSpan | null | undefined;
+  return (
+    typeof span === "object" &&
+    span !== null &&
+    (TERM_SPAN_KINDS as readonly unknown[]).includes(span.t) &&
+    typeof span.s === "string"
+  );
+}
+
+/**
+ * The span run a binding renders for a row's collapsed body, or `null` for plain `text`. This is
+ * the whole precedence rule in one place, so the two bindings cannot disagree on it:
+ *  - a block row NEVER renders spans (`block` > `spans` — its `text` renders preformatted);
+ *  - absent, empty or non-array spans fall back to `text`;
+ *  - ONE malformed member disqualifies the WHOLE run — `text` is required to carry the same
+ *    content, so falling back is lossless, whereas dropping or coercing the bad span would
+ *    silently render something the caller never wrote.
+ */
+export function rowSpans(row: TermRow): readonly TermSpan[] | null {
+  if (isBlockRow(row)) return null;
+  const spans = row.spans;
+  if (!Array.isArray(spans) || spans.length === 0) return null;
+  return spans.every(isTermSpan) ? spans : null;
+}
+
+/** The plain text of a span run — concatenation, verbatim: no separators, no trimming. */
+export function spansText(spans: readonly TermSpan[]): string {
+  const arr = Array.isArray(spans) ? spans : [];
+  return arr.map((span) => span.s).join("");
 }
 
 /** Label on a row's expand affordance, per its current state. */

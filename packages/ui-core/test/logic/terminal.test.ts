@@ -30,6 +30,7 @@ import {
   TERM_MISSING_COPY,
   TERM_NO_EVENTS_COPY,
   TERM_ROW_KINDS,
+  TERM_SPAN_KINDS,
   TERM_STALE_COPY,
   TERM_UNADDRESSABLE_COPY,
   TERM_WAKE_UNAVAILABLE_COPY,
@@ -50,6 +51,7 @@ import {
   historyToggleLabel,
   isBlockRow,
   isExpandable,
+  isTermSpan,
   keyAction,
   lastBoundaryIndex,
   makeSendGate,
@@ -64,6 +66,7 @@ import {
   ROW_SCOPE,
   rowKey,
   rowKeys,
+  rowSpans,
   scopedRowKeys,
   segmentKeys,
   sendBarClass,
@@ -72,6 +75,7 @@ import {
   shouldStopOnKey,
   showDeliveryHint,
   sourceRows,
+  spansText,
   stopButtonClass,
   termClipboardWriter,
   termContentRevision,
@@ -88,6 +92,7 @@ import {
   type QueueUnavailableReason,
   type TermRow,
   type TermSource,
+  type TermSpan,
   type TermView,
   type TranscriptSegment,
 } from "../../src/index.ts";
@@ -554,6 +559,82 @@ describe("block rows — precedence and the copy affordance", () => {
     expect(copyAria(false)).toBe(TERM_COPY_ARIA);
     expect(copyAria(true)).toBe(TERM_COPIED_ARIA);
     expect(copyAria(true)).not.toBe(copyAria(false));
+  });
+});
+
+// ── rich spans (the constrained structured body) ──
+describe("rich spans — model, validation, and the precedence rule", () => {
+  const spans: readonly TermSpan[] = [
+    { t: "text", s: "the " },
+    { t: "bold", s: "frozen surface" },
+    { t: "text", s: " stays read-only — verify with " },
+    { t: "code", s: "bun test" },
+  ];
+  /** A well-formed rich row: `text` carries the SAME content as plain text (the model's contract). */
+  const richRow = (over: Partial<TermRow> = {}): TermRow => row({ spans, text: spansText(spans), ...over });
+
+  test("the model is exactly three kinds — text, bold, code — and nothing else", () => {
+    expect(TERM_SPAN_KINDS).toEqual(["text", "bold", "code"]);
+    for (const t of TERM_SPAN_KINDS) expect(isTermSpan({ t, s: "x" })).toBe(true);
+    // no HTML-shaped arm may ever join the model quietly
+    expect(isTermSpan({ t: "html", s: "<b>x</b>" })).toBe(false);
+    expect(isTermSpan({ t: "link", s: "x" })).toBe(false);
+  });
+
+  test("isTermSpan rejects every malformed shape", () => {
+    expect(isTermSpan(null)).toBe(false);
+    expect(isTermSpan(undefined)).toBe(false);
+    expect(isTermSpan("bold")).toBe(false);
+    expect(isTermSpan({ t: "bold" })).toBe(false); // no s
+    expect(isTermSpan({ t: "bold", s: 7 })).toBe(false); // non-string s
+    expect(isTermSpan({ s: "x" })).toBe(false); // no t
+  });
+
+  test("spansText concatenates VERBATIM — no separators, no trimming", () => {
+    expect(spansText(spans)).toBe("the frozen surface stays read-only — verify with bun test");
+    expect(spansText([])).toBe("");
+    expect(spansText([{ t: "code", s: "  spaced  " }])).toBe("  spaced  ");
+    // defensive over malformed input, like the other pure helpers
+    expect(spansText(undefined as unknown as TermSpan[])).toBe("");
+  });
+
+  test("rowSpans returns a valid run VERBATIM — the same array, not a copy", () => {
+    expect(rowSpans(richRow())).toBe(spans);
+  });
+
+  test("absent, empty or non-array spans fall back to plain text", () => {
+    expect(rowSpans(row())).toBeNull();
+    expect(rowSpans(row({ spans: [] }))).toBeNull();
+    expect(rowSpans(row({ spans: "**bold**" as unknown as TermSpan[] }))).toBeNull();
+  });
+
+  test("ONE malformed member disqualifies the WHOLE run — text is the lossless fallback", () => {
+    // dropping or coercing the bad span would silently render something the caller never wrote;
+    // `text` is required to carry the same content, so falling back loses nothing
+    expect(rowSpans(richRow({ spans: [...spans, { t: "html", s: "<b>x</b>" } as unknown as TermSpan] }))).toBeNull();
+    expect(rowSpans(richRow({ spans: [...spans, { t: "bold", s: 7 } as unknown as TermSpan] }))).toBeNull();
+    expect(rowSpans(richRow({ spans: [null as unknown as TermSpan] }))).toBeNull();
+  });
+
+  test("precedence: `block` > `spans` — a block row NEVER renders spans", () => {
+    expect(rowSpans(richRow({ block: true }))).toBeNull();
+    // the same spans WITHOUT block do render — precedence, not a ban
+    expect(rowSpans(richRow({ block: false }))).toBe(spans);
+  });
+
+  test("spans work on EVERY row kind", () => {
+    for (const kind of TERM_ROW_KINDS) expect(rowSpans(richRow({ kind }))).toBe(spans);
+  });
+
+  test("spans leave expandability alone — detail still expands, spans ride the head", () => {
+    expect(isExpandable(richRow({ detail: "a body" }))).toBe(true);
+    expect(isExpandable(richRow())).toBe(false);
+    // and block precedence over detail is unchanged by spans
+    expect(isExpandable(richRow({ block: true, detail: "a body" }))).toBe(false);
+  });
+
+  test("the codespan class is structural and distinct", () => {
+    expect(TERM_CLASSES.codeSpan).toBe("my-term__codespan");
   });
 });
 

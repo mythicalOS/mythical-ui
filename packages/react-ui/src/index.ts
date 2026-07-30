@@ -273,6 +273,7 @@ export {
   type TermRow,
   type TermRowKind,
   type TermSource,
+  type TermSpan,
   type TermView,
 } from "./Terminal.js";
 export {

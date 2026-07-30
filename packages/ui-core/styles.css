@@ -1019,6 +1019,19 @@ button.my-session-card { cursor: pointer; }
 .my-term__row--result .my-term__label,
 .my-term__row--system .my-term__label { color: var(--my-term-dim); }
 
+/* rich spans — the constrained structured body (text/bold/code; never parsed HTML). The code span
+   is the same quiet inset treatment as .my-term__detail, shrunk to inline: it inherits the ROW's
+   color on purpose (a user row's code reads amber, a dim row's dim — the kind keeps carrying the
+   hue), so it declares none of its own. Bold gets an explicit weight so it does not depend on the
+   browser's default `bolder` resolution against the mono face. */
+.my-term b { font-weight: var(--my-fw-bold); }
+.my-term__codespan {
+  font-family: var(--my-font-mono);
+  background: var(--my-surface-hover);
+  border-radius: var(--my-r-control);
+  padding: 0 4px;
+}
+
 /* expandable rows — collapsed by default, highlight on hover (design card) */
 .my-term__head {
   display: block; width: 100%; text-align: left; cursor: pointer;

@@ -19,6 +19,8 @@ h3:first-child{margin-top:0}
 .p{color:#3FB8AE}.dim{color:#9AA0AC}.user{color:#EFA443}
 .tool{color:#9AA0AC;border-radius:6px;padding:0 6px;margin:0 -6px;cursor:pointer}
 .tool:hover{background:#1A1D24;color:#ECE7DE}
+.term b{font-weight:650}
+.cd{font-family:inherit;background:#1A1D24;border-radius:6px;padding:0 4px}
 @keyframes blink{50%{opacity:0}}
 .caret{display:inline-block;width:7px;height:14px;background:#3FB8AE;vertical-align:-2px;animation:blink 1s steps(1) infinite}
 .ban{display:flex;gap:8px;align-items:center;background:#33250E;color:#EFA443;border-radius:6px;padding:6px 10px;font-size:11.5px;margin-bottom:10px;font-family:Inter,sans-serif}
@@ -55,6 +57,7 @@ h3:first-child{margin-top:0}
 <div class="term">
 <span class="dim">jacob.jsonl · tail · noise off</span><br>
 <span class="p">▍assistant</span> seam refactor green — 214 tests, 0 fail.<br>
+<span class="p">▍assistant</span> the <b>frozen surface</b> stays read-only — verify with <code class="cd">bun test</code><br>
 <span class="user">← user (ASAP)</span> hold the rollout until the envelope test lands<br>
 <span class="tool">▸ tool Bash · bun test src/delivery <span style="text-decoration:underline">(expand)</span></span><br>
 <span class="p">▍assistant</span> ack — parking the rollout, resuming envelope spe<span class="caret"></span>

@@ -274,6 +274,7 @@ describe("every class the terminal-set logic emits has a selector", () => {
       "my-term__detail",
       "my-term__block",
       "my-term__blockpre",
+      "my-term__codespan",
       "my-term__copy",
       "my-term__more",
       "my-term__hist",
@@ -301,6 +302,25 @@ describe("every class the terminal-set logic emits has a selector", () => {
     ];
     const missing = structural.filter((c) => !hasClassSelector(c));
     expect(missing).toEqual([]);
+  });
+});
+
+describe("rich spans — the codespan + bold treatment", () => {
+  test("bold spans get an explicit weight inside the terminal — no reliance on `bolder`", () => {
+    expect(css).toMatch(/\.my-term b\s*\{[^}]*font-weight:\s*var\(--my-fw-bold\)/);
+  });
+
+  test("the code span is a quiet mono inset that inherits the ROW's color", () => {
+    const m = css.match(/\.my-term__codespan\s*\{([^}]*)\}/);
+    expect(m).not.toBeNull();
+    const body = m?.[1] ?? "";
+    expect(body).toMatch(/font-family:\s*var\(--my-font-mono\)/);
+    // the inset fill rides the PINNED surface-hover local (same treatment as .my-term__detail),
+    // so it resolves through --my-term-* and stays heritage-dark in both themes
+    expect(body).toMatch(/background:\s*var\(--my-surface-hover\)/);
+    expect(body).toMatch(/border-radius:/);
+    // it declares NO color of its own — the row's kind keeps carrying the hue
+    expect(body).not.toMatch(/(?<!-)color\s*:/);
   });
 });
 

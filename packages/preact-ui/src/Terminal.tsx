@@ -5,7 +5,8 @@
 //
 // Thin binding: render + wiring only. Every class string (`TERM_CLASSES`), every user-visible
 // string, the six-branch source resolution, the segmentation, the row keying, the Ctrl-C
-// predicate, the block-row precedence (`isBlockRow`/`isExpandable`), the copy labels + accessible
+// predicate, the block-row precedence (`isBlockRow`/`isExpandable`), the rich-span model + its
+// precedence (`rowSpans`: `block` > `spans` > plain text), the copy labels + accessible
 // names + clipboard guard (`copyLabel`/`copyAria`/`termClipboardWriter`) and the follow-tail
 // policy (`nearBottom`, `termContentRevision`) come from `@mythicalos/ui-core` — this file types
 // no class literal and no copy of its own, so it and its React sibling cannot drift.
@@ -39,6 +40,7 @@ import {
   nearBottom,
   noiseShow,
   ROW_SCOPE,
+  rowSpans,
   scopedRowKeys,
   segmentKeys,
   shouldStopOnKey,
@@ -65,6 +67,7 @@ export {
   type TermRow,
   type TermRowKind,
   type TermSource,
+  type TermSpan,
   type TermView,
   type TranscriptSegment,
 } from "@mythicalos/ui-core/logic";
@@ -104,6 +107,34 @@ export interface TerminalProps {
   followTail?: boolean;
 }
 
+/**
+ * The collapsed row body: ui-core's `rowSpans` verdict. A valid span run renders as `<b>` for
+ * bold, `<code>` (ui-core's codespan class) for code, and plain TEXT NODES for text — nothing
+ * else, no other elements, never any HTML parsing (a span's content is always a text node, so
+ * markup inside it renders escaped). Anything less than a valid run — absent, empty, malformed,
+ * or a block row — renders `row.text` verbatim, which the model requires to carry the same
+ * content as plain text.
+ */
+function RowBody(props: { row: TermRow }) {
+  const spans = rowSpans(props.row);
+  if (spans === null) return <>{props.row.text}</>;
+  return (
+    <>
+      {spans.map((span, i) =>
+        span.t === "bold" ? (
+          <b key={i}>{span.s}</b>
+        ) : span.t === "code" ? (
+          <code key={i} class={TERM_CLASSES.codeSpan}>
+            {span.s}
+          </code>
+        ) : (
+          span.s
+        ),
+      )}
+    </>
+  );
+}
+
 function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
   const { row } = props;
   // Copied feedback for a block row's copy control. The hooks are unconditional (rules of hooks);
@@ -121,6 +152,8 @@ function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
   );
   const label = row.label ? <span class={TERM_CLASSES.label}>{row.label}</span> : null;
   if (isBlockRow(row)) {
+    // A block row renders its `text` preformatted and IGNORES `spans` (`block` > `spans` — the
+    // precedence is ui-core's `rowSpans`, which returns null for a block row).
     // Feature-guarded: with no usable clipboard the control renders NOTHING (never a dead button).
     const write = termClipboardWriter(globalThis);
     const onCopy = async () => {
@@ -150,7 +183,7 @@ function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
       <div class={termRowClass(row.kind)}>
         {label}
         {label ? " " : null}
-        {row.text}
+        <RowBody row={row} />
       </div>
     );
   }
@@ -159,7 +192,7 @@ function RowView(props: { row: TermRow; expanded: boolean; onToggle(): void }) {
       <button type="button" class={TERM_CLASSES.head} aria-expanded={props.expanded} onClick={props.onToggle}>
         {label}
         {label ? " " : null}
-        {row.text} <span class={TERM_CLASSES.expand}>{expandLabel(props.expanded)}</span>
+        <RowBody row={row} /> <span class={TERM_CLASSES.expand}>{expandLabel(props.expanded)}</span>
       </button>
       {props.expanded ? <pre class={TERM_CLASSES.detail}>{row.detail}</pre> : null}
     </div>
