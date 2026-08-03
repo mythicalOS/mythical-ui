@@ -105,6 +105,24 @@ export {
   type GitFlagTone,
 } from "./GitChip.js";
 
+// ── KPI tile (ds/components-kpi-tile): gauge · sparkline · split bar · plain, layered on the
+// stat-tile atom above ──
+export {
+  KpiTile,
+  KPI_TILE_PARTS,
+  kpiBandClass,
+  kpiDeltaClass,
+  kpiGauge,
+  kpiGaugeWrapClass,
+  kpiSpark,
+  kpiSparkClass,
+  kpiSplitRects,
+  kpiTileClass,
+  sparkInBand,
+  type KpiSeg,
+  type KpiTileProps,
+} from "./KpiTile.js";
+
 // ── the chip family (the design system's Chip card, v2): Chip · ChipFlag · ChipDropdown ──
 export {
   Chip,
