@@ -315,6 +315,10 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .my-gauge__fill--ok    { stroke: var(--my-accent); } /* < 75% — rule #4: fill = accent, not the "ok" status color */
 .my-gauge__fill--warn  { stroke: var(--my-warn); }   /* 75–89% */
 .my-gauge__fill--error { stroke: var(--my-error); }  /* ≥ 90% */
+/* a fourth modifier for metrics with no good/bad judgement at all (an informational rate, say —
+   the KPI tile's own configurable-threshold gauge is the first consumer, src/logic/kpi-tile.ts's
+   `kpiGauge`), alongside the threshold triplet above rather than a redeclaration of any of them. */
+.my-gauge__fill--info  { stroke: var(--my-info); }
 .my-gauge__label {
   position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
   font-size: var(--my-fs-micro); /* export: 11px, no exact step */
@@ -1725,3 +1729,76 @@ button.my-stepper__step:focus-visible { outline: 2px solid var(--my-accent); out
 .my-pulse { animation: my-pulse 1s ease-in-out infinite; }
 @keyframes my-pulse { 50% { opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .my-pulse { animation: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   KPI TILE (ds/components-kpi-tile) — viz/delta/band rows layered on the shipped `.my-stat-tile`
+   atom (label/value/sub already come from statTileClass/STAT_TILE_PARTS above); this block adds
+   only the viz row (gauge/spark/split/plain) and the footer (delta + band) that sit around it.
+   Class derivation lives in src/logic/kpi-tile.ts. Fixed min-height 112px + height:100% so a row
+   of tiles is always equal height, same floor the plain stat-tile card itself is sized off.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+.my-kpi-tile {
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 112px; height: 100%;
+}
+
+/* the row holding value + (beside note | gauge | spark) — `flex:1;min-height:0` lets it share the
+   tile's fixed height with the label above and the footer rows below without overflowing. */
+.my-kpi-tile__viz-row { display: flex; align-items: center; gap: 10px; flex: 1; min-height: 0; }
+.my-kpi-tile__note {
+  margin-left: auto; flex: none;
+  font-size: var(--my-fs-nano); /* card: 10px — exact token match */
+  line-height: 1.35; color: var(--my-muted); text-align: right; white-space: pre-line;
+}
+.my-kpi-tile__viz { flex: none; margin-left: auto; display: block; }
+
+/* ── mini gauge — a KPI-tile-specific configurable-threshold donut (44x44 viewBox, drawn at
+   40x40), NOT the packaged `<Gauge>`: KPI tiles need PER-METRIC thresholds and "which direction is
+   good" varies per metric, where the packaged atom is fixed at the context/usage 75/90 pair.
+   Reuses the shared `.my-gauge`/`.my-gauge__track`/`.my-gauge__fill` classes and tokens (incl. the
+   rotation `.my-gauge svg` already applies above) via the `.my-kpi-gauge` scoping modifier —
+   see kpiGaugeWrapClass's doc comment for why the fixed stroke width lives on this modifier
+   rather than on the shared rule directly. */
+.my-kpi-gauge .my-gauge__track,
+.my-kpi-gauge .my-gauge__fill { stroke-width: 5; }
+
+/* ── sparkline (86x38, Catmull-Rom smoothed via kpiSpark) — color rides a modifier class on the
+   wrapping <svg>; only geometry (`d`, `x1`/`y1`/`x2`/`y2`, `cx`/`cy`/`r`, `stroke-dasharray`)
+   rides attributes. */
+.my-kpi-spark__area { fill-opacity: .1; }
+.my-kpi-spark__line { fill: none; stroke-width: 1.8; }
+.my-kpi-spark--ok .my-kpi-spark__area { fill: var(--my-accent); }
+.my-kpi-spark--ok .my-kpi-spark__line { stroke: var(--my-accent); }
+.my-kpi-spark--ok .my-kpi-spark__dot  { fill: var(--my-accent); }
+.my-kpi-spark--ok .my-kpi-spark__band { stroke: var(--my-border); }
+.my-kpi-spark--warn .my-kpi-spark__area { fill: var(--my-warn); }
+.my-kpi-spark--warn .my-kpi-spark__line { stroke: var(--my-warn); }
+.my-kpi-spark--warn .my-kpi-spark__dot  { fill: var(--my-warn); }
+.my-kpi-spark--warn .my-kpi-spark__band { stroke: var(--my-warn); }
+
+/* ── split bar (6px stacked track) — an SVG rather than a flex row of spans with a percent width:
+   each segment's width varies continuously, which only an SVG presentation attribute (`width`) can
+   express without an inline style (CSP). Rendered as a sibling BELOW the viz row, not inside it —
+   full tile width, not a right-aligned viz slot. */
+.my-kpi-split {
+  display: block; width: 100%; height: 6px; border-radius: 3px; overflow: hidden;
+  background: var(--my-track);
+}
+.my-kpi-split__seg--accent { fill: var(--my-accent); }
+.my-kpi-split__seg--warn   { fill: var(--my-warn); }
+.my-kpi-split__seg--muted  { fill: var(--my-muted); }
+
+/* ── footer: delta row (mono-adjacent, single line, ellipsized) + band line (reuses
+   `.my-stat-tile__sub`, with a tone modifier added here for the breached state). */
+.my-kpi-tile__delta-row {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: var(--my-fs-micro); /* card: 11px — exact token match */
+  white-space: nowrap; overflow: hidden;
+}
+.my-kpi-tile__delta { font-weight: var(--my-fw-bold); }
+.my-kpi-tile__delta--ok    { color: var(--my-ok); }
+.my-kpi-tile__delta--warn  { color: var(--my-warn); }
+.my-kpi-tile__delta--muted { color: var(--my-muted); }
+.my-kpi-tile__delta-ref { color: var(--my-muted); overflow: hidden; text-overflow: ellipsis; }
+.my-kpi-tile__band { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-kpi-tile__band--warn { color: var(--my-warn); }
