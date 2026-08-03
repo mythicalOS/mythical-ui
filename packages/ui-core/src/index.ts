@@ -199,6 +199,25 @@ export {
   type GitChipState,
 } from "./logic/git-chip.js";
 
+// ── KPI tile (ds/components-kpi-tile): gauge · sparkline · split bar · plain, layered on the
+// stat-tile atom above ──
+export {
+  kpiSpark,
+  sparkInBand,
+  kpiGauge,
+  kpiSplitRects,
+  kpiTileClass,
+  kpiGaugeWrapClass,
+  kpiSparkClass,
+  kpiDeltaClass,
+  kpiBandClass,
+  KPI_TILE_PARTS,
+  type KpiSpark,
+  type KpiSeg,
+  type KpiSplitRect,
+  type KpiTileProps,
+} from "./logic/kpi-tile.js";
+
 // ── file explorer & markdown preview (ds/components-file-explorer) ──
 export {
   // tree derivation
