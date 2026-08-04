@@ -18,6 +18,14 @@
 .muted { color: var(--my-muted); }
 .hidden { display: none; }
 
+/* links — the app mockups' own global treatment, verbatim: accent-strong (the text-safe accent,
+   AA on light per the tokens sheet), no underline. `.link` is the same look for non-anchor
+   elements and pre-dates this rule in consumer markup; the shared focus ring below has always
+   named both selectors — these are the base rules it assumed. Deliberately no :hover state:
+   the design defines none. */
+a { color: var(--my-accent-strong); text-decoration: none; }
+.link { color: var(--my-accent-strong); text-decoration: none; cursor: pointer; }
+
 /* shared focus ring (design rule 6 — identical everywhere, both themes) */
 .btn:focus-visible, .input:focus-visible,
 .tog:focus-visible, .cb:focus-visible, .rep:focus-visible,
