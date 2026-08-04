@@ -705,6 +705,7 @@ button:focus-visible{outline:2px solid var(--my-accent,#0F6B66);outline-offset:2
       });
       this.#mo.observe(this, { childList: true, subtree: true, attributes: true,
         characterData: true, // text-node edits re-adopt (label/implicit value)
+        attributeOldValue: true, // lets #relevant drop same-value re-writes (no-op records)
         attributeFilter: ['value', 'label', 'disabled', 'selected'] });
     }
 
@@ -724,8 +725,22 @@ button:focus-visible{outline:2px solid var(--my-accent,#0F6B66);outline-offset:2
        unmatched value="…" write (no-match → selection correctly cleared) back to
        the [selected]/first default while the attribute still says otherwise.
        Everything else (child/subtree childList, option attributes, text) either
-       carries selection semantics (see #replay) or refreshes the rendered list. */
-    #relevant(recs) { return recs.filter(r => r.type !== 'attributes' || r.target !== this); }
+       carries selection semantics (see #replay) or refreshes the rendered list.
+       EXCEPT a same-value attribute re-write: setAttribute queues a record even when the
+       value did not change, and vdom frameworks legitimately re-assert value="…" on every
+       render (the value prop is exempt from old-vs-new short-circuits because form DOM state
+       can drift). Re-adopting on those no-ops closes an OPEN popup mid-interaction (#adopt's
+       close-before-rebuild) — observed as "the dropdown closes itself" on any page that
+       re-renders on a poll. A record is a no-op only if its oldValue equals the attribute's
+       CURRENT value; in a queued A→B→A sequence the middle record still differs, so a real
+       round-trip keeps re-adopting. Requires attributeOldValue: true at the observe site. */
+    #relevant(recs) {
+      return recs.filter(r => {
+        if (r.type !== 'attributes') return true;
+        if (r.target === this) return false;
+        return r.oldValue !== r.target.getAttribute(r.attributeName);
+      });
+    }
 
     /* Synchronous flush of pending option mutations (the MutationObserver is
        async; native option lists are synchronous): called at the top of every
