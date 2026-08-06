@@ -230,6 +230,33 @@
   border-radius: 5px;
   padding: 1px 6px;
 }
+/* The running version of the product on this row, supplied by the consumer's own probe and never
+   by the registry (see Product.version). `margin-left:auto` inside the name line is what puts it at
+   the row's TOP right: the name line is the row's first line and the status dot sits outside the
+   body, so the version lands just inboard of the dot and cannot collide with it. Muted, mono and
+   micro because it is a reading, not a label, and must not compete with the product name. The
+   weight is reset explicitly: `.my-switcher__name` is bold, and without this the version would
+   inherit it.
+
+   `min-width: 0` is load-bearing, not tidiness: a flex item defaults to `min-width: auto`, which
+   refuses to shrink below its own content, so a long reading (a build identifier, a probe that
+   returned more than a semver) would keep its full width inside a fixed-width panel and spill out
+   of the body into the status dot. With the minimum released it truncates with an ellipsis
+   instead — a clipped version is still honest, an overlapping one corrupts the row. Scoped to this
+   element only: giving the name or body new shrink behaviour would change how existing consumers
+   render rows that have no version at all, and this release must not do that. */
+.my-switcher__version {
+  margin-left: auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-regular);
+  color: var(--my-muted);
+  letter-spacing: 0;
+  white-space: nowrap;
+}
 .my-switcher__dot { flex: none; width: 7px; height: 7px; border-radius: 50%; }
 .my-switcher__dot--here { background: var(--my-accent); }
 .my-switcher__dot--online { background: var(--my-ok); }

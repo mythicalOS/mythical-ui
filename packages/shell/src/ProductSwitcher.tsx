@@ -125,6 +125,9 @@ function SwitcherRow({ product, state, role, isCurrent, onPick }: SwitcherRowPro
         <span class="my-switcher__name">
           {product.name}
           {isCurrent && <span class="my-switcher__here">here</span>}
+          {/* Ternary, not `&&`: `version: ""` must render NOTHING rather than an empty element —
+              an empty badge would be a visible claim where the consumer supplied no reading. */}
+          {product.version ? <span class="my-switcher__version">{product.version}</span> : null}
         </span>
         <span class="my-switcher__role">{role}</span>
       </span>

@@ -31,6 +31,30 @@ export interface Product {
   role: string;
   href: string | null;
   state: ProductState;
+  /**
+   * The version this product is RUNNING, as the consumer proved it — normally the `version` field
+   * of that product's own `/detect`. Rendered subtly at the row's top right.
+   *
+   * OPTIONAL, and deliberately NOT part of the registry data below: a version is not a property of
+   * the family (every product's menu would otherwise claim to know what the others are running), it
+   * is a local reading only the consumer's own probe can supply. Absent ⇒ the row shows NO version,
+   * which is the honest rendering of "not probed, not reachable, or the probe did not say" — this
+   * package never displays a state it has not been given.
+   *
+   * Optional is also what keeps this release ADDITIVE. Every existing consumer builds `Product`
+   * values without this field, and each of them must keep compiling against the new version
+   * untouched; making it required would be a breaking change to a published package.
+   *
+   * RESIDUAL, stated rather than pretended away: widening a PUBLISHED interface is never perfectly
+   * free in structural TypeScript. A consumer that already declares its own `version` of a
+   * different type on top of this one — `interface Mine extends Product { version: {...} }`, or a
+   * class implementing `Product` — would now conflict. That is inherent to adding any field to a
+   * shipped interface, and the alternative (never extending one) is not a real option. It was
+   * checked rather than assumed: no consumer of this package extends, implements, or `satisfies`
+   * `Product` at all, and none compiles with `exactOptionalPropertyTypes`. If one ever does, the
+   * fix is theirs to rename, and this note is why.
+   */
+  version?: string;
 }
 
 export const PRODUCTS: Product[] = [

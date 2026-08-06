@@ -529,3 +529,106 @@ describe("product glyphs — the navigation marks (product-navigation reference)
     expect(html).toContain(">X</span>"); // …so the mark is the initial
   });
 });
+
+
+// ── Product.version — the consumer's own reading, rendered at the row's top right ──────────────
+// `version` is optional and the registry ships none, so the default rendering of every existing
+// consumer is unchanged; these pin both halves of that contract.
+/**
+ * Inner HTML of the first element carrying `cls`, tracking nested `<span>` depth so that "inside"
+ * means genuinely inside. Serialized-string ordering cannot distinguish a child from a later
+ * sibling, which is the whole point of the placement pin below.
+ */
+function innerHtmlOf(html: string, cls: string): string {
+  const open = html.indexOf(`<span class="${cls}"`);
+  if (open === -1) return "";
+  const start = html.indexOf(">", open) + 1;
+  let depth = 1;
+  let i = start;
+  while (i < html.length && depth > 0) {
+    const nextOpen = html.indexOf("<span", i);
+    const nextClose = html.indexOf("</span>", i);
+    if (nextClose === -1) return "";
+    if (nextOpen !== -1 && nextOpen < nextClose) {
+      depth++;
+      i = nextOpen + "<span".length;
+    } else {
+      depth--;
+      if (depth === 0) return html.slice(start, nextClose);
+      i = nextClose + "</span>".length;
+    }
+  }
+  return "";
+}
+
+describe("SwitcherRow — the optional per-product version", () => {
+  const withVersion = (version?: string): Product[] => [
+    { key: "x", name: "XPROD", initial: "X", role: "r", href: "/x", state: "online", ...(version === undefined ? {} : { version }) },
+  ];
+
+  test("a row renders the version the consumer supplied", () => {
+    const html = renderToString(
+      <SwitcherPanel current="x" products={withVersion("0.1.40")} note="n" onPick={noop} />,
+    );
+    expect(html).toContain('class="my-switcher__version"');
+    expect(html).toContain("0.1.40");
+  });
+
+  test("the version is a CHILD of the name line — that is what puts it top-right", () => {
+    // Position is the requirement, not mere presence: the name line is the row's first line and the
+    // status dot sits outside the body, so a version rendered INSIDE the name line lands at the top
+    // right just inboard of the dot.
+    //
+    // Ordering by `indexOf` is not enough to prove that (codex r1): "version class appears before
+    // role class" also holds when the version is a SIBLING between the two spans, where
+    // `margin-left:auto` no longer positions it on the name line at all. So the name element's own
+    // inner HTML is extracted with balanced-span tracking and the version must be in there.
+    const html = renderToString(
+      <SwitcherPanel current="x" products={withVersion("9.9.9")} note="n" onPick={noop} />,
+    );
+    const nameInner = innerHtmlOf(html, "my-switcher__name");
+    expect(nameInner).toContain("my-switcher__version");
+    expect(nameInner).toContain("9.9.9");
+    // …and the extractor really is scoped: the role line is a SIBLING, so it must NOT be in there.
+    // Without this, a helper that silently returned the whole document would satisfy the assertions
+    // above while proving nothing.
+    expect(nameInner).not.toContain("my-switcher__role");
+  });
+
+  test("a product with NO version renders no version element — absence is not a blank", () => {
+    const html = renderToString(
+      <SwitcherPanel current="x" products={withVersion()} note="n" onPick={noop} />,
+    );
+    expect(html).not.toContain("my-switcher__version");
+  });
+
+  test("an EMPTY version string is absence, not an empty badge", () => {
+    const html = renderToString(
+      <SwitcherPanel current="x" products={withVersion("")} note="n" onPick={noop} />,
+    );
+    expect(html).not.toContain("my-switcher__version");
+  });
+
+  test("the packaged registry ships NO versions — a version is the consumer's reading, not family data", () => {
+    for (const p of PRODUCTS) expect(p.version).toBeUndefined();
+    expect(ASGARD.version).toBeUndefined();
+  });
+
+  test("the published stylesheet defines the class the row references, with the rules that position it", () => {
+    // The component names a class; if the sheet does not define it, the version ships unstyled —
+    // inheriting the name line's bold, which is the one thing the rule exists to prevent.
+    //
+    // Bound to the RULE BLOCK, not to the file (codex r1): the class name also appears in the
+    // comment above the rule, so a bare `toContain` would still pass if the selector were deleted
+    // and the prose left behind, and a bare `toContain("margin-left: auto")` would match that
+    // declaration anywhere in a 22KB sheet. Comments are stripped and the block is matched, so both
+    // declarations must genuinely belong to this selector.
+    const css = readFileSync(join(import.meta.dir, "styles.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+    const rule = css.match(/\.my-switcher__version\s*\{([^}]*)\}/);
+    expect(rule).not.toBeNull();
+    const body = rule![1]!;
+    expect(body).toContain("margin-left: auto"); // what puts it at the right of the name line
+    expect(body).toContain("min-width: 0"); // what lets a long reading truncate instead of overflow
+    expect(body).toContain("text-overflow: ellipsis");
+  });
+});
