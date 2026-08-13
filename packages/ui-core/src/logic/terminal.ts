@@ -57,10 +57,13 @@ export const TERM_CLASSES = {
  *  - `local`    — a CLIENT-SYNTHETIC row (e.g. an interrupt marker). Deliberately its own kind so
  *                 UI-originated rows can never masquerade as `system` output from the far side.
  *
- * The last three exist for ONE reason the others cannot serve: their stylesheet rules deliberately
- * do NOT force the label to the body colour, so a row can carry a prominent peer name over a body
- * in a different weight of the palette. Every other kind either matches the two or leaves the label
- * on the default accent.
+ * The last three are added for SEMANTICS, not because no existing kind can render like them —
+ * `dim` already pairs a dim body with the default accent label, which is exactly `send`'s
+ * treatment. Hijacking it would make every kind-keyed behaviour (noise classification, styling,
+ * anything added later) treat directional traffic and bookkeeping as a dim aside. What the
+ * dedicated kinds add on top of that identity is the specific token pairing each one needs, and
+ * the deliberate refusal — shared with `assistant`/`dim`/`local`, unlike `user`/`tool`/`result`/
+ * `system` — to force the label to the body colour.
  */
 export type TermRowKind =
   | "assistant"

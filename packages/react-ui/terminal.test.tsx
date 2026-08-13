@@ -229,18 +229,26 @@ describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §
       { kind: "send", label: "→ @ qa-6❯ (14:32:06)", text: "\n  ok" },
       { kind: "memory", label: "⊕ memory · stored (14:35:02)", text: "" },
     ];
-    const html = rts(<Terminal source={{ kind: "ready", rows: newRows }} />);
-    for (const kind of ["recv", "send", "memory"] as const) {
-      expect(html).toContain(termRowClass(kind));
+    // ONE row per render, asserting that row's OWN class and the ABSENCE of the other two: a
+    // rendering that cycled the kinds (recv→send, send→memory, memory→recv) would satisfy a
+    // combined "contains all three" scan while mapping every row to the wrong hue.
+    for (const row of newRows) {
+      for (const noiseFilterEnabled of [false, true]) {
+        const one = rts(
+          <Terminal source={{ kind: "ready", rows: [row] }} noiseFilterEnabled={noiseFilterEnabled} />,
+        );
+        expect(one).toContain(termRowClass(row.kind));
+        for (const other of newRows) {
+          if (other.kind !== row.kind) expect(one).not.toContain(termRowClass(other.kind));
+        }
+        // and none of the three is silently noise-filtered away
+        expect(one).not.toContain(TERM_NO_EVENTS_COPY);
+      }
     }
     // the label really renders as a label — that element is what carries the contrasting colour
+    const html = rts(<Terminal source={{ kind: "ready", rows: newRows }} />);
     expect(html).toContain("← @ lead-4❯");
     expect(html).toContain("my-term__label");
-    // and none of the three is silently noise-filtered away
-    const filtered = rts(<Terminal source={{ kind: "ready", rows: newRows }} noiseFilterEnabled />);
-    for (const kind of ["recv", "send", "memory"] as const) {
-      expect(filtered).toContain(termRowClass(kind));
-    }
   });
 });
 
