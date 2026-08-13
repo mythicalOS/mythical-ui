@@ -36,6 +36,7 @@ import {
   queueBadgeClass,
   queueRowClass,
   sendPlaceholder,
+  TERM_ROW_KINDS,
   termRowClass,
   termTitleText,
   type QueueItem,
@@ -165,6 +166,77 @@ describe("Terminal — the six source branches (loading honesty)", () => {
 
   test("an empty ready log says `(no events)` — a state only a completed read can reach", () => {
     expect(renderToString(<Terminal source={{ kind: "ready", rows: [] }} />)).toContain(TERM_NO_EVENTS_COPY);
+  });
+});
+
+describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §4.1)", () => {
+  test("recv/send/memory row kinds exist and are enumerated", () => {
+    expect(TERM_ROW_KINDS).toContain("recv");
+    expect(TERM_ROW_KINDS).toContain("send");
+    expect(TERM_ROW_KINDS).toContain("memory");
+    expect(TERM_ROW_KINDS.length).toBe(11); // 8 existing + 3
+    expect(termRowClass("recv")).toBe("my-term__row my-term__row--recv");
+    expect(termRowClass("send")).toBe("my-term__row my-term__row--send");
+    expect(termRowClass("memory")).toBe("my-term__row my-term__row--memory");
+  });
+
+  // The headline requirement, pinned BY VALUE not by selector existence: these kinds exist
+  // precisely because their label must NOT be forced to the body colour.
+  test("each new kind's label declaration differs from its body declaration", () => {
+    // `css` is the file's existing module-scope read of ui-core/styles.css.
+    /** The `var(--token)` form — the five declarations that use it. */
+    const decl = (sel: string) => {
+      const m = new RegExp(`\\${sel}\\s*\\{[^}]*color:\\s*var\\((--[a-z-]+)\\)`).exec(css);
+      return m?.[1] ?? null;
+    };
+    expect(decl(".my-term__row--recv")).toBe("--my-term-ink");
+    expect(decl(".my-term__row--recv .my-term__label")).toBe("--my-term-user");
+    expect(decl(".my-term__row--send")).toBe("--my-term-dim");
+    expect(decl(".my-term__row--send .my-term__label")).toBe("--my-term-assistant");
+    expect(decl(".my-term__row--memory")).toBe("--my-term-dim");
+    // the property that actually matters, and that selector-existence checks cannot catch:
+    expect(decl(".my-term__row--recv")).not.toBe(decl(".my-term__row--recv .my-term__label"));
+    expect(decl(".my-term__row--send")).not.toBe(decl(".my-term__row--send .my-term__label"));
+  });
+
+  // The SIXTH declaration needs its own matcher: its value starts `color-mix(`, so the `decl()`
+  // probe above returns null for it — and a bare "they differ" assertion against a null would pass
+  // vacuously against a MISSING declaration. Match the declaration text itself.
+  test("the memory label is the sanctioned color-mix over term tokens, not a token or a hex", () => {
+    const m = /\.my-term__row--memory \.my-term__label\s*\{([^}]*)\}/.exec(css);
+    expect(m).not.toBeNull();
+    const value = /color:\s*([^;]+);/.exec(m![1]!)?.[1]?.trim() ?? "";
+    expect(value).toBe("color-mix(in oklab, var(--my-term-assistant) 45%, var(--my-term-user))");
+    // and it is NOT the body's declaration — the whole point of the kind
+    expect(value).not.toBe("var(--my-term-dim)");
+    // every var() operand inside it is a --my-term-* token, which is what keeps
+    // ui-core's test/terminal-css.test.ts flipping-token rule green
+    const refs = Array.from(value.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)).map((x) => x[1]!);
+    expect(refs).toEqual(["--my-term-assistant", "--my-term-user"]);
+  });
+
+  // "both bindings render them identically". The two tests above do NOT prove this: they exercise
+  // ui-core's shared TERM_ROW_KINDS/termRowClass and the stylesheet text, none of which is
+  // per-binding. The main render fixture contains none of the new kinds, so a binding could drop
+  // or mangle one with everything above green. Render them.
+  test("the binding renders all three new kinds through ui-core's row classes", () => {
+    const newRows: TermRow[] = [
+      { kind: "recv", label: "← @ lead-4❯ (14:32:05)", text: "\n  hi" },
+      { kind: "send", label: "→ @ qa-6❯ (14:32:06)", text: "\n  ok" },
+      { kind: "memory", label: "⊕ memory · stored (14:35:02)", text: "" },
+    ];
+    const html = renderToString(<Terminal source={{ kind: "ready", rows: newRows }} />);
+    for (const kind of ["recv", "send", "memory"] as const) {
+      expect(html).toContain(termRowClass(kind));
+    }
+    // the label really renders as a label — that element is what carries the contrasting colour
+    expect(html).toContain("← @ lead-4❯");
+    expect(html).toContain("my-term__label");
+    // and none of the three is silently noise-filtered away
+    const filtered = renderToString(<Terminal source={{ kind: "ready", rows: newRows }} noiseFilterEnabled />);
+    for (const kind of ["recv", "send", "memory"] as const) {
+      expect(filtered).toContain(termRowClass(kind));
+    }
   });
 });
 

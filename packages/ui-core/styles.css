@@ -1031,6 +1031,24 @@ button.my-session-card { cursor: pointer; }
 .my-term__row--result .my-term__label,
 .my-term__row--system .my-term__label { color: var(--my-term-dim); }
 
+/* directional traffic and bookkeeping. These three deliberately do NOT override the label to match
+   the body — that contrast is the whole reason the kinds exist, and it is what lets a row carry a
+   prominent name over a recessive body. */
+/* incoming — prominent: amber name, full-strength body */
+.my-term__row--recv { color: var(--my-term-ink); }
+.my-term__row--recv .my-term__label { color: var(--my-term-user); }
+/* outgoing — present but recessive: teal name, dim body */
+.my-term__row--send { color: var(--my-term-dim); }
+.my-term__row--send .my-term__label { color: var(--my-term-assistant); }
+/* bookkeeping — dim body, a desaturated sage label (approx #B2B17D, oklab hue 107 degrees) that
+   sits in the empty band between the terminal palette's amber (69.6) and teal (187.2). Derived by
+   color-mix over the term tokens, which is this sheet's existing escape hatch for a shade the
+   five-token palette does not name — so no hex literal, no new token, and no tokens release. */
+.my-term__row--memory { color: var(--my-term-dim); }
+.my-term__row--memory .my-term__label {
+  color: color-mix(in oklab, var(--my-term-assistant) 45%, var(--my-term-user));
+}
+
 /* rich spans — the constrained structured body (text/bold/code; never parsed HTML). The code span
    is the same quiet inset treatment as .my-term__detail, shrunk to inline: it inherits the ROW's
    color on purpose (a user row's code reads amber, a dim row's dim — the kind keeps carrying the

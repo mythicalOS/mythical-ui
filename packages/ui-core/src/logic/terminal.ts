@@ -56,6 +56,11 @@ export const TERM_CLASSES = {
  *  - `boundary` — a wake/session marker; also the segmentation anchor (`currentWakeRows`).
  *  - `local`    — a CLIENT-SYNTHETIC row (e.g. an interrupt marker). Deliberately its own kind so
  *                 UI-originated rows can never masquerade as `system` output from the far side.
+ *
+ * The last three exist for ONE reason the others cannot serve: their stylesheet rules deliberately
+ * do NOT force the label to the body colour, so a row can carry a prominent peer name over a body
+ * in a different weight of the palette. Every other kind either matches the two or leaves the label
+ * on the default accent.
  */
 export type TermRowKind =
   | "assistant"
@@ -65,7 +70,13 @@ export type TermRowKind =
   | "system"
   | "boundary"
   | "local"
-  | "dim";
+  | "dim"
+  /** Traffic INTO this session from another party — see the consuming product's message mapping. */
+  | "recv"
+  /** Traffic OUT of this session to another party. */
+  | "send"
+  /** A store/recall operation — session-internal bookkeeping, not conversation. */
+  | "memory";
 
 export const TERM_ROW_KINDS: readonly TermRowKind[] = [
   "assistant",
@@ -76,6 +87,9 @@ export const TERM_ROW_KINDS: readonly TermRowKind[] = [
   "boundary",
   "local",
   "dim",
+  "recv",
+  "send",
+  "memory",
 ];
 
 /**
