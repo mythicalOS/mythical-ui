@@ -336,10 +336,20 @@ export function termContentRevision(input: {
    * distinguishes absent from empty, which a bare `0` would not. The leading `rows.length` keeps
    * two adjacent runs unambiguous once they are joined below.
    *
-   * Cost is O(rows + spans), never O(text) — no row content is serialized, only measured. Spans
-   * are encoded because they REPLACE `text` for rendering when present (`rowSpans`), so the same
-   * text bolded on its first half versus its second wraps differently and sits at a different
-   * bottom.
+   * Cost is O(rows + spans), never O(text) — no row content is serialized, only measured.
+   *
+   * Spans are encoded because a run that RENDERS replaces `text` for the collapsed body, so the
+   * same text bolded on its first half versus its second wraps differently and sits at a different
+   * bottom. "Renders" is `rowSpans`' rule, mirrored here rather than assumed: a run is encoded only
+   * when the row is not a block row and `spans` is a non-empty array of well-formed members.
+   * Everything else — absent, empty, a non-array, a malformed member, or a block row — falls back
+   * to `text` on screen and so encodes as absent here. Mirroring it matters twice over: the key
+   * measures what a reader actually sees, and iterating a raw `spans` would THROW on a non-array,
+   * a non-iterable or a null member, taking down a render that `rowSpans` is written to survive.
+   * The one part of that rule NOT mirrored is `rowSpans`' content-identity check
+   * (`spansText(spans) === row.text`), which is O(text) and would break this function's bound; a
+   * valid-but-divergent run is therefore encoded although it renders as `text`. That
+   * over-detection can only cause a redundant re-pin, never a missed change.
    *
    * Deliberately NOT injective: a replacement identical in every encoded measure — same field
    * lengths, same presence, same block flag, same span count, each span the same kind and length —
@@ -350,15 +360,20 @@ export function termContentRevision(input: {
   const run = (rows: readonly TermRow[]): string => {
     const parts: (number | boolean)[] = [rows.length];
     for (const r of rows) {
+      const raw: unknown = r.spans;
+      // `rowSpans`' rule, minus its O(text) identity check — see the note above. Validated BEFORE
+      // anything is read off a member, so hostile or half-built JSON cannot throw here.
+      const spans: readonly TermSpan[] | null =
+        !isBlockRow(r) && Array.isArray(raw) && raw.length > 0 && raw.every(isTermSpan) ? raw : null;
       parts.push(
         TERM_ROW_KINDS.indexOf(r.kind),
         r.label?.length ?? -1,
         r.text.length,
         r.detail?.length ?? -1,
         isBlockRow(r),
-        r.spans?.length ?? -1,
+        spans?.length ?? -1,
       );
-      for (const s of r.spans ?? []) parts.push(TERM_SPAN_KINDS.indexOf(s.t), s.s.length);
+      for (const s of spans ?? []) parts.push(TERM_SPAN_KINDS.indexOf(s.t), s.s.length);
     }
     return parts.join(",");
   };

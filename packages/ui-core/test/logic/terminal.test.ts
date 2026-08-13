@@ -871,7 +871,42 @@ describe("termContentRevision — ONE key over everything the body renders", () 
   test("an ABSENT field is distinguishable from an empty one", () => {
     expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ label: "", text: "x" })]));
     expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ text: "x", detail: "" })]));
-    expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ text: "x", spans: [] })]));
+  });
+
+  /** Everything `rowSpans` refuses to render, so the encoding can be checked against it. */
+  const NON_RENDERING_SPANS: unknown[] = [
+    [],                          // empty
+    "not-an-array",              // a non-array that HAS a .length
+    5,                           // a non-array that is not even iterable
+    { a: 1 },                    // ditto, object-shaped
+    [null],                      // a null member
+    [{ t: "nope", s: "x" }],     // an unknown span kind
+    [{ t: "bold" }],             // a member with no text
+    [{ t: "bold", s: "x" }, 7],  // ONE malformed member disqualifies the whole run
+  ];
+
+  test("a span run is encoded only when it is the run that RENDERS", () => {
+    // `rowSpans` falls back to `text` for an empty, malformed or block-row run, so each of those
+    // encodes as absent: the key measures what a reader actually sees.
+    const none = rev([mkRow({ text: "x" })]);
+    for (const spans of NON_RENDERING_SPANS) {
+      expect(rev([mkRow({ text: "x", spans: spans as never })])).toBe(none);
+    }
+    // a block row ignores spans entirely (`block` beats `spans`), so a valid run is absent there too
+    expect(rev([mkRow({ text: "x", block: true, spans: [{ t: "bold", s: "x" }] })]))
+      .toBe(rev([mkRow({ text: "x", block: true })]));
+    // and a run that DOES render is encoded, so it differs
+    expect(rev([mkRow({ text: "x", spans: [{ t: "bold", s: "x" }] })])).not.toBe(none);
+  });
+
+  test("a malformed spans value can never throw — the revision is computed during render", () => {
+    // Regression: iterating a RAW `spans` threw four different ways — `undefined is not an object`
+    // on a string's characters, `not iterable` on a number or a plain object, and `null is not an
+    // object` on a null member. Any of them takes down a binding's render, on input `rowSpans` is
+    // explicitly written to survive.
+    for (const spans of NON_RENDERING_SPANS) {
+      expect(() => rev([mkRow({ text: "x", spans: spans as never })])).not.toThrow();
+    }
   });
 
   test("the row KIND is part of the encoding", () => {

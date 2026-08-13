@@ -28,6 +28,7 @@ import {
   TERM_LOADING_COPY,
   TERM_MISSING_COPY,
   TERM_NO_EVENTS_COPY,
+  TERM_ROW_KINDS,
   TERM_STALE_COPY,
   TERM_UNADDRESSABLE_COPY,
   TERM_WAKE_UNAVAILABLE_COPY,
@@ -36,7 +37,6 @@ import {
   queueBadgeClass,
   queueRowClass,
   sendPlaceholder,
-  TERM_ROW_KINDS,
   termRowClass,
   termTitleText,
   type QueueItem,
@@ -221,8 +221,8 @@ describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §
   // or mangle one with everything above green. Render them.
   test("the binding renders all three new kinds through ui-core's row classes", () => {
     const newRows: TermRow[] = [
-      { kind: "recv", label: "← @ lead-4❯ (14:32:05)", text: "\n  hi" },
-      { kind: "send", label: "→ @ qa-6❯ (14:32:06)", text: "\n  ok" },
+      { kind: "recv", label: "← @ peer-one❯ (14:32:05)", text: "\n  hi" },
+      { kind: "send", label: "→ @ peer-two❯ (14:32:06)", text: "\n  ok" },
       { kind: "memory", label: "⊕ memory · stored (14:35:02)", text: "" },
     ];
     // ONE row per render, asserting that row's OWN class and the ABSENCE of the other two: a
@@ -243,7 +243,7 @@ describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §
     }
     // the label really renders as a label — that element is what carries the contrasting colour
     const html = renderToString(<Terminal source={{ kind: "ready", rows: newRows }} />);
-    expect(html).toContain("← @ lead-4❯");
+    expect(html).toContain("← @ peer-one❯");
     expect(html).toContain("my-term__label");
   });
 });
