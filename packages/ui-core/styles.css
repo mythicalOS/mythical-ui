@@ -1066,11 +1066,24 @@ button.my-session-card { cursor: pointer; }
    chroma 0.130 / hue 315.3 degrees. This was a color-mix between assistant and user, resolving to a
    muted olive-grey (approx #B2B17D, hue 107) — and that read as the weakest of the row kinds,
    because it landed only 0.098 oklab deltaE from --my-term-dim, which is this row's OWN body
-   colour, so label and body barely separated. It could not be fixed by re-mixing: an oklab mix is a
-   convex combination, so every mix's b is at least the smallest b among its operands — and every
-   term token OTHER than this one sits at b >= -0.0187 (--my-term-dim's, the smallest), while this
-   hue needs -0.0914. Outside the hull of the seven that preceded it, so no mix of those reaches it
-   at any ratio. (Two precision notes, both from review. The occupied chromatic hues are del 23.0,
+   colour, so label and body barely separated.
+
+   WHY A TOKEN AND NOT JUST A BETTER MIX — the honest form of the argument, because the short form
+   is circular and a reviewer called it. Separation alone does NOT justify minting: a mix can
+   improve it, and one demonstrably does (--my-term-del 90% + --my-term-dim measures deltaE 0.196
+   from dim at 5.21:1, comfortably better than the old sage's 0.097). What rules mixing out is a
+   SEMANTIC constraint, not a numeric one. Every direction the old palette could reach is already
+   spoken for in this pane: user amber is "the other party", assistant teal is "this session", del
+   red and add green are diff removed/added. Any adequately-separated mix would have had to borrow a
+   hue that already carries a different meaning here — a bookkeeping row reading as a deletion is
+   worse than one reading as dim. A row kind needs a hue of its OWN, and the palette had none left
+   to give, which is what actually makes minting necessary.
+
+   The hull argument then explains why THIS hue in particular was unreachable, and nothing more: an
+   oklab mix is a convex combination, so every mix's b is at least the smallest b among its operands
+   — and every term token OTHER than this one sits at b >= -0.0187 (--my-term-dim's, the smallest),
+   while this hue needs -0.0914. Outside the hull of the seven that preceded it, so no mix of those
+   reaches it at any ratio. (Two precision notes, both from review. The occupied chromatic hues are del 23.0,
    user 69.6, add 159.3, assistant 187.2, with ink/dim/bg achromatic at chroma <= 0.019, which is
    why the 200-360 band reads as empty — but "empty hue band" is NOT the reason a mix fails:
    dim ~92.5% + del does land at about 315 degrees, just at chroma 0.016 against this token's 0.130.
