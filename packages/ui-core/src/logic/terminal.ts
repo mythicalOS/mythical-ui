@@ -114,7 +114,7 @@ export interface TermRow {
    * spans INSTEAD of `text` for the collapsed row body, on every row kind, including the button
    * head of an expandable row. `text` stays REQUIRED and MUST carry the same content as plain
    * text: it is the fallback when spans are absent or malformed, and it is what every text path
-   * reads (copy paths, tests, `termContentRevision`'s character sums — which is also why a
+   * reads (copy paths, tests, `termContentRevision`'s per-row measures — which is also why a
    * streaming update that grows `spans` must grow `text` with it). Precedence:
    * `block` > `spans` > plain text — a block row ignores spans; its `text` renders preformatted.
    */
@@ -194,8 +194,8 @@ export function rowSpans(row: TermRow): readonly TermSpan[] | null {
   if (!Array.isArray(spans) || spans.length === 0) return null;
   if (!spans.every(isTermSpan)) return null;
   // ENFORCED (not just documented): the span run must be content-identical to `row.text` — copy,
-  // the fallback, and termContentRevision's character accounting all read `text`, so a divergent
-  // run would render words those paths never see. Divergence disqualifies the whole run.
+  // the fallback, and termContentRevision's `text` measure all read `text`, so a divergent run
+  // would render words those paths never see. Divergence disqualifies the whole run.
   return spansText(spans) === row.text ? spans : null;
 }
 
@@ -297,11 +297,15 @@ export function nearBottom(
  * an enumeration has to be maintained by hand at every call site, and in practice it silently
  * dropped cases (the current-wake filter and the expand state), leaving the pane un-pinned on
  * content changes it should follow. Any change that can move the bottom edge changes the key:
- * rows appended OR a tail row growing in place mid-stream (hence the character sums, not just
- * counts — a streaming update often grows the last row without adding one), local rows, history
- * segments and their disclosure, both banners, the caret, the current-wake and noise filters,
- * and how many detail rows are expanded. Cheap by construction: lengths, counts and flags only —
- * no hashing, no serialization of row text. Pure, so it is SSR-safe to compute during render.
+ * rows appended OR a row changing in place mid-stream (hence the per-row measures, not just
+ * counts — a streaming update often grows the last row without adding one, and an in-place
+ * resolution changes no count at all), local rows, history segments and their disclosure, both
+ * banners, the caret, the current-wake and noise filters, and how many detail rows are expanded.
+ * Cheap by construction: lengths, counts and flags only — no hashing, no serialization of row
+ * text. Pure, so it is SSR-safe to compute during render.
+ *
+ * The value is OPAQUE: it is compared for equality and nothing else. Its encoding may change
+ * without notice, and no caller may parse it or assert a literal.
  */
 export function termContentRevision(input: {
   view: TermView;
@@ -315,9 +319,46 @@ export function termContentRevision(input: {
   noiseFilter: boolean;
   expandedCount: number;
 }): string {
-  // count + character sum (text AND detail, so an expanded body growing in place counts too)
-  const run = (rows: readonly TermRow[]): string =>
-    `${rows.length}.${rows.reduce((chars, row) => chars + row.text.length + (row.detail?.length ?? 0), 0)}`;
+  /**
+   * An ordered, positional encoding of each row's MEASURES — never its content.
+   *
+   * REPLACES a count + character SUM over `text`/`detail`, which was wrong three ways: two rows
+   * changing by +3 and -3 in the same poll left the sum identical; a change to a field the sum
+   * never read (the label, the block flag, the span run) was invisible at any length; and a
+   * weighted fold would have cancelled just as readily, since anything additive can.
+   *
+   * Unambiguous because every serialized value is a number or a boolean: they cannot contain the
+   * separator, which is what defeats a separator-joined encoding of arbitrary strings. Nothing is
+   * summed, so contributions from different rows cannot cancel. `-1` for an absent field
+   * distinguishes absent from empty, which a bare `0` would not. The leading `rows.length` keeps
+   * two adjacent runs unambiguous once they are joined below.
+   *
+   * Cost is O(rows + spans), never O(text) — no row content is serialized, only measured. Spans
+   * are encoded because they REPLACE `text` for rendering when present (`rowSpans`), so the same
+   * text bolded on its first half versus its second wraps differently and sits at a different
+   * bottom.
+   *
+   * Deliberately NOT injective: a replacement identical in every encoded measure — same field
+   * lengths, same presence, same block flag, same span count, each span the same kind and length —
+   * differing only in its characters is invisible. That is inherent to measuring rather than
+   * reading; full injectivity would cost O(total rendered text) on every poll of a long
+   * transcript. The history term below is likewise a count pair only, unchanged here.
+   */
+  const run = (rows: readonly TermRow[]): string => {
+    const parts: (number | boolean)[] = [rows.length];
+    for (const r of rows) {
+      parts.push(
+        TERM_ROW_KINDS.indexOf(r.kind),
+        r.label?.length ?? -1,
+        r.text.length,
+        r.detail?.length ?? -1,
+        isBlockRow(r),
+        r.spans?.length ?? -1,
+      );
+      for (const s of r.spans ?? []) parts.push(TERM_SPAN_KINDS.indexOf(s.t), s.s.length);
+    }
+    return parts.join(",");
+  };
   const view =
     input.view.kind === "log" ? (input.view.stale ? "log-stale" : "log") : `state.${input.view.copy.length}`;
   return [

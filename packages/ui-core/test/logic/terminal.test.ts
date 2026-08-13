@@ -792,6 +792,132 @@ describe("termContentRevision — ONE key over everything the body renders", () 
     const state = { ...base(), rows: [] as readonly TermRow[], view: { kind: "state", copy: "loading…" } as TermView };
     expect(termContentRevision(state)).not.toBe(termContentRevision({ ...base(), rows: [] }));
   });
+
+  // ── the positional per-row encoding ──
+  //
+  // The key is an ORDERED tuple of per-row MEASURES, not a total. The tests below pin the three
+  // shapes a folded total gets wrong (cross-row cancellation, weighted cancellation, a field the
+  // fold never read at all), plus the residual the encoding deliberately does NOT catch.
+
+  // `row()` above defaults to `kind: "assistant"`; this one exists so the cases below read as
+  // pure measure-differences rather than inheriting that file-wide fixture's text.
+  const mkRow = (o: Partial<TermRow>): TermRow => ({ kind: "system", text: "", ...o });
+
+  /** `rev` wraps the REAL 10-field input; only `rows` varies between the cases below. */
+  const rev = (rows: TermRow[]): string =>
+    termContentRevision({
+      view: { kind: "log", stale: false } as TermView,
+      rows,
+      localRows: [],
+      history: [],
+      showHistory: false,
+      wakeUnavailable: false,
+      caret: false,
+      currentWakeOnly: false,
+      noiseFilter: false,
+      expandedCount: 0,
+    });
+
+  test("the outer fields still change the revision — nothing was dropped", () => {
+    const rows = [mkRow({ text: "x" })];
+    const revWith = (o: Partial<Parameters<typeof termContentRevision>[0]>) =>
+      termContentRevision({
+        view: { kind: "log", stale: false } as TermView, rows, localRows: [], history: [],
+        showHistory: false, wakeUnavailable: false, caret: false, currentWakeOnly: false,
+        noiseFilter: false, expandedCount: 0, ...o,
+      });
+    expect(revWith({ caret: true })).not.toBe(revWith({}));
+    expect(revWith({ expandedCount: 1 })).not.toBe(revWith({}));
+    expect(revWith({ localRows: rows })).not.toBe(revWith({}));
+    expect(revWith({ showHistory: true })).not.toBe(revWith({}));
+    expect(revWith({ wakeUnavailable: true })).not.toBe(revWith({}));
+    expect(revWith({ currentWakeOnly: true })).not.toBe(revWith({}));
+    expect(revWith({ noiseFilter: true })).not.toBe(revWith({}));
+    // history and BOTH view arms
+    expect(revWith({ history: [{ id: "s1", rows: [mkRow({ text: "h" })] }] })).not.toBe(revWith({}));
+    expect(revWith({ view: { kind: "state", copy: "loading…" } as TermView })).not.toBe(revWith({}));
+    expect(revWith({ view: { kind: "log", stale: true } as TermView })).not.toBe(revWith({}));
+  });
+
+  test("localRows get the same positional encoding as rows", () => {
+    const a = [mkRow({ text: "aaa" }), mkRow({ text: "bbbbbb" })];
+    const b = [mkRow({ text: "aaaaaa" }), mkRow({ text: "bbb" })];
+    const withLocal = (localRows: TermRow[]) =>
+      termContentRevision({
+        view: { kind: "log", stale: false } as TermView, rows: [], localRows, history: [],
+        showHistory: false, wakeUnavailable: false, caret: false, currentWakeOnly: false,
+        noiseFilter: false, expandedCount: 0,
+      });
+    expect(withLocal(a)).not.toBe(withLocal(b));
+  });
+
+  test("cross-row length deltas cannot cancel (+3/-3)", () => {
+    const a = [mkRow({ text: "aaa" }), mkRow({ text: "bbbbbb" })];
+    const b = [mkRow({ text: "aaaaaa" }), mkRow({ text: "bbb" })];
+    expect(rev(a)).not.toBe(rev(b));
+  });
+
+  test("weighted cancellation cannot occur either (+4/-2)", () => {
+    const a = [mkRow({ text: "aaaa" }), mkRow({ text: "bbbbbb" })];
+    const b = [mkRow({ text: "aaaaaaaa" }), mkRow({ text: "bbbb" })];
+    expect(rev(a)).not.toBe(rev(b));
+  });
+
+  test("a label-only change is visible", () => {
+    expect(rev([mkRow({ label: "storing…", text: "x" })]))
+      .not.toBe(rev([mkRow({ label: "stored", text: "x" })]));
+  });
+
+  test("an ABSENT field is distinguishable from an empty one", () => {
+    expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ label: "", text: "x" })]));
+    expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ text: "x", detail: "" })]));
+    expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ text: "x", spans: [] })]));
+  });
+
+  test("the row KIND is part of the encoding", () => {
+    expect(rev([mkRow({ kind: "memory", text: "x" })])).not.toBe(rev([mkRow({ kind: "system", text: "x" })]));
+  });
+
+  test("a block flag flip is visible", () => {
+    expect(rev([mkRow({ text: "x" })])).not.toBe(rev([mkRow({ text: "x", block: true })]));
+  });
+
+  test("a span restructuring at identical total length is visible", () => {
+    const bodyFirst = mkRow({ text: "abcd", spans: [{ t: "bold", s: "ab" }, { t: "text", s: "cd" }] });
+    const bodySecond = mkRow({ text: "abcd", spans: [{ t: "text", s: "ab" }, { t: "bold", s: "cd" }] });
+    expect(rev([bodyFirst])).not.toBe(rev([bodySecond]));
+  });
+
+  test("two rows resolving in the SAME poll with opposite deltas both stay visible", () => {
+    // the concrete shape a folded total misses: an in-place resolution of two rows whose length
+    // changes are +3 and -3 leaves any sum identical, so follow-tail never re-runs.
+    const before = [mkRow({ label: "recalling", text: "" }), mkRow({ label: "storing…", text: "" })];
+    const after = [mkRow({ label: "recalled 0", text: "" }), mkRow({ label: "stored", text: "" })];
+    expect(rev(before)).not.toBe(rev(after));
+  });
+
+  test("row order alone changes the revision — the encoding is positional", () => {
+    const a = [mkRow({ text: "aa" }), mkRow({ text: "b" })];
+    expect(rev(a)).not.toBe(rev([a[1]!, a[0]!]));
+  });
+
+  test("two adjacent row runs cannot be confused for one — the leading count disambiguates", () => {
+    // `rows` and `localRows` are encoded by the same helper and then joined; without the leading
+    // length a row moving from one list to the other could produce an identical concatenation.
+    const mk = (rows: TermRow[], localRows: TermRow[]) =>
+      termContentRevision({
+        view: { kind: "log", stale: false } as TermView, rows, localRows, history: [],
+        showHistory: false, wakeUnavailable: false, caret: false, currentWakeOnly: false,
+        noiseFilter: false, expandedCount: 0,
+      });
+    const r = mkRow({ text: "x" });
+    expect(mk([r, r], [])).not.toBe(mk([r], [r]));
+  });
+
+  test("a same-length same-presence replacement is NOT detected — documented residual", () => {
+    // Asserted as a MISS, not a promised catch: the key measures rows, it does not read them.
+    expect(rev([mkRow({ label: "abc", text: "x" })])).toBe(rev([mkRow({ label: "xyz", text: "x" })]));
+  });
 });
 
 // ── title bar ──
