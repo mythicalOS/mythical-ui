@@ -1,6 +1,6 @@
 {
   "name": "@mythicalos/ui-core",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "mythicalOS framework-agnostic UI core — the pure logic (class derivation, poll scheduling, dialog/toast/gauge helpers), the token-driven component stylesheet, and the <mythical-select> form-associated web component. Zero framework runtime; the Preact and React bindings derive identical output from this package. Apache-2.0.",
   "type": "module",
   "license": "Apache-2.0",
@@ -40,7 +40,7 @@
     "./src/select/register.js",
     "./src/select/mythical-select.js"
   ],
-  "//peerDependencies": "PATCH, not minor, despite tightening the @mythicalos/tokens peer floor from ^0.5.17 to ^0.5.19. The floor is honest: .my-term__row--memory's label resolves var(--my-term-memory), minted in tokens 0.5.19; on an older tokens the declaration is invalid and the label falls back to the row's inherited dim body -- cosmetic, never a crash, and exactly the appearance shipping today. Minor was CONSIDERED AND REJECTED: this peer is declared OPTIONAL so no install breaks on it, while the downstream consumer pins this package through an `overrides` block using a caret on a 0.x version -- which pins the MINOR -- so a minor bump would be unreachable there and the fix could not ship at all. Policy for this repo: the published version tracks the COMPONENT surface, and a peer-floor move rides the patch that needs it.",
+  "//peerDependencies": "Released as a PATCH while raising the OPTIONAL @mythicalos/tokens peer floor from ^0.5.17 to ^0.5.19. The floor is honest: the .my-term__row--memory label resolves var(--my-term-memory), minted in tokens 0.5.19; on an older tokens that declaration is invalid and the label falls back to the row's inherited dim body -- cosmetic, never a crash, and exactly the appearance shipping before this fix. A minor was argued on the grounds that tightening a peer range is a compatibility boundary, and was NOT taken: the downstream consumer pins this package through an `overrides` caret on a 0.x version, which pins the MINOR, so a minor would force a coordinated override edit in the same change. That is friction, NOT impossibility -- the override could be widened -- so this is a deliberate policy choice and not a claim that minor was unshippable. Policy: the published version tracks the COMPONENT surface, and a peer-floor move rides the patch that needs it. Caveat, stated because `optional` is easy to over-read: it suppresses auto-install and missing-peer warnings, but does not guarantee every resolver tolerates an older installed tokens -- npm --strict-peer-deps can still reject. Full rationale: the umbrella plan, Task 3.",
   "peerDependencies": {
     "@mythicalos/tokens": "^0.5.19"
   },

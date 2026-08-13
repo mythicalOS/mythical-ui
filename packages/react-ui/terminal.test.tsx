@@ -218,11 +218,14 @@ describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §
     // REGRESSION (tokens 0.5.19): this used to be a color-mix of two existing term tokens, which
     // put it inside their oklab hull and only ~0.098 deltaE from the body's own --my-term-dim.
     // Re-mixing can never fix that — an oklab mix is a CONVEX COMBINATION, so its b coordinate is
-    // at least the smallest b among its operands; the palette bottoms out at --my-term-dim's
-    // -0.0187 while this hue needs -0.0914, so it lies outside the hull at any ratio. (Not a hue
-    // argument: a mix CAN land on the unoccupied 200-360 band — dim 92.5% + del reaches 315.3
-    // degrees — but at chroma 0.016 against this token's 0.130.) Minting the token is the fix, so
-    // a future "simplification" back to a derived shade must fail here.
+    // at least the smallest b among its operands; every term token OTHER than this one sits at
+    // b >= -0.0187 (--my-term-dim's, the smallest) while this hue needs -0.0914, so it lies
+    // outside the hull of the seven that preceded it. (Two precision notes, both from review: it
+    // is not a hue argument — a mix CAN land on the unoccupied 200-360 band, dim ~92.5% + del
+    // reaches about 315 degrees, but at chroma 0.016 against this token's 0.130; and the hull is
+    // always the hull of the tokens being MIXED, never of a set that already contains the target.)
+    // Minting the token is the fix, so a future "simplification" back to a derived shade must
+    // fail here.
     expect(value).not.toContain("color-mix");
     expect(value).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });

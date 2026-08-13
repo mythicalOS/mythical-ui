@@ -902,15 +902,18 @@ button.my-session-card { cursor: pointer; }
    hard-coded hex" and "every var(--my-*) exists in canonical tokens.css" guards both still hold.
 
    That escape hatch has a HARD LIMIT, and it is worth stating because ignoring it shipped a defect:
-   an oklab color-mix is a CONVEX COMBINATION of its operands, so the result can never leave their
-   convex hull, however the ratios are chosen or nested. It can produce a shade BETWEEN existing
-   tokens; it cannot produce a colour outside them. A rule that wants one needs a token minted
-   upstream in tokens.css — which is what --my-term-memory is (its oklab b, -0.0914, is below every
-   term token's, dim's -0.0187 being the smallest, so no mix could ever have reached it).
-   State that limit as a HULL claim, not a HUE claim: hue is a direction, and near the neutral axis
-   every direction is available, so a mix CAN land on an unoccupied hue — dim 92.5% + del reaches
-   315.3 degrees. It gets there at chroma 0.016, against this token's 0.130. Unoccupied hues are
-   reachable; usable colours outside the hull are not.
+   an oklab color-mix is a CONVEX COMBINATION of its operands, so the result can never leave THEIR
+   convex hull, however the ratios are chosen or nested. It can produce a shade BETWEEN the tokens
+   being mixed; it cannot produce a colour outside them. A rule that wants one needs a token minted
+   upstream in tokens.css — which is what --my-term-memory is: its oklab b is -0.0914, while every
+   OTHER term token sits at b >= -0.0187 (dim's, the smallest), so no mix of the tokens that existed
+   before it could ever have reached it.
+   Two ways to get this argument wrong, both of which a reviewer caught here:
+     - It is a HULL claim, not a HUE claim. Hue is a direction and near the neutral axis every
+       direction is available, so a mix CAN land on an unoccupied hue — dim ~92.5% + del reaches
+       about 315 degrees, just at chroma 0.016 against this token's 0.130.
+     - The hull is always the hull of the tokens BEING MIXED. "No mix of the palette can reach it"
+       is false once the token is itself in the palette; the true statement is about the others.
 
    The send bar and the queue rows are APP CHROME, not terminal surface: the design card draws both
    on the light surface, so they use the ordinary theme tokens and follow the app theme. Only the
@@ -1064,14 +1067,16 @@ button.my-session-card { cursor: pointer; }
    muted olive-grey (approx #B2B17D, hue 107) — and that read as the weakest of the row kinds,
    because it landed only 0.098 oklab deltaE from --my-term-dim, which is this row's OWN body
    colour, so label and body barely separated. It could not be fixed by re-mixing: an oklab mix is a
-   convex combination, so every mix's b is at least the smallest b among its operands — the palette
-   bottoms out at --my-term-dim's -0.0187, while this hue needs -0.0914. Outside the hull, so
-   unreachable at any ratio. (The palette's occupied chromatic hues are del 23.0, user 69.6,
-   add 159.3, assistant 187.2, with ink/dim/bg achromatic at chroma <= 0.019, which is why the
-   200-360 band reads as empty — but note that "empty hue band" is NOT the reason a mix fails:
-   dim 92.5% + del does land at 315.3 degrees, just at chroma 0.016 against this token's 0.130.)
-   Minting the token buys min deltaE 0.141 to any other term token (nearest --my-term-dim) at
-   9.29:1 on --my-term-bg. */
+   convex combination, so every mix's b is at least the smallest b among its operands — and every
+   term token OTHER than this one sits at b >= -0.0187 (--my-term-dim's, the smallest), while this
+   hue needs -0.0914. Outside the hull of the seven that preceded it, so no mix of those reaches it
+   at any ratio. (Two precision notes, both from review. The occupied chromatic hues are del 23.0,
+   user 69.6, add 159.3, assistant 187.2, with ink/dim/bg achromatic at chroma <= 0.019, which is
+   why the 200-360 band reads as empty — but "empty hue band" is NOT the reason a mix fails:
+   dim ~92.5% + del does land at about 315 degrees, just at chroma 0.016 against this token's 0.130.
+   And the hull is always the hull of the tokens being mixed, never of a set already containing the
+   target.) Minting the token buys min deltaE 0.141 to any other term token (nearest --my-term-dim)
+   at 9.29:1 on --my-term-bg. */
 .my-term__row--memory { color: var(--my-term-dim); }
 .my-term__row--memory .my-term__label { color: var(--my-term-memory); }
 
