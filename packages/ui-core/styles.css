@@ -901,6 +901,17 @@ button.my-session-card { cursor: pointer; }
    the in-terminal banners) uses color-mix over the term tokens rather than a new hex, so the "zero
    hard-coded hex" and "every var(--my-*) exists in canonical tokens.css" guards both still hold.
 
+   That escape hatch has a HARD LIMIT, and it is worth stating because ignoring it shipped a defect:
+   an oklab color-mix is a CONVEX COMBINATION of its operands, so the result can never leave their
+   convex hull, however the ratios are chosen or nested. It can produce a shade BETWEEN existing
+   tokens; it cannot produce a colour outside them. A rule that wants one needs a token minted
+   upstream in tokens.css — which is what --my-term-memory is (its oklab b, -0.0914, is below every
+   term token's, dim's -0.0187 being the smallest, so no mix could ever have reached it).
+   State that limit as a HULL claim, not a HUE claim: hue is a direction, and near the neutral axis
+   every direction is available, so a mix CAN land on an unoccupied hue — dim 92.5% + del reaches
+   315.3 degrees. It gets there at chroma 0.016, against this token's 0.130. Unoccupied hues are
+   reachable; usable colours outside the hull are not.
+
    The send bar and the queue rows are APP CHROME, not terminal surface: the design card draws both
    on the light surface, so they use the ordinary theme tokens and follow the app theme. Only the
    pane is pinned dark.
@@ -928,20 +939,28 @@ button.my-session-card { cursor: pointer; }
   --my-disabled-ink: var(--my-term-dim);
   --my-scrim: color-mix(in oklab, var(--my-term-bg) 55%, transparent);
   --my-shadow-modal: 0 16px 48px color-mix(in oklab, var(--my-term-bg) 50%, transparent);
-  /* NOT re-pointed, deliberately: --my-ok/--my-error/--my-info and their softs. The five-token
-     terminal palette defines no green/red/blue, so any value here would be an invented colour. No
-     rule in the terminal set uses them (enforced by test/terminal-css.test.ts, which derives the
-     flipping-token set from the canonical tokens.css and rejects any unpinned reference under a
-     .my-term selector). A consumer nesting a status-toned atom INSIDE the terminal is the one known
-     residual; the terminal's own alert hue is --my-term-user.
+  /* NOT re-pointed, deliberately: --my-ok/--my-error/--my-info and their softs. The terminal palette
+     names no GENERAL-PURPOSE status green/red/blue — --my-term-add/--my-term-del (tokens 0.5.18) are
+     diff-semantic hues scoped to diff output, deliberately not status colours, and there is no blue
+     at all — so a status value here would still be an invented colour. No rule in the terminal set
+     uses them (enforced by test/terminal-css.test.ts, which derives the flipping-token set from the
+     canonical tokens.css and rejects any unpinned reference under a .my-term selector). A consumer
+     nesting a status-toned atom INSIDE the terminal is the one known residual; the terminal's own
+     alert hue is --my-term-user.
 
      Also NOT re-pointed, for a different reason: --my-shadow-knob (tokens 0.5.16), the raised-knob
      shadow the theme toggle uses. The terminal has no knob — no toggle, no switch, no segmented
      control renders in here — and it could not be pinned honestly if it did: every local
-     re-pointed above resolves THROUGH a --my-term-* token, the terminal palette is five colours
-     with no shadow among them, and a literal rgba pair would be an invented value. The same guard
-     covers it: a knob arriving inside the terminal turns that test red rather than shipping a
-     light-theme shadow into a permanently dark pane. */
+     re-pointed above resolves THROUGH a --my-term-* token, the terminal palette is all colour and
+     names no shadow, and a literal rgba pair would be an invented value. The same guard covers it:
+     a knob arriving inside the terminal turns that test red rather than shipping a light-theme
+     shadow into a permanently dark pane.
+
+     COUNTING THE PALETTE: it is EIGHT tokens as of tokens 0.5.19 — bg, ink, assistant, user, dim,
+     add, del, memory — and it grows. This block said "five" long after add/del landed, and that
+     stale count is what argued a memory label had to be color-mixed out of the existing five
+     instead of minted; see the row-kind comment below. State what the palette does not name, never
+     how many things it names. */
 
   display: flex; flex-direction: column;
   background: var(--my-term-bg); color: var(--my-term-ink);
@@ -961,7 +980,7 @@ button.my-session-card { cursor: pointer; }
 .my-term__lights { display: inline-flex; gap: 5px; flex: none; }
 /* window-chrome traffic lights. They are DECORATION, so per token rule 2 they may not borrow the
    status hues (--my-error/--my-ok) the way a macOS titlebar would; per token rule 3 they are drawn
-   from the terminal's own five-token palette. */
+   from the terminal's own palette. */
 .my-term__light { width: 9px; height: 9px; border-radius: var(--my-r-pill); background: var(--my-term-dim); }
 .my-term__light--r { background: var(--my-term-dim); }
 .my-term__light--a { background: var(--my-term-user); }
@@ -1040,14 +1059,21 @@ button.my-session-card { cursor: pointer; }
 /* outgoing — present but recessive: teal name, dim body */
 .my-term__row--send { color: var(--my-term-dim); }
 .my-term__row--send .my-term__label { color: var(--my-term-assistant); }
-/* bookkeeping — dim body, a desaturated sage label (approx #B2B17D, oklab hue 107 degrees) that
-   sits in the empty band between the terminal palette's amber (69.6) and teal (187.2). Derived by
-   color-mix over the term tokens, which is this sheet's existing escape hatch for a shade the
-   five-token palette does not name — so no hex literal, no new token, and no tokens release. */
+/* bookkeeping — dim body, an orchid label: --my-term-memory (tokens 0.5.19), oklab L 0.780 /
+   chroma 0.130 / hue 315.3 degrees. This was a color-mix between assistant and user, resolving to a
+   muted olive-grey (approx #B2B17D, hue 107) — and that read as the weakest of the row kinds,
+   because it landed only 0.098 oklab deltaE from --my-term-dim, which is this row's OWN body
+   colour, so label and body barely separated. It could not be fixed by re-mixing: an oklab mix is a
+   convex combination, so every mix's b is at least the smallest b among its operands — the palette
+   bottoms out at --my-term-dim's -0.0187, while this hue needs -0.0914. Outside the hull, so
+   unreachable at any ratio. (The palette's occupied chromatic hues are del 23.0, user 69.6,
+   add 159.3, assistant 187.2, with ink/dim/bg achromatic at chroma <= 0.019, which is why the
+   200-360 band reads as empty — but note that "empty hue band" is NOT the reason a mix fails:
+   dim 92.5% + del does land at 315.3 degrees, just at chroma 0.016 against this token's 0.130.)
+   Minting the token buys min deltaE 0.141 to any other term token (nearest --my-term-dim) at
+   9.29:1 on --my-term-bg. */
 .my-term__row--memory { color: var(--my-term-dim); }
-.my-term__row--memory .my-term__label {
-  color: color-mix(in oklab, var(--my-term-assistant) 45%, var(--my-term-user));
-}
+.my-term__row--memory .my-term__label { color: var(--my-term-memory); }
 
 /* rich spans — the constrained structured body (text/bold/code; never parsed HTML). The code span
    is the same quiet inset treatment as .my-term__detail, shrunk to inline: it inherits the ROW's

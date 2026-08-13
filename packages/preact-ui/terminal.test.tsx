@@ -184,7 +184,7 @@ describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §
   // precisely because their label must NOT be forced to the body colour.
   test("each new kind's label declaration differs from its body declaration", () => {
     // `css` is the file's existing module-scope read of ui-core/styles.css.
-    /** The `var(--token)` form — the five declarations that use it. */
+    /** The `var(--token)` form — all six declarations use it. */
     const decl = (sel: string) => {
       const m = new RegExp(`\\${sel}\\s*\\{[^}]*color:\\s*var\\((--[a-z-]+)\\)`).exec(css);
       return m?.[1] ?? null;
@@ -194,25 +194,33 @@ describe("Terminal — the recv/send/memory row kinds (ds/components-terminal §
     expect(decl(".my-term__row--send")).toBe("--my-term-dim");
     expect(decl(".my-term__row--send .my-term__label")).toBe("--my-term-assistant");
     expect(decl(".my-term__row--memory")).toBe("--my-term-dim");
+    expect(decl(".my-term__row--memory .my-term__label")).toBe("--my-term-memory");
     // the property that actually matters, and that selector-existence checks cannot catch:
     expect(decl(".my-term__row--recv")).not.toBe(decl(".my-term__row--recv .my-term__label"));
     expect(decl(".my-term__row--send")).not.toBe(decl(".my-term__row--send .my-term__label"));
+    expect(decl(".my-term__row--memory")).not.toBe(decl(".my-term__row--memory .my-term__label"));
   });
 
-  // The SIXTH declaration needs its own matcher: its value starts `color-mix(`, so the `decl()`
-  // probe above returns null for it — and a bare "they differ" assertion against a null would pass
-  // vacuously against a MISSING declaration. Match the declaration text itself.
-  test("the memory label is the sanctioned color-mix over term tokens, not a token or a hex", () => {
+  // The memory label keeps its OWN matcher even now that decl() can read it: decl() returns null
+  // for anything that is not a bare `var(--token)`, so a "they differ" assertion against a null
+  // passes vacuously against a MISSING or re-derived declaration. Match the declaration text.
+  test("the memory label is the minted --my-term-memory token, not a color-mix and not a hex", () => {
     const m = /\.my-term__row--memory \.my-term__label\s*\{([^}]*)\}/.exec(css);
     expect(m).not.toBeNull();
     const value = /color:\s*([^;]+);/.exec(m![1]!)?.[1]?.trim() ?? "";
-    expect(value).toBe("color-mix(in oklab, var(--my-term-assistant) 45%, var(--my-term-user))");
+    expect(value).toBe("var(--my-term-memory)");
     // and it is NOT the body's declaration — the whole point of the kind
     expect(value).not.toBe("var(--my-term-dim)");
-    // every var() operand inside it is a --my-term-* token, which is what keeps
-    // ui-core's test/terminal-css.test.ts flipping-token rule green
-    const refs = Array.from(value.matchAll(/var\(\s*(--[a-zA-Z0-9-]+)/g)).map((x) => x[1]!);
-    expect(refs).toEqual(["--my-term-assistant", "--my-term-user"]);
+    // REGRESSION (tokens 0.5.19): this used to be a color-mix of two existing term tokens, which
+    // put it inside their oklab hull and only ~0.098 deltaE from the body's own --my-term-dim.
+    // Re-mixing can never fix that — an oklab mix is a CONVEX COMBINATION, so its b coordinate is
+    // at least the smallest b among its operands; the palette bottoms out at --my-term-dim's
+    // -0.0187 while this hue needs -0.0914, so it lies outside the hull at any ratio. (Not a hue
+    // argument: a mix CAN land on the unoccupied 200-360 band — dim 92.5% + del reaches 315.3
+    // degrees — but at chroma 0.016 against this token's 0.130.) Minting the token is the fix, so
+    // a future "simplification" back to a derived shade must fail here.
+    expect(value).not.toContain("color-mix");
+    expect(value).not.toMatch(/#[0-9a-fA-F]{3,8}/);
   });
 
   // "both bindings render them identically". The two tests above do NOT prove this: they exercise

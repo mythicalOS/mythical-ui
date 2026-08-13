@@ -160,14 +160,16 @@ describe("invariant 1 — .my-term pins the heritage palette in BOTH themes", ()
     // Two groups, deliberately NOT re-pointed, for two different reasons. Both are pinned
     // explicitly rather than left implied, so growing the list is a decision someone has to make.
     //
-    //   the status hues — --my-ok/--my-error/--my-info and their softs. The five-token terminal
-    //     palette has no green/red/blue, so any value here would be an invented colour.
+    //   the status hues — --my-ok/--my-error/--my-info and their softs. The terminal palette names
+    //     no general-purpose status green/red/blue: --my-term-add/--my-term-del (tokens 0.5.18) are
+    //     diff-semantic and scoped to diff output, not status colours, and there is no blue at all
+    //     — so a status value here would still be an invented colour.
     //
     //   --my-shadow-knob (tokens 0.5.16) — a raised-knob shadow, minted for the theme toggle. The
     //     terminal has no knob: no toggle, no switch, no segmented control renders inside .my-term,
     //     and the guard above is what keeps that true. It could not be pinned honestly even if one
     //     did: every re-pointed local must resolve THROUGH --my-term-* (asserted above), the
-    //     terminal palette is five colours with no shadow among them, and a literal rgba pair here
+    //     terminal palette is all colour and names no shadow, and a literal rgba pair here
     //     would be both an invented value and a hex/colour literal the sheet-wide guards forbid.
     //     If a knob ever does land inside the terminal, the guard above goes red first — which is
     //     the outcome this residual is chosen to preserve.

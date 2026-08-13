@@ -1,6 +1,6 @@
 {
   "name": "@mythicalos/ui-core",
-  "version": "0.10.2",
+  "version": "0.10.3",
   "description": "mythicalOS framework-agnostic UI core — the pure logic (class derivation, poll scheduling, dialog/toast/gauge helpers), the token-driven component stylesheet, and the <mythical-select> form-associated web component. Zero framework runtime; the Preact and React bindings derive identical output from this package. Apache-2.0.",
   "type": "module",
   "license": "Apache-2.0",
@@ -40,8 +40,9 @@
     "./src/select/register.js",
     "./src/select/mythical-select.js"
   ],
+  "//peerDependencies": "PATCH, not minor, despite tightening the @mythicalos/tokens peer floor from ^0.5.17 to ^0.5.19. The floor is honest: .my-term__row--memory's label resolves var(--my-term-memory), minted in tokens 0.5.19; on an older tokens the declaration is invalid and the label falls back to the row's inherited dim body -- cosmetic, never a crash, and exactly the appearance shipping today. Minor was CONSIDERED AND REJECTED: this peer is declared OPTIONAL so no install breaks on it, while the downstream consumer pins this package through an `overrides` block using a caret on a 0.x version -- which pins the MINOR -- so a minor bump would be unreachable there and the fix could not ship at all. Policy for this repo: the published version tracks the COMPONENT surface, and a peer-floor move rides the patch that needs it.",
   "peerDependencies": {
-    "@mythicalos/tokens": "^0.5.17"
+    "@mythicalos/tokens": "^0.5.19"
   },
   "peerDependenciesMeta": {
     "@mythicalos/tokens": {
