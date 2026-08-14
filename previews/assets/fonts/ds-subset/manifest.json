@@ -1,6 +1,6 @@
 {
  "generatedBy": "subset-ds-fonts.sh",
- "date": "2026-07-22",
+ "date": "2026-08-14",
  "mode": "variable",
  "modeNote": "InterVariable.woff2 subset with the weight axis kept (default pyftsubset axis retention, no instancing).",
  "note": "Font subsets for the self-contained ds/ cards. files[*] sha256/bytes are the payloads check-ds.sh verifies inside every card's @dsFonts block (family/weight/style feed its @font-face generation; the variable Inter face records its wght axis range as wghtAxis for the weight-coverage check). This manifest is the sole authority over ds-subset/: files not recorded here are flagged as stale. sources are the sha256s of the canonical assets/fonts/ files these subsets were built from \u2014 when they drift, check-ds.sh says \"canonical fonts changed\". codepoints is the sorted list the subsets are built to cover \u2014 the contract check-ds.sh validates cards against (rendered text + rendered attributes only; runtime-generated glyphs are out of static reach); missingCodepoints (per file) are requested codepoints the source font itself lacks (they fall through to system fonts, exactly as with the full canonical font). requestedWeights are the card-CSS-derived weights (diagnostic; drives fallback instancing). Italics are not subset: no ds/ card uses them.",
@@ -18,8 +18,8 @@
  ],
  "files": {
   "InterVariable.woff2": {
-   "sha256": "8f3aadecd3ad019b9b71119c43cbe6ceee78d7ad4c8d1314077caf829de167b3",
-   "bytes": 101660,
+   "sha256": "1d623f20273066a471f2098e422499ae76f46462327f0d4a4862c218e62daadc",
+   "bytes": 101560,
    "family": "Inter",
    "weight": "100 900",
    "style": "normal",
@@ -65,6 +65,7 @@
     8302,
     8303,
     8505,
+    8857,
     8943,
     9613,
     9656,
@@ -73,14 +74,15 @@
     9673,
     9680,
     9681,
+    9719,
     9998,
     10005,
     128274
    ]
   },
   "JetBrainsMono-Regular.woff2": {
-   "sha256": "3e702a75a0835ff43873ca6785a255906f387983aeb5598aaca3f0fe6063e299",
-   "bytes": 34996,
+   "sha256": "ddd4cd706bc2bd459cec59b3158664e1d67ca6be4eeb6748729bc3807f63555b",
+   "bytes": 35124,
    "family": "JetBrains Mono",
    "weight": "400",
    "style": "normal",
@@ -169,14 +171,15 @@
     9095,
     9680,
     9681,
+    9719,
     9998,
     11044,
     128274
    ]
   },
   "JetBrainsMono-Medium.woff2": {
-   "sha256": "6959ae6cab2e471836e43f9280a97f56448dc849c464f8a8d33f38d86dfc980a",
-   "bytes": 35732,
+   "sha256": "7221c2dfe31614ab94bfa2d4c3b966c6438a70f4df6e59cfef5ee46d176417c0",
+   "bytes": 35948,
    "family": "JetBrains Mono",
    "weight": "500",
    "style": "normal",
@@ -265,14 +268,15 @@
     9095,
     9680,
     9681,
+    9719,
     9998,
     11044,
     128274
    ]
   },
   "JetBrainsMono-Bold.woff2": {
-   "sha256": "567a71f39639d67e9152a2faabe99978cc05a7d53c05fea7650b4ddd104a0ad2",
-   "bytes": 36284,
+   "sha256": "3542974eb735d969af223c41759e75fc4b2d975d818a46e2ce262c78b65b0cae",
+   "bytes": 36484,
    "family": "JetBrains Mono",
    "weight": "700",
    "style": "normal",
@@ -361,6 +365,7 @@
     9095,
     9680,
     9681,
+    9719,
     9998,
     11044,
     128274
@@ -681,6 +686,8 @@
   8734,
   8804,
   8805,
+  8853,
+  8857,
   8943,
   8984,
   9095,
@@ -695,6 +702,7 @@
   9679,
   9680,
   9681,
+  9719,
   9888,
   9998,
   10003,
@@ -702,5 +710,5 @@
   11044,
   128274
  ],
- "totalBytes": 208672
+ "totalBytes": 209116
 }
