@@ -958,10 +958,15 @@ describe("termContentRevision — ONE key over everything the body renders", () 
 // ── title bar ──
 describe("title bar", () => {
   test("title text composes name · tail · noise state, with a neutral fallback", () => {
-    expect(termTitleText("jacob.jsonl", false)).toBe("jacob.jsonl · tail · noise off");
-    expect(termTitleText("jacob.jsonl", true)).toBe("jacob.jsonl · tail · noise on");
-    expect(termTitleText(undefined, false)).toBe("transcript · tail · noise off");
-    expect(termTitleText("  ", false)).toBe("transcript · tail · noise off");
+      // The label states whether NOISE is showing, not whether the FILTER is engaged
+      // (maintainer ruling 2026-08-14). Filter ENGAGED ⇒ noise hidden ⇒ reads `noise off`.
+      expect(termTitleText("jacob.jsonl", true)).toBe("jacob.jsonl · tail · noise off");
+      expect(termTitleText("jacob.jsonl", false)).toBe("jacob.jsonl · tail · noise on");
+      expect(termTitleText(undefined, true)).toBe("transcript · tail · noise off");
+      expect(termTitleText("  ", true)).toBe("transcript · tail · noise off");
+      // The filter ships ENGAGED, so an untouched pane reads `noise off` WHILE it suppresses.
+      // Label and renderer must agree on that default — that agreement is the ruling.
+      expect(noiseShow(true)).toBe(false);
   });
 
   test("the turn caption renders ONLY from supplied truth — undefined guesses nothing", () => {

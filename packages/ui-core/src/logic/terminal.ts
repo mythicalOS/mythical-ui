@@ -563,10 +563,26 @@ export function sourceRows(source: TermSource): readonly TermRow[] {
 
 // ── title bar ──
 
-/** `{name} · tail · noise {on|off}`; a nameless transcript falls back to `transcript`. */
+/**
+ * `{name} · tail · noise {on|off}`; a nameless transcript falls back to `transcript`.
+ *
+ * **The label states whether NOISE is showing, not whether the FILTER is engaged** — so the
+ * filter being enabled reads `noise off`. Maintainer ruling 2026-08-14 ("noise must be off
+ * default"), and it reverses what this function used to say.
+ *
+ * The old wording labelled the filter: filter on ⇒ `noise on`, while noise was in fact HIDDEN.
+ * In a status line that sits beside `tail`, every reader took `noise on` to mean noise was being
+ * shown — the opposite of the state it described. The default compounded it: the filter ships
+ * enabled (`terminal_noise_filter: true`), so a pane that had never been touched opened claiming
+ * `noise on` while suppressing the init line, tool-reference blobs and skill preambles.
+ *
+ * The parameter keeps its name because it is still the FILTER flag the caller holds; only the
+ * word rendered for it changes. `noiseShow()` is unaffected — it maps filter → renderer option
+ * and never had this ambiguity.
+ */
 export function termTitleText(name: string | undefined, noiseFilterEnabled: boolean): string {
   const trimmed = name?.trim();
-  return `${trimmed ? trimmed : "transcript"} · tail · noise ${noiseFilterEnabled ? "on" : "off"}`;
+  return `${trimmed ? trimmed : "transcript"} · tail · noise ${noiseFilterEnabled ? "off" : "on"}`;
 }
 
 export const TURN_IN_FLIGHT_COPY = "turn in flight";
