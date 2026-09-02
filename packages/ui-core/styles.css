@@ -1,0 +1,1873 @@
+/* @mythicalos/ui-core — component stylesheet. The CSS classes the pure logic in
+   src/logic/ derives (buttonClass, chipClass, statusLineClass, bannerClass, gaugeTone/gaugeGeom)
+   and that BOTH the Preact and React bindings render for the same visual result from one shared
+   source. Classes + CSS custom properties only — no inline styles. Serve this AFTER
+   @mythicalos/tokens' styles.css; every color/spacing/radius/font-size below resolves through a
+   `--my-*` custom property that flips under [data-theme="dark"]. Apache-2.0. */
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   BASE — ported verbatim from the family's internal Preact atoms package (styles.css) (the shipped,
+   codex-gated atom sheet: buttons, inputs/toggles/checkboxes, the secret-slot chip, toasts,
+   dialogs, empty states). Class names are unchanged — these are exactly what buttonClass et al.
+   emit and what the skuld/brokkr consumer tests assert.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── base helpers ─────────────────────────────────────────────────────── */
+.mono { font-family: var(--my-font-mono); font-size: var(--my-fs-mono); }
+.tnum { font-variant-numeric: tabular-nums; }
+.muted { color: var(--my-muted); }
+.hidden { display: none; }
+
+/* links — the app mockups' own global treatment, verbatim: accent-strong (the text-safe accent,
+   AA on light per the tokens sheet), no underline. `.link` is the same look for non-anchor
+   elements and pre-dates this rule in consumer markup; the shared focus ring below has always
+   named both selectors — these are the base rules it assumed. Deliberately no :hover state:
+   the design defines none. */
+a { color: var(--my-accent-strong); text-decoration: none; }
+.link { color: var(--my-accent-strong); text-decoration: none; cursor: pointer; }
+
+/* shared focus ring (design rule 6 — identical everywhere, both themes) */
+.btn:focus-visible, .input:focus-visible,
+.tog:focus-visible, .cb:focus-visible, .rep:focus-visible,
+a:focus-visible, .link:focus-visible, .is-focus {
+  outline: 2px solid var(--my-accent);
+  outline-offset: 2px;
+}
+
+/* ── buttons (ds/components-buttons: 5 variants × 6 states) ───────────── */
+.btn {
+  border-radius: var(--my-r-control); padding: 8px 16px;
+  font-weight: var(--my-fw-medium); font-size: var(--my-fs-body);
+  border: 1px solid transparent; font-family: inherit; cursor: pointer;
+  transition: background var(--my-t-fast), border-color var(--my-t-fast);
+  display: inline-flex; align-items: center; gap: var(--my-sp-2); justify-content: center;
+}
+.btn--pri { background: var(--my-ink); color: var(--my-surface); }
+.btn--pri:hover, .btn--pri.is-hover { background: var(--my-ink-hover); }
+/* Pressed collapses onto the hover token step ("hover = one token step", design.md §5) —
+   the v0.4 literal #0A0C10 was light-theme-only thinking (dark ink-fill buttons are cream). */
+.btn--pri:active, .btn--pri.is-active { background: var(--my-ink-hover); }
+.btn--acc { background: var(--my-accent); color: var(--my-surface); }
+.btn--acc:hover, .btn--acc.is-hover { background: var(--my-accent-hover); }
+.btn--acc:active, .btn--acc.is-active { background: var(--my-accent-strong); }
+.btn--sec { background: var(--my-surface); border-color: var(--my-control-border); color: var(--my-ink); } /* v0.5.4 rule 11 */
+.btn--sec:hover, .btn--sec.is-hover { background: var(--my-surface-hover); }
+.btn--gho { background: transparent; color: var(--my-accent-strong); }
+.btn--gho:hover, .btn--gho.is-hover { background: var(--my-surface-hover); }
+.btn--dan { background: var(--my-surface); border-color: var(--my-error); color: var(--my-error); }
+.btn--dan:hover, .btn--dan.is-hover { background: var(--my-error-soft); }
+.btn:disabled, .btn.is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+  border-color: transparent; cursor: not-allowed;
+}
+.btn--sm { padding: 6px 12px; font-size: 12.5px; }
+.spin {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 2px solid currentColor; border-top-color: transparent;
+  animation: my-spin .8s linear infinite; opacity: .85; flex: none;
+}
+@keyframes my-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+
+/* ── inputs / toggles / checkboxes (ds/components-inputs) ─────────────── */
+.field { display: block; }
+.field-label { display: block; font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); margin-bottom: 4px; }
+.field-label .st { font-weight: var(--my-fw-regular); color: var(--my-muted); }
+.input {
+  width: 100%; border: 1px solid var(--my-control-border); border-radius: var(--my-r-control); /* v0.5.4 rule 11 */
+  padding: 8px 12px; font: inherit; background: var(--my-surface); color: var(--my-ink);
+  transition: border-color var(--my-t-fast);
+}
+.input:hover:not(:disabled) { border-color: var(--my-muted); } /* input row v2 reference */
+/* `.mono` is declared far earlier at the SAME specificity (0,1,0), so `.input`'s `font: inherit`
+   shorthand above wins the cascade and resets the family — a `mono` input silently rendered in the
+   body face. Restate it at (0,2,0) so the modifier survives inside this package alone, rather than
+   depending on a consumer happening to re-declare `.mono` after our sheet. */
+.input.mono { font-family: var(--my-font-mono); font-size: var(--my-fs-mono); }
+.input.is-err { border-color: var(--my-error); }
+.input:disabled, .input.is-disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.input.is-dirty { border-color: var(--my-accent); }
+.help { font-size: var(--my-fs-micro); color: var(--my-muted); margin-top: 4px; }
+.emsg { font-size: var(--my-fs-micro); color: var(--my-error); margin-top: 4px; display: flex; gap: 4px; align-items: center; }
+.textarea { resize: vertical; min-height: 64px; }
+.readonly-input { background: var(--my-surface-hover); }
+.rep { font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); color: var(--my-accent-strong); cursor: pointer; white-space: nowrap; background: none; border: 0; font-family: inherit; }
+
+.slot { display: flex; gap: var(--my-sp-2); align-items: center; }
+.slot .input { flex: 1; }
+.chip {
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); border-radius: var(--my-r-pill);
+  padding: 3px 11px; background: var(--my-accent-soft); color: var(--my-accent-strong);
+  white-space: nowrap;
+}
+.chip--empty { background: var(--my-disabled-bg); color: var(--my-muted); border: 1px dashed var(--my-control-border); } /* v3 resting boundary token */
+
+.tog {
+  /* Interactables are squared (v0.5.1 decision #20) — the pill radius is for
+     non-interactive tags only, so the toggle takes --my-r-control, never 99px. */
+  width: 38px; height: 22px; border-radius: var(--my-r-control); background: var(--my-accent);
+  position: relative; display: inline-block; cursor: pointer; padding: 0;
+  /* v3 resting control boundary — v0.5.4 rule 11. The <button> is
+     border-box (UA default), so the 38x22 track keeps its outer size. */
+  border: 1px solid var(--my-control-border);
+  transition: background var(--my-t-fast); flex: none;
+}
+/* On-state boundary joins the accent fill (reference .toggle.on) —
+   base .tog carries the ON look here (Toggle.tsx adds .is-off when off), so on = :not(.is-off). */
+.tog:not(.is-off) { border-color: var(--my-accent); }
+.tog i { position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 4px; background: var(--my-surface); display: block; transition: left var(--my-t-fast), right var(--my-t-fast); } /* squared thumb (v3); 16px per the v3 reference — symmetric 2px insets inside the bordered 22px track */
+.tog.is-off { background: var(--my-track); } /* v3 off-state track fill */
+.tog.is-off i { right: auto; left: 2px; }
+.tog:hover:not(.is-disabled) { background: var(--my-accent-hover); }
+.tog.is-off:hover:not(.is-disabled) { background: var(--my-muted); } /* hover-darkened border tone (input-hover precedent) */
+.tog.is-disabled { background: var(--my-disabled-bg); border-color: transparent; cursor: not-allowed; } /* reference .toggle.d neutralizes the boundary when disabled */
+.tog.is-disabled i { background: var(--my-disabled-ink); } /* rules-of-use 8 (disabled = --my-disabled-*) */
+
+.cb {
+  width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid var(--my-control-border); /* checkbox reference + v0.5.4 rule 11 */
+  background: var(--my-surface); display: inline-flex; align-items: center; justify-content: center;
+  color: var(--my-surface); font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); cursor: pointer; padding: 0; flex: none;
+}
+.cb.is-on { background: var(--my-accent); border-color: var(--my-accent); }
+.cb.is-disabled { background: var(--my-disabled-bg); border-color: var(--my-border); color: var(--my-disabled-ink); cursor: not-allowed; }
+.check-row { display: flex; gap: var(--my-sp-2); align-items: center; cursor: pointer; }
+
+/* ── toasts (ds/components-toasts) — bottom-CENTER stack (design.md interaction rules) ── */
+.toast-stack { position: fixed; left: 50%; transform: translateX(-50%); bottom: var(--my-sp-5); z-index: 50; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 420px; }
+.toast { display: flex; gap: 10px; align-items: baseline; border-radius: 8px; padding: 11px 14px; font-size: var(--my-fs-mono); animation: my-toast-in 180ms ease-out; }
+@keyframes my-toast-in { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
+.toast .toast-icon { font-style: normal; font-size: var(--my-fs-mono); font-weight: var(--my-fw-bold); flex: none; }
+.toast b { font-weight: var(--my-fw-bold); }
+.toast .toast-action { font-weight: var(--my-fw-bold); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; white-space: nowrap; background: none; border: 0; font-family: inherit; font-size: var(--my-fs-mono); }
+.toast .toast-x { margin-left: auto; color: var(--my-muted); cursor: pointer; flex: none; font-size: var(--my-fs-caption); background: none; border: 0; }
+.toast .toast-x:hover { color: var(--my-ink); }
+/* The canonical v0.5 toast is a border-LESS tone-colored
+   soft fill (design.md "tone-colored soft fill + icon + message") — the v0.4 status borders were
+   themselves a deviation and are REMOVED entirely, not tokenized. */
+.toast--ok { background: var(--my-ok-soft); }
+.toast--ok .toast-icon, .toast--ok .toast-action { color: var(--my-ok); }
+.toast--warn { background: var(--my-warn-soft); }
+.toast--warn .toast-icon, .toast--warn .toast-action { color: var(--my-warn); }
+.toast--error { background: var(--my-error-soft); }
+.toast--error .toast-icon, .toast--error .toast-action { color: var(--my-error); }
+.toast--info { background: var(--my-info-soft); }
+.toast--info .toast-icon, .toast--info .toast-action { color: var(--my-info); }
+.toast-more { font-size: var(--my-fs-micro); color: var(--my-muted); text-align: center; }
+
+/* ── dialogs (ds/components-dialogs) ─────────────────────────────────── */
+.scrim { position: fixed; inset: 0; background: var(--my-scrim); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--my-sp-5); }
+.dlg { background: var(--my-surface); border-radius: var(--my-r-modal); box-shadow: var(--my-shadow-modal); padding: var(--my-sp-5); width: 400px; max-width: 100%; }
+.dlg h2 { font-size: var(--my-fs-h3); font-weight: var(--my-fw-bold); margin: 0 0 6px; }
+.dlg p { font-size: var(--my-fs-mono); color: var(--my-muted); margin: 0 0 12px; }
+.dlg ul { list-style: none; font-size: 12.5px; margin: 0 0 4px; padding: 0; }
+.dlg li { padding: 5px 0; display: flex; gap: 9px; align-items: baseline; }
+.dlg li i { font-style: normal; flex: none; }
+.dlg .ic-ok { color: var(--my-ok); }
+.dlg .ic-warn { color: var(--my-warn); }
+.dlg .ic-error { color: var(--my-error); }
+.dlg-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: var(--my-sp-5); }
+.danf { background: var(--my-error); color: var(--my-surface); border: 1px solid transparent; }
+/* No --my-error-hover token exists and the v0.5 confirm-dialog reference styles no
+   danger-fill hover restyle — the hover keeps the rest fill (token addendum candidate). */
+.danf:hover:not(:disabled) { background: var(--my-error); }
+.danf:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.esc { font-size: var(--my-fs-micro); color: var(--my-disabled-ink); margin-top: var(--my-sp-4); }
+
+/* ── empty states (ds/layouts-observability + book §7.10) ────────────── */
+.empty { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--my-sp-8) var(--my-sp-5); text-align: center; }
+.empty h2 { font-size: var(--my-fs-h2); font-weight: var(--my-fw-bold); margin: var(--my-sp-4) 0 6px; }
+.empty p { font-size: var(--my-fs-mono); color: var(--my-muted); max-width: 380px; margin: 0 0 var(--my-sp-4); }
+.ebtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+/* The spine art rides package-owned tokenized classes — the gauge-block `gfill--nominal`
+   and the literal #C9C3B6 strokes are replaced (empty-state row v1: segments = border, hollow /
+   waiting nodes = muted, the live "you are here" node = accent). */
+.spine-empty { width: 180px; height: 36px; }
+.spine-track { stroke: var(--my-border); }
+.spine-dash { stroke: var(--my-muted); }
+.spine-node { fill: none; stroke: var(--my-muted); }
+.spine-dot { fill: var(--my-muted); }
+.spine-here { fill: var(--my-accent); }
+
+/* @section: additions */
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   ADDITIONS — new atom families, extracted from design-export's
+   mythical-design/src/styles/{components,base}.css: .my-chip, .my-status (statusLineClass's
+   target — NOT the topbar's plain `.my-statusline`, which has no per-tone modifiers and belongs
+   to a later shell task), .my-card, .my-avatar, .my-search, .my-banner, .my-gauge, .my-truncate.
+
+   Fidelity note: the export's own tokens.css is v0.4-era and predates two v0.5.4 canonical
+   token distinctions, so two rules were remapped against the CANONICAL tokens.css
+   (mythical-design/tokens.css) rather than copied as-is:
+     - .my-gauge__track's rail color: var(--my-border) → var(--my-track)
+       (canonical rule #4: "Gauges: ... rail = --my-track").
+     - .my-search__input's border: var(--my-border) → var(--my-control-border), and its radius
+       → var(--my-r-control) to match the base `.input` atom (canonical rule #11: control
+       boundaries use --my-control-border; --my-border is dividers/cards/non-interactive only).
+   Separately, several literal font-size px values in the export had no exact step on the
+   --my-fs-* scale; they're normalized to the nearest existing token (--my-fs-caption for tiny
+   badge/label/gauge text, --my-fs-body for body-scale text) so every declaration below resolves
+   through a token — see the design system's Chip card notes for the full before/after list.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* chip — the base rule and the five soft status tones (neutral has no modifier; the other five add
+   my-chip--{tone}). The rest of the family — the `outline`/`empty` tones, the `xs`/`md` size steps,
+   the dot/count/remove elements, .my-chip-flag and .my-chip-dd — lives in the chip-family block at
+   the foot of this sheet; it EXTENDS this rule rather than restating it.
+
+   METRICS follow the design system's Chip card v2 — a deliberate visual change from v1 for
+   every consumer: gap 5px → 6px, padding 2px 9px → 3px 11px, and `letter-spacing: .3px`
+   dropped (the card has none). The transparent 1px border is new and load-bearing — it keeps every
+   tone the same box, so `--outline`/`--empty`, which do paint a border, cannot reflow the chips
+   beside them. The face is unchanged: --my-fs-micro (the card's 11px, exact) at --my-fw-bold.
+   The neutral default rides --my-surface-hover, NOT --my-disabled-bg: a chip at rest reads as
+   furniture, not as a disabled control. */
+.my-chip {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  border: 1px solid transparent; border-radius: var(--my-r-pill); padding: 3px 11px;
+  background: var(--my-surface-hover); color: var(--my-muted);
+}
+.my-chip--accent { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-chip--ok { background: var(--my-ok-soft); color: var(--my-ok); }
+.my-chip--warn { background: var(--my-warn-soft); color: var(--my-warn); }
+.my-chip--error { background: var(--my-error-soft); color: var(--my-error); }
+.my-chip--info { background: var(--my-info-soft); color: var(--my-info); }
+
+/* status dot + text (statusLineClass's 6 tones — always a modifier, never bare `.my-status`) */
+.my-status { display: inline-flex; align-items: center; gap: 7px; font-size: var(--my-fs-caption); }
+.my-status__dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+.my-status--ok    { color: var(--my-muted);   } .my-status--ok    .my-status__dot { background: var(--my-ok); }
+.my-status--warn  { color: var(--my-warn);    } .my-status--warn  .my-status__dot { background: var(--my-warn); }
+.my-status--error { color: var(--my-error);   } .my-status--error .my-status__dot { background: var(--my-error); }
+.my-status--info  { color: var(--my-info);    } .my-status--info  .my-status__dot { background: var(--my-info); }
+.my-status--muted { color: var(--my-muted);   } .my-status--muted .my-status__dot { background: var(--my-border); }
+.my-status--accent{ color: var(--my-accent-strong); } .my-status--accent .my-status__dot { background: var(--my-accent); }
+
+/* card */
+.my-card {
+  background: var(--my-surface); border: 1px solid var(--my-border); /* cards are a valid --my-border use (canonical rule #11) */
+  border-radius: var(--my-r-card); padding: 15px 17px;
+}
+.my-card--flush { padding: 0; overflow: hidden; } /* for table/row lists */
+.my-card__title {
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); color: var(--my-muted); /* export: 11px, no exact token step */
+  text-transform: uppercase; letter-spacing: .4px; margin: 0 0 11px;
+}
+
+/* avatar (with optional context ring) */
+.my-avatar { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; flex: none; }
+.my-avatar__ring {
+  display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  flex: none; padding: 3px; background: var(--my-border); /* decorative ring, non-interactive */
+}
+.my-avatar__inner {
+  border-radius: 50%; background: var(--my-surface); display: inline-flex;
+  align-items: center; justify-content: center; padding: 2px;
+}
+.my-avatar__initials {
+  width: 34px; height: 34px; border-radius: 50%;
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: var(--my-fw-bold); font-size: var(--my-fs-body); /* export: 14px — exact token match */
+}
+
+/* search / filter input */
+.my-search { position: relative; display: flex; align-items: center; }
+.my-search__icon { position: absolute; left: 11px; font-size: var(--my-fs-caption); color: var(--my-muted); pointer-events: none; } /* export: 12.5px, no exact step */
+.my-search__input {
+  width: 100%; box-sizing: border-box;
+  border: 1px solid var(--my-control-border); /* remapped — see fidelity note above */
+  background: var(--my-surface); border-radius: var(--my-r-control); /* remapped to match the base .input atom */
+  padding: 8px 30px; font-size: var(--my-fs-caption); /* export: 12.5px, no exact step */
+  color: var(--my-ink); font-family: inherit;
+}
+.my-search__input:focus { outline: none; border-color: var(--my-accent); box-shadow: 0 0 0 3px var(--my-accent-soft); }
+.my-search__clear {
+  position: absolute; right: 8px; width: 18px; height: 18px; border: 0;
+  background: var(--my-surface-hover); color: var(--my-muted); border-radius: 50%;
+  font-size: var(--my-fs-micro); /* export: 11px, no exact step */
+  line-height: 1; cursor: pointer;
+}
+
+/* banners (status softs — always icon + label, token rule #7) */
+.my-banner {
+  display: flex; gap: 10px; align-items: baseline; border-radius: var(--my-r-card);
+  padding: 13px 16px; font-size: var(--my-fs-body); /* export: 13px, nearest body-scale token */
+  text-wrap: pretty;
+}
+.my-banner__glyph { font-style: normal; font-weight: var(--my-fw-bold); }
+.my-banner--warn  { background: var(--my-warn-soft);  border: 1px solid var(--my-warn);  }
+.my-banner--warn  .my-banner__glyph { color: var(--my-warn); }
+.my-banner--info  { background: var(--my-info-soft);  border: 1px solid var(--my-info);  }
+.my-banner--info  .my-banner__glyph { color: var(--my-info); }
+.my-banner--ok    { background: var(--my-ok-soft);    border: 1px solid var(--my-ok);    }
+.my-banner--ok    .my-banner__glyph { color: var(--my-ok); }
+.my-banner--error { background: var(--my-error-soft); border: 1px solid var(--my-error); }
+.my-banner--error .my-banner__glyph { color: var(--my-error); }
+/* non-status surface variants (ported from the SAGA mockup rewire): accent = an emphasis/brand
+   surface (privacy posture, credential guidance), neutral = a quiet notice ("deactivated").
+   Not part of the rule-#7 status quartet, but the glyph still rides along for structure —
+   consumers usually supply their own inline SVG via the binding's `glyph` prop. Ink on
+   accent-soft follows the page precedent: --my-accent-strong, never bare --my-accent. */
+.my-banner--accent  { background: var(--my-accent-soft);   border: 1px solid var(--my-accent); }
+.my-banner--accent  .my-banner__glyph { color: var(--my-accent-strong); }
+.my-banner--neutral { background: var(--my-surface-hover); border: 1px solid var(--my-border); }
+.my-banner--neutral .my-banner__glyph { color: var(--my-muted); }
+
+/* gauge (context / usage) — fill thresholds per token rule #4 */
+.my-gauge { display: inline-flex; }
+.my-gauge svg { display: block; transform: rotate(-90deg); }
+.my-gauge__track { stroke: var(--my-track); fill: none; } /* remapped — see fidelity note above */
+.my-gauge__fill { fill: none; stroke-linecap: round; transition: stroke-dashoffset var(--my-t-base); }
+.my-gauge__fill--ok    { stroke: var(--my-accent); } /* < 75% — rule #4: fill = accent, not the "ok" status color */
+.my-gauge__fill--warn  { stroke: var(--my-warn); }   /* 75–89% */
+.my-gauge__fill--error { stroke: var(--my-error); }  /* ≥ 90% */
+/* a fourth modifier for metrics with no good/bad judgement at all (an informational rate, say —
+   the KPI tile's own configurable-threshold gauge is the first consumer, src/logic/kpi-tile.ts's
+   `kpiGauge`), alongside the threshold triplet above rather than a redeclaration of any of them. */
+.my-gauge__fill--info  { stroke: var(--my-info); }
+.my-gauge__label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: var(--my-fs-micro); /* export: 11px, no exact step */
+  font-weight: var(--my-fw-bold); font-variant-numeric: tabular-nums; color: var(--my-ink);
+}
+.my-gauge__wrap { position: relative; display: inline-flex; }
+
+/* truncation helper (design-export base.css) */
+.my-truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── revealable secret input (the Input atom's opt-in show/hide affordance) ──
+   Same family as the input rules above, but authored here rather than spliced into the BASE
+   block: that section is a verbatim port and is not edited. The toggle borrows the "Replace"
+   affordance's look (.rep) — micro, bold, accent-strong, no chrome — so a field with a reveal
+   reads as the same control family as a secret slot. */
+.input-reveal { position: relative; display: block; }
+/* border-box here so the field cannot outgrow the wrapper the toggle is positioned against (the
+   base .input is width:100% with content-box padding, and this sheet declares no global reset);
+   the right padding is the toggle's reserved lane, so a long token never runs under it */
+.input-reveal .input { box-sizing: border-box; padding-right: 58px; }
+.input-reveal__btn {
+  position: absolute; top: 0; right: 0; height: 100%; padding: 0 12px;
+  border: 0; background: none; font-family: inherit;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  color: var(--my-accent-strong); cursor: pointer;
+}
+.input-reveal__btn:hover:not(:disabled) { color: var(--my-accent); }
+.input-reveal__btn:disabled { color: var(--my-disabled-ink); cursor: not-allowed; }
+/* design rule 6 — the shared focus ring, restated rather than added to the BASE selector list
+   above for the same reason the rules above live here */
+.input-reveal__btn:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   SMALL ATOMS — save bar · stat tiles · git status chip. Each was registered in the design
+   system but implemented only inside one product; these rules are taken from the cards
+   (ds/layouts-settings.html, ds/components-stat-tiles.html, ds/components-git-chip.html) with
+   colors/font-sizes remapped onto canonical --my-* tokens. Where the product's local sheet and
+   the card differed, the CARD wins and the delta is noted inline.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* save bar (ds/layouts-settings.html `.save`) — full-bleed bottom, slides up only when dirty.
+   The card draws it `position:absolute` inside its own bordered screen frame; a packaged atom has
+   no such frame to anchor to, so it is `fixed` to the viewport (what the reference product's
+   sheet does too) — a consumer that needs it scoped to a pane overrides `position` via the
+   passthrough class. Padding is the card's `9px 16px`; the product's own sheet insets it to 24px
+   horizontally, which a consumer can restore from its own sheet. */
+.my-savebar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--my-surface); border-top: 1px solid var(--my-border);
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px var(--my-sp-4); font-size: var(--my-fs-caption); /* the card's 9px 16px */
+  animation: my-savebar-up 180ms ease-out; /* the card's "slides up (180ms)" */
+}
+@keyframes my-savebar-up { from { transform: translateY(100%); } }
+@media (prefers-reduced-motion: reduce) { .my-savebar { animation: none; } }
+.my-savebar__note { color: var(--my-muted); }
+.my-savebar__count { color: var(--my-ink); font-weight: var(--my-fw-bold); }
+.my-savebar__actions { margin-left: auto; display: flex; gap: var(--my-sp-2); }
+
+/* stat tiles (ds/components-stat-tiles.html `.tiles`/`.tile`) — mono, tabular-nums, micro key +
+   mono sub-caption. The card sizes tiles by content off a 112px floor; the reference product's
+   sheet additionally stretches them with `flex: 1`, which a consumer can restore from its own
+   sheet (`.my-stat-tiles > .my-stat-tile { flex: 1 }`). */
+.my-stat-tiles { display: flex; gap: 10px; flex-wrap: wrap; }
+.my-stat-tile {
+  min-width: 112px; background: var(--my-surface);
+  border: 1px solid var(--my-border); border-radius: var(--my-r-card); padding: 10px 12px;
+}
+.my-stat-tile__label {
+  font-size: var(--my-fs-micro); /* card: 10px, no exact token step */
+  font-weight: var(--my-fw-bold); text-transform: uppercase; letter-spacing: .4px;
+  color: var(--my-muted);
+}
+.my-stat-tile__value {
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-body-lg); /* card: 17px, nearest token step */
+  font-weight: var(--my-fw-bold); font-variant-numeric: tabular-nums; margin-top: 2px;
+}
+.my-stat-tile__sub {
+  font-family: var(--my-font-mono);
+  font-size: var(--my-fs-micro); /* card: 10.5px, no exact token step */
+  color: var(--my-muted);
+}
+/* the card's "brag" number (`.tile.save .v` → --my-accent-strong) */
+.my-stat-tile--accent .my-stat-tile__value { color: var(--my-accent-strong); }
+/* band tint (token rule #4 thresholds live with the caller, only the tint is here) */
+.my-stat-tile--warn { border-color: var(--my-warn); }
+.my-stat-tile--warn .my-stat-tile__value { color: var(--my-warn); }
+.my-stat-tile--error { border-color: var(--my-error); }
+.my-stat-tile--error .my-stat-tile__value { color: var(--my-error); }
+/* ok is voice, not band (ported from the SAGA mockup rewire: "indexes fresh", "index health") —
+   a healthy value reads --my-ok on the default border; only trouble gets the border band. */
+.my-stat-tile--ok .my-stat-tile__value { color: var(--my-ok); }
+
+/* git status chip (ds/components-git-chip.html `.gitchip`/`.gitflag`) — a bordered inline mono
+   chip. The flags are the card's own squared 4px badge, NOT the pill `.my-chip`: inside a mono
+   chip the card gives them a tighter, squared shape, and design rule #10 reserves the pill for
+   stand-alone non-interactive tags.
+
+   Three deliberate deltas from the card, all recorded here (and pinned by
+   test/css-small-atoms.test.ts) rather than left to be discovered:
+     - `flex-wrap: wrap` on the chip and its flag group. The card demonstrates the chip inside a
+       fixed 820px panel where it cannot run out of room; a packaged atom renders at whatever width
+       the consumer gives it, and a long branch name plus three flags must wrap rather than
+       overflow its container.
+     - the branch keeps the card's inherited weight (NOT bold). The product's local sheet bolds it;
+       the card does not, so the card wins.
+     - the flag weight is `--my-fw-bold` (650), where the card's literal is 700. There is no 700
+       step on the canonical --my-fw-* scale, and the additions section above already normalizes
+       badge weights onto the nearest token (`.my-chip` does exactly this). */
+.my-gitchip {
+  display: inline-flex; gap: 10px; align-items: center; flex-wrap: wrap; /* delta 1 */
+  font-family: var(--my-font-mono); font-size: var(--my-fs-caption);
+  border: 1px solid var(--my-border); border-radius: var(--my-r-control);
+  padding: 6px 10px; background: var(--my-surface);
+}
+.my-gitchip__branch { color: var(--my-ink); } /* delta 2 — card weight, not the product's bold */
+.my-gitchip__flags { display: inline-flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.my-gitchip__flag {
+  font-size: var(--my-fs-micro); /* card: 10px, no exact token step */
+  font-weight: var(--my-fw-bold); /* delta 3 — card: 700, no exact token step */
+  letter-spacing: .3px; border-radius: 4px; padding: 2px 6px;
+}
+.my-gitchip__flag--warn  { background: var(--my-warn-soft);  color: var(--my-warn); }
+.my-gitchip__flag--error { background: var(--my-error-soft); color: var(--my-error); }
+.my-gitchip__flag--ok    { background: var(--my-ok-soft);    color: var(--my-ok); }
+/* the honest unavailable arm: the branch slot is muted and the note carries the reason in UI type */
+.my-gitchip--unavailable .my-gitchip__branch { color: var(--my-muted); }
+.my-gitchip__note { font-family: var(--my-font-ui); color: var(--my-muted); }
+/* a retained (not current) status — flagged on BOTH arms */
+.my-gitchip--stale { border-color: var(--my-warn); }
+.my-gitchip__stale { color: var(--my-warn); font-size: var(--my-fs-micro); }
+
+/* ── dropdown popover (ds/components-popover — registry row `popover` v1) ──
+   The design card: a chip trigger over a panel anchored 6px below it, --my-shadow-modal, high
+   z-index, ✓ marking the current row. Two card values are normalized onto the canonical scale the
+   way the additions section above already does: the card's 12.5px/10px body text → --my-fs-caption
+   (12px) / --my-fs-micro (11px), and its literal 6px item radius → --my-r-control (6px, the same
+   number — now expressed as the token shape rule 10 demands for anything clickable).
+   Placement is state-driven, never inline-styled: the bindings toggle .my-pop--above /
+   .my-pop--end from @mythicalos/ui-core's resolvePopoverPosition, mirroring <mythical-select>'s
+   [data-flip].
+   CONSUMER CONTRACT (design card, verbatim): "Ancestors must never clip it." The panel is
+   position:absolute inside .my-pop-anchor, so any ancestor with overflow:hidden/auto or its own
+   stacking context will crop or bury it — give that ancestor room, not this component a portal. */
+.my-pop-anchor { position: relative; display: inline-block; }
+
+.my-pop-trigger {
+  display: inline-flex; align-items: center; gap: var(--my-sp-2);
+  /* shape rule 10 — the trigger is clickable, so it is SQUARED (--my-r-control); the pill radius
+     is reserved for non-interactive status tags */
+  border: 1px solid var(--my-control-border); border-radius: var(--my-r-control);
+  padding: 5px 12px; font-family: inherit; font-size: var(--my-fs-caption);
+  background: var(--my-surface); color: var(--my-ink); cursor: pointer;
+  transition: background var(--my-t-fast), border-color var(--my-t-fast);
+}
+.my-pop-trigger:hover:not(:disabled):not(.is-disabled) { background: var(--my-surface-hover); }
+/* Open state — NOT on the design card (which draws a single, already-open popover and so has no
+   closed/open pair to distinguish). It is not an invention either: this is verbatim what the
+   package's other floating control does, `:host([data-open]) button{border-color:var(--my-accent)}`
+   in src/select/mythical-select.js. Two anchored dropdowns in one package must not disagree about
+   what an open trigger looks like, so the popover follows the select. */
+.my-pop-trigger.is-open { border-color: var(--my-accent); }
+.my-pop-trigger:disabled, .my-pop-trigger.is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+  border-color: transparent; cursor: not-allowed;
+}
+.my-pop-trigger__label { color: var(--my-muted); }
+.my-pop-trigger__value { font-weight: var(--my-fw-medium); }
+.my-pop-trigger__caret { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+.my-pop-trigger:disabled .my-pop-trigger__label,
+.my-pop-trigger.is-disabled .my-pop-trigger__label,
+.my-pop-trigger:disabled .my-pop-trigger__caret,
+.my-pop-trigger.is-disabled .my-pop-trigger__caret { color: var(--my-disabled-ink); }
+
+.my-pop {
+  position: absolute; top: calc(100% + 6px); left: 0; z-index: 30;
+  /* min-width only, per the card — the panel grows to its widest row rather than truncating it */
+  /* 6px is the card's own panel padding and has no step on the --my-sp-* scale (4 / 8); it is
+     kept literal rather than rounded, exactly as the trigger's 5px 12px and the row's 7px 10px
+     are — this block's spacing comes from the card, only its colors/radii/fonts are tokenized. */
+  min-width: 210px; padding: 6px;
+  background: var(--my-surface); border: 1px solid var(--my-border); /* panel edge = a card boundary, not a control one */
+  border-radius: var(--my-r-card); box-shadow: var(--my-shadow-modal);
+}
+/* viewport-aware flip — same rule as <mythical-select>'s :host([data-flip]) #pop */
+.my-pop--above { top: auto; bottom: calc(100% + 6px); }
+.my-pop--end { left: auto; right: 0; }
+
+.my-pop__head { display: flex; flex-direction: column; gap: 2px; padding: 6px 10px 8px; }
+.my-pop__title { font-size: var(--my-fs-caption); font-weight: var(--my-fw-bold); color: var(--my-ink); }
+.my-pop__caption { font-size: var(--my-fs-micro); color: var(--my-muted); }
+
+/* The role="menu" element NESTED in the panel: it owns ONLY the rows, so the head and the
+   caller's footer stay siblings of it (a menu may not own arbitrary content). Purely structural —
+   it adds no box of its own. */
+.my-pop__menu { display: flex; flex-direction: column; }
+
+.my-pop__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  /* border-box explicitly: this sheet declares no global reset (same reason the .input-reveal rules
+     above restate it), so a full-width row's padding must not be left to the UA's or a consumer's
+     box model — otherwise the row, its hover fill and its focus ring overhang the panel's padding. */
+  width: 100%; box-sizing: border-box; padding: 7px 10px; border: 0; background: none;
+  border-radius: var(--my-r-control); /* shape rule 10 — a row is clickable, so squared */
+  font-family: inherit; font-size: var(--my-fs-caption); color: var(--my-ink);
+  text-align: left; cursor: pointer;
+}
+.my-pop__item:hover:not(:disabled):not(.is-disabled) { background: var(--my-surface-hover); }
+.my-pop__item.is-selected { color: var(--my-accent-strong); font-weight: var(--my-fw-medium); }
+.my-pop__item:disabled, .my-pop__item.is-disabled { color: var(--my-disabled-ink); cursor: not-allowed; }
+/* The panel is min-width-only, so this truncation is INERT by default (the panel widens to fit).
+   It engages solely when a consumer constrains the panel's width themselves — then a long label
+   ellipsises instead of tearing the row's layout apart. */
+.my-pop__label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-pop__check { flex: none; }
+
+.my-pop__div { height: 1px; margin: var(--my-sp-1) 0; background: var(--my-border); }
+.my-pop__foot { display: block; }
+
+/* ── popover rich rows — ported upstream from the product mockups' hand-rolled pickers (project
+   switcher, role/model/effort pickers, the grouped entity picker). Elements on the SAME
+   `.my-pop__item` row, never a fork: `--rich` top-aligns the taller row; the leading slot is an
+   avatar tile OR the fixed-width `__lead` check column (alignment survives mixed
+   selected/unselected rows — the plain single-line item keeps its existing trailing `__check`).
+   Normalizations: the pages' selected-avatar `#fff` → --my-surface (the standing accent-fill
+   remap), opacity-dimmed rows → --my-disabled-ink (token rule 8: never opacity on text),
+   13/11.5/9.5px → the mono/micro/nano steps, row radii 6-7px → the item's own --my-r-control.
+   The pages' terminal-dressed agent avatars are a CONSUMER color choice via their own class —
+   the atom ships the neutral default only (status/term hues are not popover vocabulary). */
+.my-pop__item--rich { align-items: flex-start; gap: 9px; justify-content: flex-start; }
+.my-pop__av {
+  width: 26px; height: 26px; flex: none; border-radius: var(--my-r-control);
+  display: inline-flex; align-items: center; justify-content: center;
+  background: var(--my-bg); color: var(--my-muted);
+  font-weight: var(--my-fw-bold); font-size: var(--my-fs-caption);
+}
+.my-pop__item.is-selected .my-pop__av { background: var(--my-accent); color: var(--my-surface); }
+.my-pop__body { min-width: 0; flex: 1; }
+.my-pop__name {
+  display: block; font-size: var(--my-fs-mono); font-weight: var(--my-fw-bold);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.my-pop__sub {
+  display: block; font-size: var(--my-fs-micro); color: var(--my-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* the LEADING fixed-width check column of the rich rows */
+.my-pop__lead {
+  width: 15px; flex: none; color: var(--my-accent-strong);
+  font-weight: var(--my-fw-bold); font-size: var(--my-fs-caption);
+}
+/* group header — mono-uppercase with a trailing rule line. A distinct job from `__head`, which
+   titles the whole panel; this one splits the row list into named runs. */
+.my-pop__group {
+  display: flex; align-items: center; gap: 7px; padding: 8px 9px 3px;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-nano); font-weight: var(--my-fw-bold);
+  color: var(--my-muted); text-transform: uppercase; letter-spacing: .5px;
+}
+.my-pop__group::after { content: ""; flex: 1; height: 1px; background: var(--my-border); }
+/* de-emphasis (an entity with nothing in it) — NOT disabled: the row stays clickable */
+.my-pop__item.is-dim { color: var(--my-disabled-ink); }
+.my-pop__item.is-dim .my-pop__sub { color: var(--my-disabled-ink); }
+
+/* design rule 6 — the shared focus ring, identical in both themes, on every interactive control
+   here (restated locally for the same reason the input-reveal rules above are) */
+.my-pop-trigger:focus-visible, .my-pop__item:focus-visible {
+  outline: 2px solid var(--my-accent); outline-offset: 2px;
+}
+
+/* ── file explorer & markdown preview (ds/components-file-explorer) ────────
+   A READ-ONLY two-pane explorer: the rail (header + scope picker + tree) and the preview pane
+   (breadcrumb + size/mtime header + rendered body). Every class here is derived by
+   src/logic/file-explorer.ts — this sheet only gives those class strings their look.
+
+   Two tree modes share these rules and differ only in which rows classify as what:
+   a bind MOUNT root is mono + muted (⌂); a REPO is accent-strong (⎇). See the logic module.
+
+   The four honest states (unavailable · empty · too-large · binary) each get their own modifier
+   so they are distinctly styleable, but ALL of them inherit the neutral muted note tone: none is
+   painted as a failure, because none of them is one. */
+
+.my-files__rail {
+  display: flex; flex-direction: column; min-height: 0;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: var(--my-r-card); overflow: hidden;
+}
+.my-files__hd { padding: var(--my-sp-3); border-bottom: 1px solid var(--my-border); flex: none; }
+.my-files__ti {
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  color: var(--my-muted); text-transform: uppercase; letter-spacing: .4px;
+}
+.my-files__count { font-weight: var(--my-fw-regular); text-transform: none; letter-spacing: 0; }
+.my-files__branch {
+  margin-left: auto; display: flex; align-items: center; gap: 5px;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-regular); color: var(--my-muted);
+  text-transform: none; letter-spacing: 0;
+}
+.my-files__branch-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--my-ok); flex: none; }
+
+/* scope picker — a plain disclosure of buttons (no ARIA menu claim) */
+.my-files__scope { position: relative; margin-top: 9px; }
+.my-files__scope-btn, .my-files__scope-static {
+  width: 100%; display: flex; align-items: center; gap: var(--my-sp-2);
+  border: 1px solid var(--my-border); border-radius: 7px; padding: 6px 10px;
+  background: var(--my-bg); color: var(--my-ink);
+  font: inherit; font-size: var(--my-fs-caption); text-align: left;
+}
+.my-files__scope-btn { cursor: pointer; transition: border-color var(--my-t-fast); }
+.my-files__scope-btn:hover { border-color: var(--my-control-border); }
+.my-files__scope-btn:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-files__scope-glyph { color: var(--my-accent); font-size: var(--my-fs-micro); flex: none; }
+.my-files__scope-label {
+  flex: 1; min-width: 0; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; font-weight: var(--my-fw-bold);
+}
+.my-files__scope-caret { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+.my-files__scope-menu {
+  position: absolute; left: 0; right: 0; top: calc(100% + 5px); z-index: 10;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: 9px; box-shadow: var(--my-shadow-modal); padding: 5px;
+}
+.my-files__scope-it {
+  width: 100%; display: flex; align-items: center; gap: var(--my-sp-2);
+  border: 0; border-radius: var(--my-r-control); padding: 7px 9px;
+  background: none; color: var(--my-ink);
+  font: inherit; font-size: var(--my-fs-caption); text-align: left; cursor: pointer;
+}
+.my-files__scope-it:hover { background: var(--my-surface-hover); }
+.my-files__scope-it:focus-visible { outline: 2px solid var(--my-accent); outline-offset: -2px; }
+.my-files__scope-it--on {
+  background: var(--my-accent-soft); color: var(--my-accent-strong); font-weight: var(--my-fw-bold);
+}
+.my-files__scope-it-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-files__scope-it-count { margin-left: auto; font-family: var(--my-font-mono); font-size: var(--my-fs-micro); color: var(--my-muted); }
+.my-files__scope-it--on .my-files__scope-it-count { color: var(--my-accent-strong); }
+.my-files__scope-divider { height: 1px; background: var(--my-border); margin: var(--my-sp-1) 6px; }
+
+/* tree + rows — the WHOLE ROW is the hit target */
+.my-files__tree { flex: 1; min-height: 0; overflow: auto; padding: 7px 7px var(--my-sp-3); }
+.my-files__row {
+  width: 100%; display: flex; align-items: center; gap: 7px;
+  border: 0; border-radius: var(--my-r-control); padding: 5px var(--my-sp-2);
+  background: none; color: var(--my-ink);
+  font: inherit; font-size: var(--my-fs-caption); text-align: left;
+  cursor: pointer; margin-bottom: 1px;
+}
+.my-files__row:hover { background: var(--my-surface-hover); }
+.my-files__row:focus-visible { outline: 2px solid var(--my-accent); outline-offset: -2px; }
+.my-files__row--sel { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-files__row--sel .my-files__fname { font-weight: var(--my-fw-bold); }
+.my-files__chev { color: var(--my-muted); font-size: var(--my-fs-micro); width: 10px; flex: none; }
+.my-files__glyph { color: var(--my-accent); width: 12px; flex: none; text-align: center; }
+.my-files__spacer { width: 14px; flex: none; }
+.my-files__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* a bind MOUNT reads as a path: mono + muted. A REPO reads as a repo: accent-strong. */
+.my-files__row--mount .my-files__name { font-family: var(--my-font-mono); color: var(--my-muted); }
+.my-files__row--repo .my-files__name { font-weight: var(--my-fw-bold); color: var(--my-accent-strong); }
+.my-files__row--dir .my-files__name { font-weight: var(--my-fw-medium); }
+/* a file row is the leaf: no structural emphasis, the mono name carries it */
+.my-files__row--file { font-weight: var(--my-fw-regular); }
+.my-files__fglyph {
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro);
+  color: var(--my-muted); width: 15px; flex: none; text-align: center;
+}
+.my-files__fname {
+  min-width: 0; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-caption);
+}
+.my-files__badge {
+  margin-left: auto; flex: none; border-radius: var(--my-r-pill); padding: 1.5px 7px;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); white-space: nowrap;
+}
+.my-files__badge--accent { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-files__badge--muted { background: var(--my-disabled-bg); color: var(--my-muted); }
+.my-files__mark { font-family: var(--my-font-mono); font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold); flex: none; }
+.my-files__mark--warn { color: var(--my-warn); }
+.my-files__mark--ok { color: var(--my-ok); }
+.my-files__mark--muted { color: var(--my-muted); }
+
+/* notes — the honest states and the two informational rows. ONE neutral tone for all of them. */
+.my-files__note { display: block; padding: 5px var(--my-sp-2); font-size: var(--my-fs-micro); color: var(--my-muted); }
+.my-files__note--loading, .my-files__note--truncated,
+.my-files__note--unavailable, .my-files__note--empty,
+.my-files__note--too-large, .my-files__note--binary { color: var(--my-muted); }
+
+/* indent steps — depth-capped by indentClass(); deeper rows share the last step */
+.my-files__d0 { padding-left: var(--my-sp-2); }
+.my-files__d1 { padding-left: 22px; }
+.my-files__d2 { padding-left: 36px; }
+.my-files__d3 { padding-left: 50px; }
+.my-files__d4 { padding-left: 64px; }
+.my-files__d5 { padding-left: 78px; }
+.my-files__d6 { padding-left: 92px; }
+.my-files__d7 { padding-left: 106px; }
+.my-files__d8 { padding-left: 120px; }
+.my-files__d9 { padding-left: 134px; }
+.my-files__d10 { padding-left: 148px; }
+
+/* preview pane */
+.my-files__prev {
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: var(--my-r-card); overflow: hidden;
+}
+.my-files__prev-hd {
+  padding: 13px 18px; border-bottom: 1px solid var(--my-border);
+  display: flex; align-items: center; gap: 14px;
+}
+.my-files__prev-main { min-width: 0; }
+.my-files__crumb {
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro); color: var(--my-muted);
+  overflow-wrap: anywhere;
+}
+.my-files__name-row { display: flex; align-items: center; gap: 9px; margin-top: 3px; }
+.my-files__prev-name { font-family: var(--my-font-mono); font-size: var(--my-fs-body-lg); overflow-wrap: anywhere; }
+.my-files__pill {
+  border-radius: var(--my-r-pill); padding: 2px 9px; flex: none;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+}
+.my-files__pill--warn { background: var(--my-warn-soft); color: var(--my-warn); }
+.my-files__pill--ok { background: var(--my-ok-soft); color: var(--my-ok); }
+.my-files__pill--muted { background: var(--my-disabled-bg); color: var(--my-muted); }
+.my-files__meta {
+  margin-left: auto; display: flex; gap: 14px; flex: none;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-micro); color: var(--my-muted);
+}
+.my-files__prev-bd { padding: var(--my-sp-4) 18px; font-size: var(--my-fs-body); }
+.my-files__md { max-width: 720px; }
+.my-files__md h1 { font-size: var(--my-fs-h3); font-weight: var(--my-fw-bold); letter-spacing: -.3px; margin-bottom: 6px; }
+.my-files__md p { color: var(--my-ink); margin: var(--my-sp-2) 0; }
+.my-files__md code {
+  font-family: var(--my-font-mono); font-size: .88em;
+  background: var(--my-surface-hover); border: 1px solid var(--my-border);
+  border-radius: var(--my-sp-1); padding: 1px 5px;
+}
+.my-files__md blockquote {
+  margin: 10px 0; padding: 7px 13px;
+  border-left: 3px solid var(--my-accent); background: var(--my-accent-soft);
+  border-radius: 0 var(--my-sp-2) var(--my-sp-2) 0;
+}
+.my-files__pre {
+  max-width: 720px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere;
+  font-family: var(--my-font-mono); font-size: var(--my-fs-mono); color: var(--my-ink);
+}
+
+/* ── session-card (design registry `session-card` v1, ds/components-session-card.html) ──
+   Five states: default·nominal, selected, warn ≥75%, error ≥90%, disconnected·stale — plus the
+   UNKNOWN states the design's five did not enumerate but the doctrine requires (no context
+   reading; no activity signal). Every dynamic visual is a class or an SVG presentation
+   attribute: the prototype positioned its gauge fill and its 75/90 ticks with inline
+   `style="width:62%"` / `style="left:75%"`, which CSP style-src 'self' forbids AND which cannot
+   express product-tuned thresholds — so the meter is an SVG whose rects carry the geometry.
+
+   The status dot deliberately does NOT reuse `.my-status` (StatusLine): that atom's tone axis has
+   no `unknown` member and its component takes no `class`, so neither the hollow unknown dot nor
+   the ≤1/s pulse could ride on it without reshaping a sibling atom. Same tone vocabulary, own
+   elements. */
+.my-session-card {
+  display: block; width: 100%; text-align: left;
+  background: var(--my-surface); color: var(--my-ink);
+  border: 1px solid var(--my-border); /* card outline — a valid --my-border use (rule #11) */
+  border-radius: var(--my-r-card); padding: var(--my-sp-4);
+  font-family: inherit; font-size: var(--my-fs-body);
+  transition: border-color var(--my-t-fast);
+}
+button.my-session-card { cursor: pointer; }
+.my-session-card:hover { border-color: var(--my-control-border); } /* the prototype's "hover deepens the border" */
+/* selected = petrol border doubled (1px border + 1px ring), per the card's caption */
+.my-session-card.is-selected { border-color: var(--my-accent); box-shadow: 0 0 0 1px var(--my-accent); }
+/* disconnected = dashed border, values muted as stale */
+.my-session-card.is-stale { border-style: dashed; color: var(--my-muted); }
+.my-session-card:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule #6 */
+
+.my-session-card__head { display: flex; gap: var(--my-sp-3); align-items: center; }
+.my-session-card__ident { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.my-session-card__line1 { display: flex; align-items: center; gap: var(--my-sp-2); flex-wrap: wrap; }
+.my-session-card__name { font-size: var(--my-fs-body); font-weight: var(--my-fw-bold); }
+.my-session-card__meta { font-size: var(--my-fs-caption); color: var(--my-muted); }
+/* the packaged Avatar rides here; stale mutes it the way the prototype's `.stale .avatar` did */
+.my-session-card.is-stale .my-session-card__avatar {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+}
+
+/* status: dot + words (token rule #7 — never colour alone) */
+.my-session-card__status { display: inline-flex; align-items: center; gap: var(--my-sp-1); font-size: var(--my-fs-caption); }
+.my-session-card__status-text { white-space: nowrap; }
+.my-session-card__dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.my-session-card__status--ok { color: var(--my-ok); }
+.my-session-card__status--ok .my-session-card__dot { background: var(--my-ok); }
+.my-session-card__status--warn { color: var(--my-warn); }
+.my-session-card__status--warn .my-session-card__dot { background: var(--my-warn); }
+.my-session-card__status--error { color: var(--my-error); }
+.my-session-card__status--error .my-session-card__dot { background: var(--my-error); }
+.my-session-card__status--info { color: var(--my-info); }
+.my-session-card__status--info .my-session-card__dot { background: var(--my-info); }
+.my-session-card__status--muted { color: var(--my-muted); }
+.my-session-card__status--muted .my-session-card__dot { background: var(--my-disabled-ink); }
+/* UNKNOWN is not idle: a HOLLOW dot, so an unreported session can never be read as a solid-dot
+   claim. The word beside it says "unknown"; the ring says it a second time, without colour. */
+.my-session-card__status--unknown { color: var(--my-muted); font-style: italic; }
+.my-session-card__status--unknown .my-session-card__dot {
+  background: transparent; box-shadow: inset 0 0 0 1.5px var(--my-disabled-ink);
+}
+/* transient states only, ≤1/s */
+.my-session-card__status.is-pulse .my-session-card__dot { animation: my-session-pulse 1s ease-in-out infinite; }
+@keyframes my-session-pulse { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) {
+  .my-session-card__status.is-pulse .my-session-card__dot { animation: none; }
+}
+
+/* context meter — rail + fill + fixed threshold ticks (rule #4: whole-hue flip, rail = --my-track) */
+.my-session-card__ctx { display: block; margin-top: var(--my-sp-3); }
+.my-session-card__ctx-bar {
+  display: block; height: 8px; border-radius: var(--my-r-pill); overflow: hidden;
+}
+.my-session-card__ctx-svg { display: block; width: 100%; height: 100%; }
+.my-session-card__ctx-track { fill: var(--my-track); }
+/* whole-hue flip at each threshold (rule #4) — never a gradient */
+.my-session-card__ctx-fill,
+.my-session-card__ctx--ok .my-session-card__ctx-fill { fill: var(--my-accent); } /* < warn: fill = accent */
+.my-session-card__ctx--warn .my-session-card__ctx-fill { fill: var(--my-warn); }
+.my-session-card__ctx--error .my-session-card__ctx-fill { fill: var(--my-error); }
+/* no reading ⇒ no fill element is emitted at all; the rail itself also changes, so the unknown
+   state cannot be mistaken for a healthy 0% one */
+.my-session-card__ctx--unknown .my-session-card__ctx-track { fill: var(--my-disabled-bg); }
+.my-session-card__ctx-tick { fill: var(--my-surface); }
+/* a stale reading is a LAST-KNOWN value: kept visible, drained of its band hue */
+.my-session-card__ctx.is-stale .my-session-card__ctx-fill { fill: var(--my-disabled-ink); }
+.my-session-card__ctx-legend {
+  display: flex; justify-content: space-between; gap: var(--my-sp-2);
+  margin-top: var(--my-sp-1); font-size: var(--my-fs-micro); color: var(--my-muted);
+}
+/* a long note truncates rather than pushing the (load-bearing) value off the card */
+.my-session-card__ctx-note,
+.my-session-card__spine-note { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-session-card__ctx-value {
+  font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; /* rule #5 */
+  color: var(--my-ink); font-weight: var(--my-fw-medium);
+}
+.my-session-card__ctx--unknown .my-session-card__ctx-value,
+.my-session-card__ctx.is-stale .my-session-card__ctx-value { color: var(--my-disabled-ink); }
+
+/* spine strip — filled petrol nodes = distills, hollow node = the live tip */
+.my-session-card__spine { display: flex; align-items: center; margin-top: var(--my-sp-3); }
+.my-session-card__spine-seg { height: 3px; background: var(--my-border); flex: 1; }
+.my-session-card__spine-node {
+  width: 13px; height: 13px; border-radius: 50%; flex: none;
+  background: var(--my-accent); border: 3px solid var(--my-surface);
+  box-shadow: 0 0 0 1px var(--my-border);
+}
+.my-session-card__spine-node--tip { background: var(--my-surface); border-color: var(--my-accent); }
+.my-session-card__spine-value {
+  font-family: var(--my-font-mono); font-variant-numeric: tabular-nums;
+  color: var(--my-ink); font-weight: var(--my-fw-medium);
+}
+.my-session-card.is-stale .my-session-card__spine-value { color: var(--my-disabled-ink); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   TERMINAL SET (ds/components-terminal, spec v2): .my-term · .my-qrow · .my-sendbar.
+
+   Token rule 3 — "Terminal surfaces always use the --my-term-* set, regardless of app theme" —
+   is the load-bearing one here. The --my-term-* tokens are declared ONLY in :root and are
+   deliberately NOT overridden by [data-theme="dark"], so they are already theme-invariant; the
+   `.my-term` block below additionally re-points every theme-flipping local (--my-bg/--my-surface/
+   --my-ink/--my-muted/--my-accent/--my-warn/…) onto that fixed palette for the WHOLE subtree. That
+   way an atom nested inside the terminal cannot inherit a light-theme surface either, and the
+   terminal stays heritage-dark in both themes without a single hard-coded color.
+
+   Deriving the two shades the palette does not name (a hairline border and the warn-soft fill for
+   the in-terminal banners) uses color-mix over the term tokens rather than a new hex, so the "zero
+   hard-coded hex" and "every var(--my-*) exists in canonical tokens.css" guards both still hold.
+
+   That escape hatch has a HARD LIMIT, and it is worth stating because ignoring it shipped a defect:
+   an oklab color-mix is a CONVEX COMBINATION of its operands, so the result can never leave THEIR
+   convex hull, however the ratios are chosen or nested. It can produce a shade BETWEEN the tokens
+   being mixed; it cannot produce a colour outside them. A rule that wants one needs a token minted
+   upstream in tokens.css — which is what --my-term-memory is: its oklab b is -0.0914, while every
+   OTHER term token sits at b >= -0.0187 (dim's, the smallest), so no mix of the tokens that existed
+   before it could ever have reached it.
+   Two ways to get this argument wrong, both of which a reviewer caught here:
+     - It is a HULL claim, not a HUE claim. Hue is a direction and near the neutral axis every
+       direction is available, so a mix CAN land on an unoccupied hue — dim ~92.5% + del reaches
+       about 315 degrees, just at chroma 0.016 against this token's 0.130.
+     - The hull is always the hull of the tokens BEING MIXED. "No mix of the palette can reach it"
+       is false once the token is itself in the palette; the true statement is about the others.
+
+   The send bar and the queue rows are APP CHROME, not terminal surface: the design card draws both
+   on the light surface, so they use the ordinary theme tokens and follow the app theme. Only the
+   pane is pinned dark.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── terminal pane ─────────────────────────────────────────────────────── */
+.my-term {
+  /* token rule 3 — the fixed heritage palette, both themes */
+  --my-bg: var(--my-term-bg);
+  --my-surface: var(--my-term-bg);
+  --my-surface-hover: color-mix(in oklab, var(--my-term-ink) 8%, var(--my-term-bg));
+  --my-border: color-mix(in oklab, var(--my-term-ink) 14%, var(--my-term-bg));
+  --my-control-border: color-mix(in oklab, var(--my-term-ink) 34%, var(--my-term-bg));
+  --my-ink: var(--my-term-ink);
+  --my-muted: var(--my-term-dim);
+  --my-accent: var(--my-term-assistant);
+  --my-accent-strong: var(--my-term-assistant);
+  --my-accent-soft: color-mix(in oklab, var(--my-term-assistant) 18%, var(--my-term-bg));
+  --my-warn: var(--my-term-user);
+  --my-warn-soft: color-mix(in oklab, var(--my-term-user) 18%, var(--my-term-bg));
+  --my-track: color-mix(in oklab, var(--my-term-ink) 12%, var(--my-term-bg));
+  --my-ink-hover: var(--my-term-ink);
+  --my-accent-hover: var(--my-term-assistant);
+  --my-disabled-bg: color-mix(in oklab, var(--my-term-ink) 6%, var(--my-term-bg));
+  --my-disabled-ink: var(--my-term-dim);
+  --my-scrim: color-mix(in oklab, var(--my-term-bg) 55%, transparent);
+  --my-shadow-modal: 0 16px 48px color-mix(in oklab, var(--my-term-bg) 50%, transparent);
+  /* NOT re-pointed, deliberately: --my-ok/--my-error/--my-info and their softs. The terminal palette
+     names no GENERAL-PURPOSE status green/red/blue — --my-term-add/--my-term-del (tokens 0.5.18) are
+     diff-semantic hues scoped to diff output, deliberately not status colours, and there is no blue
+     at all — so a status value here would still be an invented colour. No rule in the terminal set
+     uses them (enforced by test/terminal-css.test.ts, which derives the flipping-token set from the
+     canonical tokens.css and rejects any unpinned reference under a .my-term selector). A consumer
+     nesting a status-toned atom INSIDE the terminal is the one known residual; the terminal's own
+     alert hue is --my-term-user.
+
+     Also NOT re-pointed, for a different reason: --my-shadow-knob (tokens 0.5.16), the raised-knob
+     shadow the theme toggle uses. The terminal has no knob — no toggle, no switch, no segmented
+     control renders in here — and it could not be pinned honestly if it did: every local
+     re-pointed above resolves THROUGH a --my-term-* token, the terminal palette is all colour and
+     names no shadow, and a literal rgba pair would be an invented value. The same guard covers it:
+     a knob arriving inside the terminal turns that test red rather than shipping a light-theme
+     shadow into a permanently dark pane.
+
+     COUNTING THE PALETTE: it is EIGHT tokens as of tokens 0.5.19 — bg, ink, assistant, user, dim,
+     add, del, memory — and it grows. This block said "five" long after add/del landed, and that
+     stale count is what argued a memory label had to be color-mixed out of the existing five
+     instead of minted; see the row-kind comment below. State what the palette does not name, never
+     how many things it names. */
+
+  display: flex; flex-direction: column;
+  background: var(--my-term-bg); color: var(--my-term-ink);
+  border: 1px solid var(--my-border); border-radius: var(--my-r-card);
+  font-family: var(--my-font-mono); font-size: var(--my-fs-mono); line-height: 1.7;
+  overflow: hidden;
+}
+
+/* title bar — traffic lights · `{name} · tail · noise {on|off}` · turn/stop cluster */
+.my-term__titlebar {
+  display: flex; align-items: center; gap: var(--my-sp-2);
+  padding: var(--my-sp-2) var(--my-sp-3);
+  border-bottom: 1px solid var(--my-border);
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  color: var(--my-term-dim);
+}
+.my-term__lights { display: inline-flex; gap: 5px; flex: none; }
+/* window-chrome traffic lights. They are DECORATION, so per token rule 2 they may not borrow the
+   status hues (--my-error/--my-ok) the way a macOS titlebar would; per token rule 3 they are drawn
+   from the terminal's own palette. */
+.my-term__light { width: 9px; height: 9px; border-radius: var(--my-r-pill); background: var(--my-term-dim); }
+.my-term__light--r { background: var(--my-term-dim); }
+.my-term__light--a { background: var(--my-term-user); }
+.my-term__light--g { background: var(--my-term-assistant); }
+.my-term__noise {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; color: var(--my-term-dim); text-align: left;
+}
+.my-term__noise:hover { color: var(--my-term-ink); }
+.my-term__noise:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__tb-right { margin-left: auto; display: inline-flex; align-items: center; gap: var(--my-sp-2); }
+.my-term__turn, .my-term__idle { display: inline-flex; align-items: center; gap: 5px; color: var(--my-term-dim); }
+.my-term__turn-dot {
+  width: 7px; height: 7px; border-radius: var(--my-r-pill);
+  background: var(--my-term-assistant); animation: my-term-pulse 1s ease-in-out infinite;
+}
+/* the stop control lives INSIDE the terminal, so per token rule 3 it wears the term palette rather
+   than the app's danger red (which flips with the app theme). `is-prominent` raises it to the
+   terminal's one alert hue — the heritage amber — when a turn is actually in flight. */
+.my-term__stop {
+  border: 1px solid var(--my-term-dim); border-radius: var(--my-r-control);
+  background: none; color: var(--my-term-ink);
+  padding: 2px 9px; font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-medium); cursor: pointer;
+}
+.my-term__stop:hover:not(:disabled) { background: color-mix(in oklab, var(--my-term-ink) 8%, var(--my-term-bg)); }
+.my-term__stop:disabled { border-color: var(--my-term-dim); color: var(--my-term-dim); cursor: not-allowed; }
+.my-term__stop:focus-visible { outline: 2px solid var(--my-term-assistant); outline-offset: 2px; }
+.my-term__stop.is-prominent { border-color: var(--my-term-user); color: var(--my-term-user); }
+.my-term__stop.is-prominent:hover:not(:disabled) {
+  background: color-mix(in oklab, var(--my-term-user) 18%, var(--my-term-bg));
+}
+.my-term__stop-key { opacity: .7; }
+
+/* body */
+.my-term__body { padding: var(--my-sp-3) var(--my-sp-4); overflow: auto; flex: 1; }
+.my-term__body:focus-visible { outline: 2px solid var(--my-accent); outline-offset: -2px; }
+
+/* the two in-terminal banners (wake-unavailable · stale). Warn soft + a dot; never a spinner —
+   neither banner claims a retry is under way, so neither may look like one. */
+.my-term__banner {
+  display: flex; gap: var(--my-sp-2); align-items: center;
+  background: var(--my-warn-soft); color: var(--my-warn);
+  border-radius: var(--my-r-control); padding: 6px 10px; margin-bottom: 10px;
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+}
+.my-term__banner-dot {
+  width: 7px; height: 7px; border-radius: var(--my-r-pill); flex: none;
+  background: currentColor; animation: my-term-pulse 1s ease-in-out infinite;
+}
+
+/* state copy (loading · missing · unaddressable · failed · no events) */
+.my-term__state { color: var(--my-term-dim); }
+
+/* rows */
+.my-term__row { display: block; color: var(--my-term-ink); white-space: pre-wrap; word-break: break-word; }
+.my-term__row--assistant { color: var(--my-term-ink); }
+.my-term__row--user { color: var(--my-term-user); }
+.my-term__row--tool, .my-term__row--result, .my-term__row--system { color: var(--my-term-dim); }
+.my-term__row--boundary { color: var(--my-term-assistant); }
+.my-term__row--dim { color: var(--my-term-dim); }
+/* client-synthetic rows read as UI-originated, never as output from the far side */
+.my-term__row--local { color: var(--my-term-dim); font-style: italic; }
+.my-term__label { color: var(--my-term-assistant); font-weight: var(--my-fw-medium); }
+.my-term__row--user .my-term__label { color: var(--my-term-user); }
+.my-term__row--tool .my-term__label,
+.my-term__row--result .my-term__label,
+.my-term__row--system .my-term__label { color: var(--my-term-dim); }
+
+/* directional traffic and bookkeeping. These three deliberately do NOT override the label to match
+   the body — that contrast is the whole reason the kinds exist, and it is what lets a row carry a
+   prominent name over a recessive body. */
+/* incoming — prominent: amber name, full-strength body */
+.my-term__row--recv { color: var(--my-term-ink); }
+.my-term__row--recv .my-term__label { color: var(--my-term-user); }
+/* outgoing — present but recessive: teal name, dim body */
+.my-term__row--send { color: var(--my-term-dim); }
+.my-term__row--send .my-term__label { color: var(--my-term-assistant); }
+/* bookkeeping — dim body, an orchid label: --my-term-memory (tokens 0.5.19), oklab L 0.780 /
+   chroma 0.130 / hue 315.3 degrees. This was a color-mix between assistant and user, resolving to a
+   muted olive-grey (approx #B2B17D, hue 107) — and that read as the weakest of the row kinds,
+   because it landed only 0.098 oklab deltaE from --my-term-dim, which is this row's OWN body
+   colour, so label and body barely separated.
+
+   WHY A TOKEN AND NOT JUST A BETTER MIX — the honest form of the argument, because the short form
+   is circular and a reviewer called it. Separation alone does NOT justify minting: a mix can
+   improve it, and one demonstrably does (--my-term-del 90% + --my-term-dim measures deltaE 0.196
+   from dim at 5.21:1, comfortably better than the old sage's 0.097). What rules mixing out is a
+   SEMANTIC constraint, not a numeric one. Every direction the old palette could reach is already
+   spoken for in this pane: user amber is "the other party", assistant teal is "this session", del
+   red and add green are diff removed/added. Any adequately-separated mix would have had to borrow a
+   hue that already carries a different meaning here — a bookkeeping row reading as a deletion is
+   worse than one reading as dim. A row kind needs a hue of its OWN, and the palette had none left
+   to give, which is what actually makes minting necessary.
+
+   The hull argument then explains why THIS hue in particular was unreachable, and nothing more: an
+   oklab mix is a convex combination, so every mix's b is at least the smallest b among its operands
+   — and every term token OTHER than this one sits at b >= -0.0187 (--my-term-dim's, the smallest),
+   while this hue needs -0.0914. Outside the hull of the seven that preceded it, so no mix of those
+   reaches it at any ratio. (Two precision notes, both from review. The occupied chromatic hues are del 23.0,
+   user 69.6, add 159.3, assistant 187.2, with ink/dim/bg achromatic at chroma <= 0.019, which is
+   why the 200-360 band reads as empty — but "empty hue band" is NOT the reason a mix fails:
+   dim ~92.5% + del does land at about 315 degrees, just at chroma 0.016 against this token's 0.130.
+   And the hull is always the hull of the tokens being mixed, never of a set already containing the
+   target.) Minting the token buys min deltaE 0.141 to any other term token (nearest --my-term-dim)
+   at 9.29:1 on --my-term-bg. */
+.my-term__row--memory { color: var(--my-term-dim); }
+.my-term__row--memory .my-term__label { color: var(--my-term-memory); }
+
+/* rich spans — the constrained structured body (text/bold/code; never parsed HTML). The code span
+   is the same quiet inset treatment as .my-term__detail, shrunk to inline: it inherits the ROW's
+   color on purpose (a user row's code reads amber, a dim row's dim — the kind keeps carrying the
+   hue), so it declares none of its own. Bold gets an explicit weight so it does not depend on the
+   browser's default `bolder` resolution against the mono face. */
+.my-term b { font-weight: var(--my-fw-bold); }
+.my-term__codespan {
+  font-family: var(--my-font-mono);
+  background: var(--my-surface-hover);
+  border-radius: var(--my-r-control);
+  padding: 0 4px;
+}
+
+/* expandable rows — collapsed by default, highlight on hover (design card) */
+.my-term__head {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  border: 0; background: none; color: inherit; font: inherit;
+  border-radius: var(--my-r-control); padding: 0 6px; margin: 0 -6px;
+}
+.my-term__head:hover { background: var(--my-surface-hover); color: var(--my-term-ink); }
+.my-term__head:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__expand { text-decoration: underline; }
+.my-term__detail {
+  margin: var(--my-sp-1) 0 var(--my-sp-2); padding: var(--my-sp-2);
+  background: var(--my-surface-hover); border-radius: var(--my-r-control);
+  color: var(--my-term-ink); white-space: pre-wrap; word-break: break-word;
+  font-family: var(--my-font-mono);
+}
+
+/* structured report blocks — hand-aligned key-value text rendered verbatim. `pre` + x-overflow
+   (NEVER pre-wrap) is the contract: wrapping is what destroys the alignment these rows exist to
+   keep. A quiet inset panel on the term surface — same treatment as .my-term__detail — with the
+   copy control floated top-right by the positioning wrapper. */
+.my-term__block { position: relative; margin: var(--my-sp-1) 0 var(--my-sp-2); }
+.my-term__blockpre {
+  margin: 0; padding: var(--my-sp-2);
+  background: var(--my-surface-hover); border-radius: var(--my-r-control);
+  color: var(--my-term-ink); white-space: pre; overflow-x: auto;
+  font-family: var(--my-font-mono);
+}
+.my-term__copy {
+  position: absolute; top: var(--my-sp-1); right: var(--my-sp-1); cursor: pointer;
+  border: 1px solid var(--my-term-dim); border-radius: var(--my-r-control);
+  background: var(--my-term-bg); color: var(--my-term-dim);
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro); padding: 1px 7px;
+}
+.my-term__copy:hover { color: var(--my-term-ink); }
+.my-term__copy:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+
+/* foreign transcript segments — behind the toggle, captioned, visually separated */
+.my-term__more {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  color: var(--my-term-dim); display: block; margin-bottom: var(--my-sp-2);
+}
+.my-term__more:hover { color: var(--my-term-ink); }
+.my-term__more:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-term__hist { border-left: 2px solid var(--my-border); padding-left: var(--my-sp-3); margin-bottom: var(--my-sp-3); }
+.my-term__hist-cap {
+  font-family: var(--my-font-ui); font-size: var(--my-fs-micro);
+  color: var(--my-term-dim); margin-bottom: var(--my-sp-1);
+}
+
+/* streaming caret — blinks 1/s, paused under prefers-reduced-motion (design card) */
+.my-term__caret {
+  display: inline-block; width: 7px; height: 14px; vertical-align: -2px;
+  background: var(--my-term-assistant); animation: my-term-blink 1s steps(1) infinite;
+}
+@keyframes my-term-blink { 50% { opacity: 0; } }
+@keyframes my-term-pulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) {
+  .my-term__caret, .my-term__banner-dot, .my-term__turn-dot { animation: none; }
+}
+
+/* ── queue (app chrome — follows the app theme) ────────────────────────── */
+.my-queue { display: block; }
+.my-queue__list { display: block; }
+.my-queue__state, .my-queue__stale { font-size: var(--my-fs-caption); color: var(--my-muted); margin-top: var(--my-sp-2); }
+.my-queue__stale { color: var(--my-warn); }
+.my-queue__empty {
+  display: flex; align-items: center; justify-content: center;
+  border: 1px dashed var(--my-border); border-radius: var(--my-r-card);
+  padding: 9px 12px; margin-top: var(--my-sp-2);
+  font-size: var(--my-fs-caption); color: var(--my-muted); background: none;
+}
+
+/* ── queue row ─────────────────────────────────────────────────────────── */
+.my-qrow {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: 8px; padding: 9px 12px; margin-top: var(--my-sp-2);
+  font-size: var(--my-fs-mono); color: var(--my-ink);
+  transition: background var(--my-t-fast);
+}
+.my-qrow:hover { background: var(--my-surface-hover); }
+.my-qrow__body { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.my-qrow__status { color: var(--my-muted); font-size: var(--my-fs-micro); flex: none; }
+/* per-status presentation. The status WORD is always rendered next to the row (queueStatusLabel),
+   so these tints reinforce it and never carry it alone (token rule 7). `queued` is the default
+   presentation — it takes no modifier styling. */
+.my-qrow--queued { }
+.my-qrow--leased .my-qrow__status { color: var(--my-accent-strong); }
+.my-qrow--delivered .my-qrow__body,
+.my-qrow--canceled .my-qrow__body { color: var(--my-muted); }
+.my-qrow--canceled .my-qrow__body { text-decoration: line-through; }
+.my-qrow__cancel {
+  margin-left: auto; flex: none; cursor: pointer;
+  border: 0; background: none; font: inherit; font-size: var(--my-fs-caption);
+  color: var(--my-muted); padding: 0;
+}
+.my-qrow__cancel:hover { color: var(--my-error); }
+.my-qrow__cancel:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+/* two-step confirm, inside the row — never a modal for a queue item (design card) */
+.my-qrow.is-confirm { background: var(--my-error-soft); border-color: var(--my-error); }
+.my-qrow__ask { color: var(--my-error); font-weight: var(--my-fw-medium); }
+.my-qrow__acts { margin-left: auto; display: flex; gap: 6px; flex: none; }
+.my-qmini {
+  border-radius: 5px; padding: 3px 10px; cursor: pointer;
+  font-family: inherit; font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  border: 1px solid transparent;
+}
+.my-qmini:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-qmini--yes { background: var(--my-error); color: var(--my-surface); }
+.my-qmini--no { background: var(--my-surface); border-color: var(--my-control-border); color: var(--my-ink); }
+.my-qbadge {
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  border-radius: 5px; padding: 2px 7px; letter-spacing: .4px; flex: none;
+}
+.my-qbadge--asap { background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-qbadge--done { background: var(--my-disabled-bg); color: var(--my-muted); }
+
+/* ── send bar (app chrome — follows the app theme) ─────────────────────── */
+.my-sendbar-wrap { display: block; }
+.my-sendbar { display: flex; gap: var(--my-sp-2); align-items: flex-start; }
+.my-sendbar__seg { display: inline-flex; flex: none; }
+.my-sendbar__cls {
+  border: 1px solid var(--my-control-border); background: var(--my-surface);
+  color: var(--my-muted); cursor: pointer;
+  padding: 8px 10px; font-family: inherit; font-size: var(--my-fs-micro);
+  font-weight: var(--my-fw-bold); letter-spacing: .4px;
+}
+.my-sendbar__seg .my-sendbar__cls:first-child { border-radius: var(--my-r-control) 0 0 var(--my-r-control); }
+.my-sendbar__seg .my-sendbar__cls:last-child { border-radius: 0 var(--my-r-control) var(--my-r-control) 0; margin-left: -1px; }
+.my-sendbar__cls.is-on { background: var(--my-accent-soft); color: var(--my-accent-strong); border-color: var(--my-accent); z-index: 1; }
+.my-sendbar__cls:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; z-index: 1; }
+.my-sendbar__cls:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-sendbar__input {
+  flex: 1; min-width: 0; resize: vertical;
+  border: 1px solid var(--my-control-border); border-radius: var(--my-r-control);
+  padding: 8px 12px; font: inherit; font-size: var(--my-fs-body);
+  background: var(--my-surface); color: var(--my-ink);
+}
+.my-sendbar__input:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-sendbar__input:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-sendbar__send {
+  border: 0; border-radius: var(--my-r-control); cursor: pointer; flex: none;
+  padding: 8px 14px; font-family: inherit; font-size: var(--my-fs-body);
+  font-weight: var(--my-fw-medium); background: var(--my-ink); color: var(--my-bg);
+}
+.my-sendbar__send:hover:not(:disabled) { background: var(--my-ink-hover); }
+.my-sendbar__send:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-sendbar__send:disabled { background: var(--my-disabled-bg); color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-sendbar__hint { font-size: var(--my-fs-micro); color: var(--my-muted); margin-top: 6px; }
+.my-sendbar__notice { font-size: var(--my-fs-micro); color: var(--my-warn); margin-top: 6px; }
+/* static title line — used instead of .my-term__noise when the pane has no noise toggle, so a
+   non-interactive caption never gets a pointer cursor it cannot honor */
+.my-term__title { color: var(--my-term-dim); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   CHIP FAMILY — the design system's Chip card (v2). One family, three jobs, and the SHAPE
+   carries the affordance so a user never has to guess whether a label is a button:
+     .my-chip       pill + soft fill + no hover — a human label that is never clickable,
+     .my-chip-flag  squared + mono — machine facts (kinds, counters, diff letters),
+     .my-chip-dd    the ONE interactive member — control radius, --my-control-border, hover.
+   That split is canonical token rule #10, so it is an invariant rather than a preference.
+
+   SUPERSESSION. An earlier revision of the card shipped this family under a second name, `.my-tag`,
+   beside the older `.my-chip` atom — two pill badges with soft tone fills and no rule for which to
+   reach for. v2 retires that split: Chip absorbs the family, and `.my-tag` / `.my-flag` are gone.
+
+   The BASE `.my-chip` rule and its five soft status tones live in the additions section higher up,
+   where the atom was first extracted, and v2's metrics were applied there. This block adds
+   everything the atom GREW — the two bordered tones, the two size steps, the three element
+   variants — plus the two siblings. Nothing here restates the base.
+
+   Values come from the card. Four documented normalizations, all following the standing rules
+   of this sheet (and pinned by test/css-chip.test.ts so none of them can be quietly undone):
+
+     1. Every font-size resolves through a --my-fs-* token, as the additions header above
+        requires. The card's 11px is --my-fs-micro exactly; its 12.5px snaps to --my-fs-caption
+        (12px), the same normalization .my-search__icon / .my-pop-trigger / .my-gitchip already
+        made; its 10px is --my-fs-nano exactly (minted in tokens 0.5.15 for this family).
+     2. The card's `.xs` step is a genuinely smaller face, not merely a tighter one:
+        --my-fs-nano carries it, so `.my-chip--xs` is tighter AND smaller, per the card.
+     3. The card's literal `font-weight: 700` on the flag rides --my-fw-bold (650) instead —
+        there is no 700 step on the --my-fw-* scale, and .my-gitchip__flag set this precedent
+        (650 resolves up to the mono family's 700 face per CSS font matching, so the rendered
+        weight is unchanged).
+     4. The chip's count AND the flag carry `font-variant-numeric: tabular-nums` (token rule #5:
+        tabular-nums on all counters), which the card's own CSS omits on both. Flags are
+        counters — "2↓ behind" beside "10↓ behind" has to align — and .my-stat-tile__value set
+        the precedent. It is belt-and-braces under the mono family, which is already
+        fixed-width, and it is what keeps the column honest under any fallback face.
+
+   --my-border on `.my-chip--outline` is a CORRECT use of that token under rule #11: a chip is
+   non-interactive, and --my-border is exactly for dividers, cards and non-interactive
+   outlines. The interactive member below is the one that takes --my-control-border. */
+
+/* ── chip: the two bordered tones. Both ride the base rule's transparent 1px border, so neither
+      changes the box the five soft tones occupy. ─────────────────────────────────────────── */
+.my-chip--outline { background: var(--my-surface);     color: var(--my-muted); border-color: var(--my-border); }
+.my-chip--empty   { background: var(--my-disabled-bg); color: var(--my-muted); border: 1px dashed var(--my-control-border); }
+/* ── chip: sizes — nano/caption steps; see normalizations (1)-(2) ────────────────────────── */
+.my-chip--xs { padding: 2px 8px; gap: 5px; font-size: var(--my-fs-nano); }
+.my-chip--md { padding: 5px 13px; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); }
+/* ── chip: variants ──────────────────────────────────────────────────────────────────────── */
+.my-chip__dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex: none; }
+.my-chip__num { font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; }
+  /* no opacity dimming: the ok/warn soft pairs sit at ~4.4:1 undimmed, so ANY dimming puts
+     small mono digits below AA on the tones that carry counts most — the mono face is the
+     hierarchy. The card's own caption says the same. */
+/* The removable × — the one thing inside a chip that may be clicked. It is a focusable CHILD with
+   its own focus ring; the chip itself never becomes a control. Rendered as a real <button>, so the
+   element resets (border/background/font) are part of the rule.
+
+   TARGET SIZE. The card's caption binds a removal target at ≥24px, and the glyph's own box is
+   nowhere near that: at caption size with line-height 1 and 2px of side padding it is roughly
+   12×11px, and a roomier chip grows the CHIP, not this button. The ::after below is the standard
+   fix — a transparent, non-painting overlay centred on the button that carries the hit test
+   (a pseudo-element hit-tests as its originating element), so the target is a real 24×24 while
+   the painted glyph and the chip's own geometry are untouched. It stays within the chip's padding
+   at the default and md steps, and overhangs an xs chip by ~1.5px, well inside the gap any chip
+   row leaves between neighbours.
+
+   ON THE RADIUS. This is a clickable element carrying --my-r-pill, which looks like a rule 10
+   violation and is not. Rule 10 governs a control's RESTING SHAPE — "a pill never invites a
+   click, so an interactive control must never look like one" — and this button paints no
+   resting shape at all: no fill, no border, only a glyph. The radius is visible solely in the
+   focus ring, where following the round glyph is the right read, and the sheet already settled
+   this species of control the same way: `.my-search__clear`, a glyph-only button nested inside
+   an input, is `border-radius: 50%`. The card specifies the pill here for the same reason. */
+.my-chip__x {
+  position: relative;
+  margin-left: 1px; margin-right: -3px; padding: 0 2px;
+  border: 0; background: none; color: currentColor; opacity: .8; /* rest ≥3:1 every tone (was .6 ≈2.3:1 worst) */
+  font: inherit; font-size: var(--my-fs-caption); line-height: 1;
+  border-radius: var(--my-r-pill); cursor: pointer;
+  transition: opacity var(--my-t-fast);
+}
+.my-chip__x::after {
+  content: ""; position: absolute; top: 50%; left: 50%;
+  width: 24px; height: 24px; transform: translate(-50%, -50%);
+}
+.my-chip__x:hover { opacity: 1; }
+.my-chip__x:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+
+/* ── chip-flag: squared, mono — machine facts ───────────────────────────────────────────── */
+.my-chip-flag {
+  display: inline-flex; align-items: center; gap: 5px; white-space: nowrap;
+  font-family: var(--my-font-mono); font-variant-numeric: tabular-nums; /* normalization (4) */
+  font-size: var(--my-fs-nano); /* card: 10px — exact since tokens 0.5.15 */
+  font-weight: var(--my-fw-bold); /* card: 700 — normalization (3) */
+  letter-spacing: .4px; border-radius: 4px; padding: 2px 7px;
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+}
+.my-chip-flag--ok      { background: var(--my-ok-soft);     color: var(--my-ok); }
+.my-chip-flag--warn    { background: var(--my-warn-soft);   color: var(--my-warn); }
+.my-chip-flag--error   { background: var(--my-error-soft);  color: var(--my-error); }
+.my-chip-flag--neutral { background: var(--my-disabled-bg); color: var(--my-muted); }
+/* info — the pages render info-MEANING machine facts (review
+   events, on-done delivery classes, observation kinds) beside genuinely neutral ones in the same
+   row; the card's earlier "no info flag" doctrine collapsed a distinction the mockups draw —
+   the doctrine text in chip.ts is rewritten with this arm, not quietly contradicted. */
+.my-chip-flag--info    { background: var(--my-info-soft);   color: var(--my-info); }
+
+/* ── chip dropdown: the interactive member ──────────────────────────────────────────────── */
+.my-chip-dd {
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  /* shape rule 10 — this one IS clickable, so it is squared and takes the control border
+     (rule 11), which is the whole point of the family: shape carries the affordance. */
+  border: 1px solid var(--my-control-border); border-radius: var(--my-r-control);
+  padding: 5px 12px;
+  font: inherit; font-size: var(--my-fs-caption); /* card: 12.5px — normalization (1) */
+  background: var(--my-surface); color: var(--my-ink); cursor: pointer;
+  transition: background var(--my-t-fast);
+}
+/* The hover invite deliberately skips the SELECTED chip, matching the card, where `.chip-dd.sel`
+   outranks `.chip-dd:hover` and a selected chip therefore keeps its accent fill under the pointer.
+   Excluding it here reproduces that without a specificity arms race. */
+.my-chip-dd:hover:not(:disabled):not([aria-disabled="true"]):not(.my-chip-dd--sel) {
+  background: var(--my-surface-hover);
+}
+.my-chip-dd:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-chip-dd--sel { border-color: var(--my-accent); background: var(--my-accent-soft); color: var(--my-accent-strong); }
+.my-chip-dd__value { font-weight: var(--my-fw-medium); }
+.my-chip-dd__caret { color: var(--my-muted); font-size: var(--my-fs-nano); flex: none; } /* card v2: the caret face is the nano step */
+/* Disabled (token rule #8: disabled-bg/-ink + not-allowed, never opacity on text). Both spellings
+   are honored — the card's `aria-disabled="true"`, which the bindings render because it keeps the
+   chip focusable and announced, and a native `:disabled` for a consumer who hands the class to a
+   plain disabled <button>. Same pairing as `.my-pop-trigger:disabled, .my-pop-trigger.is-disabled`
+   above. Higher specificity than `--sel`, so a disabled selected chip reads as disabled. */
+.my-chip-dd:disabled,
+.my-chip-dd[aria-disabled="true"] {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+  border-color: var(--my-border); cursor: not-allowed;
+}
+.my-chip-dd:disabled .my-chip-dd__caret,
+.my-chip-dd[aria-disabled="true"] .my-chip-dd__caret { color: var(--my-disabled-ink); }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   THEME TOGGLE (ds/components-theme-toggle) — one component, three members: the segmented
+   radiogroup (the default), the compact icon button, and the settings-row switch. Classes are
+   derived by src/logic/theme-toggle.ts; see that module for the behavioural contract.
+
+   The two segmented variants raise the selection two DIFFERENT ways, and the difference is the
+   whole reason neither needs a measured layout:
+     · icon-only — three fixed 30px cells, so one 30px knob slides between three known offsets
+       (3 / 35 / 67 px = padding + n x (cell + gap)).
+     · labelled  — options size to their words, so there is no offset to know: the knob is hidden
+       and the CHECKED BUTTON itself carries the raised look.
+   That matters beyond tidiness: this image runs under `style-src 'self'`, so the inline style a
+   measured layout would have to write is a CSP violation, and the bindings are render-only.
+
+   ── ON THE PILL RADIUS ──
+   The card draws the segmented track, its options, the knob and the switch track at
+   --my-r-pill, while canonical token rule 10 squares everything clickable at --my-r-control
+   (the base `.tog` atom near the top of this sheet follows the rule). The theme-toggle family
+   KEEPS the card's pill, recorded in tokens.css rule 10 as a scoped exception — not a
+   precedent — with the inputs Toggle staying squared. The icon-only options are defensible on
+   the rule's own terms (they paint no resting shape; the pill shows solely in the focus ring,
+   the same reasoning as `.my-chip__x`); the labelled variant's checked fill and the switch
+   track are covered by the exception. test/css-theme-toggle.test.ts pins the answer so any
+   change has to be equally deliberate.
+
+   Normalizations, per the standing rules of this section:
+     1. The card's 12px option label and its 12.5px switch label both ride --my-fs-caption
+        (12px) — 12 is that step exactly, and 12.5 snaps to it, the same normalization
+        .my-chip-dd / .my-pop-trigger / .my-gitchip already made.
+     2. --my-shadow-knob (tokens 0.5.16) carries every raised surface here. The card's rgba pairs
+        are never restated.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── theme toggle: the segmented member (the default) ─────────────────────────────────────── */
+.my-tt-seg {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 2px;
+  padding: 3px;
+  background: var(--my-track); border: 1px solid var(--my-border);
+  border-radius: var(--my-r-pill);
+}
+.my-tt-seg__opt {
+  position: relative; z-index: 1;
+  display: grid; place-items: center;
+  width: 30px; height: 24px; padding: 0;
+  border: 0; background: none; color: var(--my-muted);
+  border-radius: var(--my-r-pill); cursor: pointer; line-height: 1;
+  transition: color var(--my-t-fast);
+}
+.my-tt-seg__opt svg { width: 14px; height: 14px; display: block; flex: none; }
+.my-tt-seg__opt:hover { color: var(--my-ink); }
+.my-tt-seg__opt:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+/* The accent lands on the GLYPH, never as a filled pill behind it — the card's don't-panel is
+   explicit that a saturated track turns a preference into a call to action. */
+.my-tt-seg__opt[aria-checked="true"] { color: var(--my-accent-strong); }
+/* The icon-only knob. `left` rather than a transform, per the card. `width` rides the same
+   transition the card leaves on it: nothing varies it today, and a future variant that sizes the
+   knob would then animate instead of jumping. */
+.my-tt-seg__knob {
+  position: absolute; top: 3px; left: 3px; z-index: 0;
+  width: 30px; height: 24px;
+  border-radius: var(--my-r-pill);
+  background: var(--my-surface); box-shadow: var(--my-shadow-knob);
+  transition: left var(--my-t-base), width var(--my-t-base);
+}
+/* One rule per mode, including the resting one. `--sel-system` repeats the base rule's 3px on
+   purpose: the mode with no rule would otherwise be the only one whose position is an absence. */
+.my-tt-seg--sel-system .my-tt-seg__knob { left: 3px; }
+.my-tt-seg--sel-light .my-tt-seg__knob { left: 35px; }
+.my-tt-seg--sel-dark .my-tt-seg__knob { left: 67px; }
+/* NOTHING selected — what an unrecognised mode degrades to. The knob is hidden rather than parked
+   under System, because parking it there would paint a selection that every option's
+   `aria-checked="false"` denies, telling a sighted user and a screen-reader user two different
+   things about the same control. */
+.my-tt-seg--sel-none .my-tt-seg__knob { display: none; }
+/* ── theme toggle: the LABELLED variant — the raised look moves onto the checked button ────── */
+/* The knob is still rendered (the two variants share one piece of markup, exactly as the card's
+   does) and hidden here, because a fixed-offset knob cannot track content-width options. */
+.my-tt-seg--lab .my-tt-seg__knob { display: none; }
+.my-tt-seg--lab .my-tt-seg__opt {
+  width: auto;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 0 11px;
+  font-family: inherit; line-height: 1;
+  font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium); /* normalization (1) */
+  transition: background var(--my-t-fast), color var(--my-t-fast), box-shadow var(--my-t-fast);
+}
+/* Still a lift of value, not a fill of colour: --my-surface + the knob shadow, exactly what the
+   sliding knob paints. The accent stays on the glyph, from the base rule above. */
+.my-tt-seg--lab .my-tt-seg__opt[aria-checked="true"] {
+  background: var(--my-surface); box-shadow: var(--my-shadow-knob);
+}
+
+/* ── theme toggle: the icon member — one 30px button for a crowded top bar ────────────────── */
+.my-tt-icon {
+  display: grid; place-items: center;
+  width: 30px; height: 30px; padding: 0;
+  /* rule 10 the ordinary way: this one paints a resting box, so it is squared. */
+  border: 1px solid transparent; border-radius: var(--my-r-control);
+  background: none; color: var(--my-muted); cursor: pointer;
+  transition: background var(--my-t-fast), color var(--my-t-fast);
+}
+.my-tt-icon svg {
+  width: 16px; height: 16px; display: block;
+  transition: transform var(--my-t-base), opacity var(--my-t-fast);
+}
+.my-tt-icon:hover { background: var(--my-surface-hover); color: var(--my-ink); }
+.my-tt-icon:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
+.my-tt-icon--bordered { border-color: var(--my-control-border); }
+.my-tt-icon__stack { display: grid; place-items: center; }
+.my-tt-icon__stack svg { grid-area: 1 / 1; }
+/* The button shows the theme you are IN — sun while light, moon while dark — and the glyphs
+   cross-fade with a 45deg counter-rotation rather than swapping. The state comes from
+   `aria-pressed` (true = dark), so the paint cannot exist without the announcement. */
+.my-tt-icon__moon { opacity: 0; transform: rotate(-45deg) scale(.7); }
+.my-tt-icon__sun { opacity: 1; transform: rotate(0) scale(1); }
+.my-tt-icon[aria-pressed="true"] .my-tt-icon__moon { opacity: 1; transform: rotate(0) scale(1); }
+.my-tt-icon[aria-pressed="true"] .my-tt-icon__sun { opacity: 0; transform: rotate(45deg) scale(.7); }
+
+/* ── theme toggle: the switch member — settings rows only ─────────────────────────────────── */
+.my-tt-switch {
+  position: relative;
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: var(--my-fs-caption); /* card: 12.5px — normalization (1) */
+  color: var(--my-ink); cursor: pointer;
+}
+/* Hidden, never removed: the real <input> is what carries the checkbox role, the checked state,
+   focus and the space bar. Zero-sized rather than display:none, which would take it out of the
+   accessibility tree and the tab order along with it. */
+.my-tt-switch__input { position: absolute; opacity: 0; width: 0; height: 0; }
+.my-tt-switch__track {
+  position: relative; flex: none;
+  width: 40px; height: 22px; border-radius: var(--my-r-pill);
+  background: var(--my-track); border: 1px solid var(--my-control-border);
+  transition: background var(--my-t-base), border-color var(--my-t-base);
+}
+.my-tt-switch__knob {
+  position: absolute; top: 2px; left: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  display: grid; place-items: center;
+  background: var(--my-surface); box-shadow: var(--my-shadow-knob); color: var(--my-muted);
+  transition: left var(--my-t-base), color var(--my-t-base);
+}
+.my-tt-switch__knob svg { width: 9px; height: 9px; display: block; }
+/* The fallback name, when the caller renders no text this package can read. Clipped, NOT hidden:
+   `display:none` / `visibility:hidden` would take it off the accessibility tree, which is the one
+   thing it exists to be on. It sits inside the <label>, so it names the input the ordinary way and
+   ADDS to any visible words rather than overriding them the way an aria-label would. */
+.my-tt-switch__name {
+  position: absolute; width: 1px; height: 1px;
+  margin: -1px; padding: 0; border: 0;
+  clip-path: inset(50%); overflow: hidden; white-space: nowrap;
+}
+/* Checked = the inputs Toggle's on/off vocabulary: a soft accent track with an accent boundary,
+   so a theme switch is not a special case. */
+.my-tt-switch__input:checked + .my-tt-switch__track {
+  background: var(--my-accent-soft); border-color: var(--my-accent);
+}
+.my-tt-switch__input:checked + .my-tt-switch__track .my-tt-switch__knob {
+  left: 20px; color: var(--my-accent-strong);
+}
+/* The ring goes on the track, because the input it belongs to is zero-sized and invisible. */
+.my-tt-switch__input:focus-visible + .my-tt-switch__track {
+  outline: 2px solid var(--my-accent); outline-offset: 2px;
+}
+/* Disabled (token rule 8: disabled-bg/-ink + not-allowed, never opacity on text). The hook is the
+   card's `aria-disabled` on the <label>; the SEMANTICS are the input's own native `disabled`,
+   which is what assistive tech and the pointer actually obey. */
+.my-tt-switch[aria-disabled="true"] { color: var(--my-disabled-ink); cursor: not-allowed; }
+.my-tt-switch[aria-disabled="true"] .my-tt-switch__track {
+  background: var(--my-disabled-bg); border-color: var(--my-border);
+}
+
+/* The knob slide, the raised-tile fade and the glyph cross-fade are the only motion this family
+   has, and every one of them is a transition rather than an animation — so, unlike the sheet's
+   other reduced-motion blocks, this one turns off `transition`. The states themselves are
+   unaffected: the selection still lands where it should, it simply arrives at once.
+
+   `.my-tt-seg--lab .my-tt-seg__opt` is listed SEPARATELY and not as a tidier `.my-tt-seg__opt`
+   alone: the labelled rule that restates `transition` is (0,2,0) and would outrank a (0,1,0)
+   override here no matter that this block comes last. */
+@media (prefers-reduced-motion: reduce) {
+  .my-tt-seg__knob,
+  .my-tt-seg__opt,
+  .my-tt-seg--lab .my-tt-seg__opt,
+  .my-tt-icon,
+  .my-tt-icon svg,
+  .my-tt-switch__track,
+  .my-tt-switch__knob { transition: none; }
+}
+
+
+/* ── tone-outlined button (ds/components-buttons; ported upstream from the product mockups'
+   review rows, which drew it as `.btn--sec` + an inline per-tone border/ink override) ────
+   The outline mirror of `.btn--tone` below, sharing the same `data-tone` axis: the `.btn--dan`
+   recipe copied per tone — surface fill, tone border, tone ink, tone-soft hover, no separate
+   :active. Bare `.btn--tone-line` (or data-tone="accent") degrades to an accent outline, the
+   same degrade grammar as `.btn--tone` → `.btn--acc`. The `data-tone="error"` arm is EQUIVALENT
+   to `.btn--dan` — it ships anyway so the axis is uniform (one derivation path for a view-model
+   mapping tones to buttons); `.btn--dan` remains the standing danger-outline contract (rule 9).
+   This block deliberately sits BEFORE the fill block: the fill block's disabled override must
+   stay the last interactive `.btn--tone*` rule in the sheet (its ordering is gate-pinned by
+   test/css-button-tone.test.ts). */
+.btn--tone-line { background: var(--my-surface); border-color: var(--my-accent); color: var(--my-accent-strong); }
+.btn--tone-line:hover, .btn--tone-line.is-hover { background: var(--my-accent-soft); }
+.btn--tone-line[data-tone="ok"]    { border-color: var(--my-ok);    color: var(--my-ok); }
+.btn--tone-line[data-tone="warn"]  { border-color: var(--my-warn);  color: var(--my-warn); }
+.btn--tone-line[data-tone="info"]  { border-color: var(--my-info);  color: var(--my-info); }
+.btn--tone-line[data-tone="error"] { border-color: var(--my-error); color: var(--my-error); } /* ≡ .btn--dan */
+.btn--tone-line[data-tone="ok"]:hover,    .btn--tone-line[data-tone="ok"].is-hover    { background: var(--my-ok-soft); }
+.btn--tone-line[data-tone="warn"]:hover,  .btn--tone-line[data-tone="warn"].is-hover  { background: var(--my-warn-soft); }
+.btn--tone-line[data-tone="info"]:hover,  .btn--tone-line[data-tone="info"].is-hover  { background: var(--my-info-soft); }
+.btn--tone-line[data-tone="error"]:hover, .btn--tone-line[data-tone="error"].is-hover { background: var(--my-error-soft); }
+/* disabled parity with the fill block's specificity fix below: the per-tone hover selectors are
+   (0,3,0) and :hover matches a disabled button under a pointer, so the override needs the
+   [data-tone] forms AND last position within this block */
+.btn--tone-line:disabled, .btn--tone-line.is-disabled,
+.btn--tone-line[data-tone]:disabled, .btn--tone-line[data-tone].is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink); border-color: transparent;
+}
+
+/* ── tone-filled button (ds/components-buttons; spec originated pane-side as SPEC-btn-tone
+   during the mockup rewire) ─────────────────────────────────────────────────────────────
+   A fill modifier on .btn whose fill is a status tone rather than the accent-only .btn--acc:
+   `data-tone` picks ok/warn/error/info; bare .btn--tone (or data-tone="accent") degrades to
+   .btn--acc behaviour with accent's hand-tuned hover/active steps, so an unset tone never
+   renders unstyled. No new metrics and no new colour values: fills ARE the status tokens,
+   hover/active are derived by mixing toward --my-ink — near-black in light (darkens, like
+   every light hover), cream in heritage (lightens, matching the dark hover grammar of
+   --my-accent-hover/--my-ink-hover) — and label ink rides --my-tone-ink (tokens.css), which
+   flips per theme like every other token, so this block needs no [data-theme] selector.
+   data-tone="error" is still governed by rule 9: danger fills only in lifecycle confirm flows. */
+.btn--tone { background: var(--my-accent); color: var(--my-tone-ink); border-color: transparent; }
+.btn--tone:hover,  .btn--tone.is-hover  { background: var(--my-accent-hover); }
+.btn--tone:active, .btn--tone.is-active { background: var(--my-accent-strong); }
+.btn--tone[data-tone="ok"]    { background: var(--my-ok); }
+.btn--tone[data-tone="warn"]  { background: var(--my-warn); }
+.btn--tone[data-tone="error"] { background: var(--my-error); }
+.btn--tone[data-tone="info"]  { background: var(--my-info); }
+.btn--tone[data-tone="ok"]:hover,    .btn--tone[data-tone="ok"].is-hover    { background: color-mix(in oklab, var(--my-ok) 88%, var(--my-ink)); }
+.btn--tone[data-tone="warn"]:hover,  .btn--tone[data-tone="warn"].is-hover  { background: color-mix(in oklab, var(--my-warn) 88%, var(--my-ink)); }
+.btn--tone[data-tone="error"]:hover, .btn--tone[data-tone="error"].is-hover { background: color-mix(in oklab, var(--my-error) 88%, var(--my-ink)); }
+.btn--tone[data-tone="info"]:hover,  .btn--tone[data-tone="info"].is-hover  { background: color-mix(in oklab, var(--my-info) 88%, var(--my-ink)); }
+.btn--tone[data-tone="ok"]:active,    .btn--tone[data-tone="ok"].is-active    { background: color-mix(in oklab, var(--my-ok) 76%, var(--my-ink)); }
+.btn--tone[data-tone="warn"]:active,  .btn--tone[data-tone="warn"].is-active  { background: color-mix(in oklab, var(--my-warn) 76%, var(--my-ink)); }
+.btn--tone[data-tone="error"]:active, .btn--tone[data-tone="error"].is-active { background: color-mix(in oklab, var(--my-error) 76%, var(--my-ink)); }
+.btn--tone[data-tone="info"]:active,  .btn--tone[data-tone="info"].is-active  { background: color-mix(in oklab, var(--my-info) 76%, var(--my-ink)); }
+/* Disabled must out-rank the tone rules above, which this sheet's shared `.btn:disabled` (0,2,0),
+   declared far earlier, cannot: the per-tone hover/active selectors are (0,3,0), and :hover DOES
+   match a disabled button under a pointer. The [data-tone] forms below tie them at (0,3,0) and
+   win by order; the bare forms cover an unset tone at (0,2,0) for the same reason. */
+.btn--tone:disabled, .btn--tone.is-disabled,
+.btn--tone[data-tone]:disabled, .btn--tone[data-tone].is-disabled {
+  background: var(--my-disabled-bg); color: var(--my-disabled-ink);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   STEPPER · SEG · CALLOUT/HELP · PULSE — four families ported upstream from
+   the product mockups, which hand-rolled each of them repeatedly (four steppers, five segment
+   rows, a dozen callouts plus nine "?" openers, two page-local pulse utilities). Values come
+   from the pages, normalized onto canonical tokens per this sheet's standing rules: hex white
+   on an accent fill → --my-surface (the package's standing fidelity remap), literal px font sizes →
+   the nearest --my-fs-* step, 700 weights → --my-fw-bold, opacity dimming on text → the
+   muted/disabled inks (token rule 8). Class derivation lives in
+   src/logic/{stepper,seg,callout}.ts; `.my-pulse` is a bare rider class and has no module.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── wizard stepper (ds/components-stepper) — todo/current/done rows with numbered dots ──
+   One atom over the pages' four hand-rolled variants: 20px dots (default) / 17px (`--sm`).
+   Done is the ACCENT family — accent-soft ✓ with an accent ring — never an `ok` recipe: a
+   completed step is progress/selection vocabulary, not a status verdict (token rule 2; cf. the
+   session-card spine's filled petrol done-nodes). Current = accent fill + --my-surface ink.
+   Clickability rides the ELEMENT: a binding renders a <button> only for steps the caller allows
+   (the pages allow back-nav, i <= current) and a plain <span> otherwise — the same grammar as
+   button.my-session-card vs div. `__bar` is an OPTIONAL connector the caller places between
+   steps: the page-level steppers draw it, the card-head dot rows do not. */
+.my-stepper { display: flex; align-items: center; gap: var(--my-sp-2); flex-wrap: wrap; }
+.my-stepper__step {
+  display: inline-flex; gap: 7px; align-items: center;
+  border: 0; background: none; padding: 2px 4px; font-family: inherit;
+  font-size: var(--my-fs-caption); color: var(--my-muted);
+}
+button.my-stepper__step { cursor: pointer; }
+button.my-stepper__step:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule 6 */
+.my-stepper__dot {
+  width: 20px; height: 20px; border-radius: 50%; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  background: var(--my-surface-hover); color: var(--my-muted);
+  border: 1.5px solid transparent; /* transparent rest border: state changes cannot reflow (chip-v2 grammar) */
+}
+.my-stepper__step--current { color: var(--my-ink); font-weight: var(--my-fw-bold); }
+.my-stepper__step--current .my-stepper__dot { background: var(--my-accent); color: var(--my-surface); }
+.my-stepper__step--done { color: var(--my-accent-strong); }
+.my-stepper__step--done .my-stepper__dot {
+  background: var(--my-accent-soft); color: var(--my-accent-strong); border-color: var(--my-accent);
+}
+.my-stepper__bar { width: 16px; height: 1.5px; background: var(--my-border); flex: none; }
+.my-stepper--sm { gap: var(--my-sp-1); }
+.my-stepper--sm .my-stepper__dot { width: 17px; height: 17px; font-size: var(--my-fs-nano); }
+.my-stepper--sm .my-stepper__step { font-size: var(--my-fs-micro); }
+
+/* ── tab segments (ds/components-seg) — squared segmented tabs; NOT the theme-toggle pill
+   (that family's look is a scoped rule-10 exception, not a precedent) ─────────────────────
+   Track = surface + --my-border (a track is furniture, not a control boundary) at the pages'
+   own drawn 8px radius (option 6 + 3px padding − 1 optical); options are squared
+   --my-r-control (rule 10). Selection = accent-soft + accent-strong + bold — the house
+   selection grammar (scope pickers, send-bar class segments and current popover rows all read
+   the same way). The pages' two divergent selected looks lose: the raised-surface knob borrows
+   the theme-toggle grammar, and a full accent fill reads as a call to action (the theme-toggle
+   card's don't-panel argument). Chips (`.my-chip--xs`) ride inside an option unchanged. */
+.my-seg {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--my-surface); border: 1px solid var(--my-border);
+  border-radius: 8px;
+}
+.my-seg--grow { display: flex; }
+.my-seg--grow .my-seg__opt { flex: 1; }
+.my-seg__opt {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  border: 0; border-radius: var(--my-r-control); padding: 6px 11px;
+  font-family: inherit; font-size: var(--my-fs-caption); font-weight: var(--my-fw-medium);
+  background: none; color: var(--my-muted); cursor: pointer;
+  transition: background var(--my-t-fast), color var(--my-t-fast);
+}
+.my-seg__opt:hover:not(.is-on) { color: var(--my-ink); }
+.my-seg__opt.is-on {
+  background: var(--my-accent-soft); color: var(--my-accent-strong);
+  font-weight: var(--my-fw-bold);
+}
+.my-seg__opt:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule 6 */
+/* the count slot: tabular digits (rule 5); the pages' opacity dimming normalizes to --my-muted —
+   the chip family's no-opacity-on-small-digits AA note applies to these digits too */
+.my-seg__count { font-variant-numeric: tabular-nums; color: var(--my-muted); }
+.my-seg__opt.is-on .my-seg__count { color: var(--my-accent-strong); }
+
+/* ── callout (ds/components-callout) — the titled tone box, bigger than a banner ──
+   The banner stays the one-line notice; the callout is the titled BLOCK (success panel, titled
+   list box, help paragraph, guidance with actions). `accent` is the DEFAULT (the pages' help
+   callouts) and emits no modifier; `error` is axis-complete with no page site yet. Two title
+   dresses ship, per the pages' own split — `__title` (body-lg, tone ink) and `__kicker`
+   (micro-uppercase, tone ink) — ONE per callout, never both (the bindings enforce it). Glyphs
+   follow the banner's tone-glyph map (tone.ts BANNER_ICON) — the same rule-7 discipline. */
+.my-callout {
+  border-radius: var(--my-r-card); padding: 14px 16px;
+  display: flex; flex-direction: column; gap: var(--my-sp-2);
+  font-size: var(--my-fs-mono); line-height: 1.6; color: var(--my-ink); text-wrap: pretty;
+  background: var(--my-accent-soft); border: 1px solid var(--my-accent);
+}
+.my-callout--ok      { background: var(--my-ok-soft);      border-color: var(--my-ok); }
+.my-callout--warn    { background: var(--my-warn-soft);    border-color: var(--my-warn); }
+.my-callout--info    { background: var(--my-info-soft);    border-color: var(--my-info); }
+.my-callout--error   { background: var(--my-error-soft);   border-color: var(--my-error); } /* axis-complete; no page site yet */
+.my-callout--neutral { background: var(--my-bg);           border-color: var(--my-border); }
+.my-callout__title {
+  display: flex; gap: 9px; align-items: center;
+  font-size: var(--my-fs-body-lg); font-weight: var(--my-fw-bold);
+  color: var(--my-accent-strong); /* accent (default tone) rides -strong, never bare accent */
+}
+.my-callout__kicker {
+  font-size: var(--my-fs-micro); font-weight: var(--my-fw-bold);
+  text-transform: uppercase; letter-spacing: .4px;
+  color: var(--my-accent-strong); /* tone ink — the same per-tone rules as __title below */
+}
+.my-callout--ok      .my-callout__title, .my-callout--ok      .my-callout__kicker { color: var(--my-ok); }
+.my-callout--warn    .my-callout__title, .my-callout--warn    .my-callout__kicker { color: var(--my-warn); }
+.my-callout--info    .my-callout__title, .my-callout--info    .my-callout__kicker { color: var(--my-info); }
+.my-callout--error   .my-callout__title, .my-callout--error   .my-callout__kicker { color: var(--my-error); }
+.my-callout--neutral .my-callout__title, .my-callout--neutral .my-callout__kicker { color: var(--my-muted); }
+.my-callout__glyph { font-style: normal; font-weight: var(--my-fw-bold); flex: none; }
+.my-callout__body { font-size: var(--my-fs-mono); }
+.my-callout__acts { display: flex; gap: var(--my-sp-2); margin-top: var(--my-sp-1); flex-wrap: wrap; }
+
+/* the tiny "?" opener that toggles a help callout — 18px unifies the pages' 15/16/18; the 700
+   weight rides --my-fw-bold, the standing normalization. It STAYS ROUND: a proposed rule-10
+   scoped exception (the theme-toggle precedent — the circle is what all nine page sites draw)
+   not yet adopted by the design book; should the book rule the other way it squares to
+   --my-r-control. aria-label + aria-expanded come from the binding. */
+.my-help {
+  width: 18px; height: 18px; flex: none; border-radius: 50%;
+  border: 1px solid var(--my-border); background: var(--my-surface); color: var(--my-muted);
+  font-size: var(--my-fs-nano); font-weight: var(--my-fw-bold); line-height: 1;
+  padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+}
+.my-help:hover { color: var(--my-ink); border-color: var(--my-control-border); }
+.my-help.is-open { background: var(--my-accent-soft); color: var(--my-accent-strong); border-color: var(--my-accent); }
+.my-help:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; } /* rule 6 */
+
+/* ── status pulse — a RIDER class on dots/chips/badges, never an atom of its own ──
+   Verbatim the product mockups' page-local utility, whose numbers the two shipped in-family
+   pulses already pin (1s ease-in-out, 50% opacity .4; "transient states only, ≤1/s" — the
+   session-card doctrine). View-models emit it beside the host class
+   (`running ? "my-pulse" : ""`); no logic module. The reduced-motion guard is non-negotiable. */
+.my-pulse { animation: my-pulse 1s ease-in-out infinite; }
+@keyframes my-pulse { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .my-pulse { animation: none; } }
+
+/* ══════════════════════════════════════════════════════════════════════════════════════════
+   KPI TILE (ds/components-kpi-tile) — viz/delta/band rows layered on the shipped `.my-stat-tile`
+   atom (label/value/sub already come from statTileClass/STAT_TILE_PARTS above); this block adds
+   only the viz row (gauge/spark/split/plain) and the footer (delta + band) that sit around it.
+   Class derivation lives in src/logic/kpi-tile.ts. Fixed min-height 112px + height:100% so a row
+   of tiles is always equal height, same floor the plain stat-tile card itself is sized off.
+   ══════════════════════════════════════════════════════════════════════════════════════════ */
+.my-kpi-tile {
+  display: flex; flex-direction: column; gap: 6px;
+  min-height: 112px; height: 100%;
+}
+
+/* the row holding value + (beside note | gauge | spark) — `flex:1;min-height:0` lets it share the
+   tile's fixed height with the label above and the footer rows below without overflowing. */
+.my-kpi-tile__viz-row { display: flex; align-items: center; gap: 10px; flex: 1; min-height: 0; }
+.my-kpi-tile__note {
+  margin-left: auto; flex: none;
+  font-size: var(--my-fs-nano); /* card: 10px — exact token match */
+  line-height: 1.35; color: var(--my-muted); text-align: right; white-space: pre-line;
+}
+.my-kpi-tile__viz { flex: none; margin-left: auto; display: block; }
+
+/* ── mini gauge — a KPI-tile-specific configurable-threshold donut (44x44 viewBox, drawn at
+   40x40), NOT the packaged `<Gauge>`: KPI tiles need PER-METRIC thresholds and "which direction is
+   good" varies per metric, where the packaged atom is fixed at the context/usage 75/90 pair.
+   Reuses the shared `.my-gauge`/`.my-gauge__track`/`.my-gauge__fill` classes and tokens (incl. the
+   rotation `.my-gauge svg` already applies above) via the `.my-kpi-gauge` scoping modifier —
+   see kpiGaugeWrapClass's doc comment for why the fixed stroke width lives on this modifier
+   rather than on the shared rule directly. */
+.my-kpi-gauge .my-gauge__track,
+.my-kpi-gauge .my-gauge__fill { stroke-width: 5; }
+
+/* ── sparkline (86x38, Catmull-Rom smoothed via kpiSpark) — color rides a modifier class on the
+   wrapping <svg>; only geometry (`d`, `x1`/`y1`/`x2`/`y2`, `cx`/`cy`/`r`, `stroke-dasharray`)
+   rides attributes. */
+.my-kpi-spark__area { fill-opacity: .1; }
+.my-kpi-spark__line { fill: none; stroke-width: 1.8; }
+.my-kpi-spark--ok .my-kpi-spark__area { fill: var(--my-accent); }
+.my-kpi-spark--ok .my-kpi-spark__line { stroke: var(--my-accent); }
+.my-kpi-spark--ok .my-kpi-spark__dot  { fill: var(--my-accent); }
+.my-kpi-spark--ok .my-kpi-spark__band { stroke: var(--my-border); }
+.my-kpi-spark--warn .my-kpi-spark__area { fill: var(--my-warn); }
+.my-kpi-spark--warn .my-kpi-spark__line { stroke: var(--my-warn); }
+.my-kpi-spark--warn .my-kpi-spark__dot  { fill: var(--my-warn); }
+.my-kpi-spark--warn .my-kpi-spark__band { stroke: var(--my-warn); }
+
+/* ── split bar (6px stacked track) — an SVG rather than a flex row of spans with a percent width:
+   each segment's width varies continuously, which only an SVG presentation attribute (`width`) can
+   express without an inline style (CSP). Rendered as a sibling BELOW the viz row, not inside it —
+   full tile width, not a right-aligned viz slot. */
+.my-kpi-split {
+  display: block; width: 100%; height: 6px; border-radius: 3px; overflow: hidden;
+  background: var(--my-track);
+}
+.my-kpi-split__seg--accent { fill: var(--my-accent); }
+.my-kpi-split__seg--warn   { fill: var(--my-warn); }
+.my-kpi-split__seg--muted  { fill: var(--my-muted); }
+
+/* ── footer: delta row (mono-adjacent, single line, ellipsized) + band line (reuses
+   `.my-stat-tile__sub`, with a tone modifier added here for the breached state). */
+.my-kpi-tile__delta-row {
+  display: flex; align-items: baseline; gap: 6px;
+  font-size: var(--my-fs-micro); /* card: 11px — exact token match */
+  white-space: nowrap; overflow: hidden;
+}
+.my-kpi-tile__delta { font-weight: var(--my-fw-bold); }
+.my-kpi-tile__delta--ok    { color: var(--my-ok); }
+.my-kpi-tile__delta--warn  { color: var(--my-warn); }
+.my-kpi-tile__delta--muted { color: var(--my-muted); }
+.my-kpi-tile__delta-ref { color: var(--my-muted); overflow: hidden; text-overflow: ellipsis; }
+.my-kpi-tile__band { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.my-kpi-tile__band--warn { color: var(--my-warn); }

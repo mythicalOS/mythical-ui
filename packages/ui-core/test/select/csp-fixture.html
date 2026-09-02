@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mythical-select strict-CSP fixture</title>
+<link rel="stylesheet" href="../../../../../mythical-design/tokens.css">
+</head>
+<body>
+<form id="form">
+  <label for="csp" id="csp-label">CSP lane</label>
+  <mythical-select id="csp" name="csp">
+    <mythical-option value="a" selected>Alpha</mythical-option>
+    <mythical-option value="b">Beta</mythical-option>
+  </mythical-select>
+</form>
+<script src="../../src/select/mythical-select.js"></script>
+</body>
+</html>

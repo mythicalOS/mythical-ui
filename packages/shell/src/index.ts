@@ -1,0 +1,60 @@
+// @mythicalos/shell — barrel. Mirrors the design source's export surface: the mythical FAMILY
+// SHELL, the central modules that must be identical across every product in the family, built on
+// top of:
+//   • tokens CSS              → import '@mythicalos/tokens/tokens.css' once
+//   • @mythicalos/preact-ui   → executable atoms (Button, Input, Toast, ConfirmDialog, Chip, …)
+//   • @mythicalos/ui-core/styles.css → the atoms' stylesheet
+//
+// This package adds what those two don't: the product selector + registry, the top bar, nav, the
+// list+detail workspace, the settings layout, and useTheme. Ship `@mythicalos/shell/styles.css`
+// after ui-core's — see this package's README for the three-layer import order.
+
+export { Logo, LogoMark, type LogoProps, type LogoMarkProps } from "./Logo.js";
+export { ProductGlyph, hasProductGlyph, type ProductGlyphProps } from "./ProductGlyph.js";
+export {
+  ProductSwitcher,
+  type ProductSwitcherProps,
+} from "./ProductSwitcher.js";
+export { TopBar, type TopBarProps } from "./TopBar.js";
+export { NavTabs, type NavTabsProps, type NavTabItem } from "./NavTabs.js";
+export {
+  WorkspaceSplit,
+  RailHead,
+  RailList,
+  RailGroup,
+  RailCard,
+  type WorkspaceSplitProps,
+  type RailHeadProps,
+  type RailListProps,
+  type RailGroupProps,
+  type RailCardProps,
+  type RailCardState,
+} from "./Workspace.js";
+export {
+  SettingsLayout,
+  SettingsNav,
+  type SettingsLayoutProps,
+  type SettingsNavProps,
+  type SettingsNavItem,
+} from "./Settings.js";
+export {
+  TokenGate,
+  authErrorLine,
+  defaultRetrieveCommand,
+  defaultRotateCommand,
+  TOKEN_GATE_BODY,
+  TOKEN_GATE_INVALID_BODY,
+  type TokenGateProps,
+} from "./TokenGate.js";
+export { PRODUCTS, ASGARD, FAMILY_NOTE, type Product, type ProductState } from "./products.js";
+export {
+  useTheme,
+  useThemeMode,
+  DEFAULT_THEME_STORAGE_KEY,
+  type Theme,
+  type ThemeMode,
+  type UseThemeOptions,
+  type UseThemeResult,
+  type UseThemeModeResult,
+} from "./hooks/useTheme.js";
+export { ThemeControl, type ThemeControlProps } from "./ThemeControl.js";

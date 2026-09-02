@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mythical-select contract fixture</title>
+<link rel="stylesheet" href="../../../../../mythical-design/tokens.css">
+<style>
+  body { margin: 24px; background: var(--my-bg); font: 14px/1.4 var(--my-font-ui); }
+  form { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+</style>
+</head>
+<body>
+<form id="form">
+
+  <!-- (a) pure-tag: optgroups, one disabled option, external label -->
+  <label for="pure" id="pure-label">Lane</label>
+  <mythical-select id="pure" name="pure">
+    <mythical-optgroup label="Cross-model">
+      <mythical-option value="codex">codex cross-model</mythical-option>
+      <mythical-option value="gemini" disabled>gemini flash</mythical-option>
+    </mythical-optgroup>
+    <mythical-optgroup label="Local">
+      <mythical-option value="fresh" selected>fresh context</mythical-option>
+      <mythical-option value="off">off</mythical-option>
+    </mythical-optgroup>
+    <span id="pure-note">unrelated child</span>
+  </mythical-select>
+
+  <!-- (b) progressive: wraps a real native select with optgroups -->
+  <label for="wrapped" id="wrapped-label">Priority</label>
+  <mythical-select id="wrapped">
+    <select name="wrapped" id="wrapped-native">
+      <optgroup label="High tier">
+        <option value="p0">P0 immediate</option>
+        <option value="p1" selected>P1 next</option>
+      </optgroup>
+      <optgroup label="Low tier">
+        <option value="p2">P2 later</option>
+        <option value="p3">P3 someday</option>
+      </optgroup>
+    </select>
+  </mythical-select>
+
+  <!-- (c) disabled instance -->
+  <mythical-select id="disabled-sel" name="disabled-choice" disabled>
+    <mythical-option value="locked" selected>Locked option</mythical-option>
+    <mythical-option value="other">Other option</mythical-option>
+  </mythical-select>
+
+  <!-- (d) chip variant -->
+  <mythical-select id="chip" name="chip" variant="chip">
+    <mythical-option value="warn">warn</mythical-option>
+    <mythical-option value="strict" selected>strict</mythical-option>
+  </mythical-select>
+
+  <!-- (e) required with a value="" placeholder first option -->
+  <mythical-select id="required-sel" name="required-choice" required>
+    <mythical-option value="">Choose…</mythical-option>
+    <mythical-option value="alpha">Alpha choice</mythical-option>
+    <mythical-option value="beta">Beta choice</mythical-option>
+  </mythical-select>
+
+  <button type="submit" id="submit">Submit</button>
+
+</form>
+<script src="../../src/select/mythical-select.js"></script>
+</body>
+</html>

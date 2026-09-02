@@ -1,0 +1,355 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  BUN_VERSION: "1.3.14"
+
+jobs:
+  # Typecheck, unit tests (460) and package builds for all 4 workspace packages.
+  # packages/ui-core/test/css.test.ts and packages/shell/css.test.tsx read the
+  # canonical tokens.css from a SIBLING mythical-design checkout (the same
+  # resolution the tests use locally: {mythical-ui,mythical-design}
+  # side by side) — there's no persistent sibling checkout on a runner, so both
+  # repos are checked out here as sibling directories under $GITHUB_WORKSPACE
+  # (mythicalOS/mythical-design is a public repo; a plain checkout works).
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: mythical-ui
+
+      - name: Checkout mythical-design (sibling — canonical tokens.css)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      - name: Set up bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Build FIRST: cross-package imports like `@mythicalos/ui-core/logic`
+      # resolve to built dist/, so typecheck and the binding tests need the
+      # dependency's dist present (same ordering as release.yml).
+      - name: Build (all packages, dependency order)
+        run: bun run build
+
+      - name: Typecheck (all packages)
+        run: bun run typecheck
+
+      - name: Unit tests
+        run: bun test
+
+  # Cross-engine mythical-select contract suite (354 Playwright tests). The
+  # fixtures are served over HTTP from packages/ui-core/playwright.config.js's
+  # webServer, rooted high enough to reach both the fixture/component AND the
+  # sibling mythical-design/tokens.css it links — same sibling checkout as the
+  # `test` job above, same reason.
+  select-parity:
+    name: select-parity
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: mythical-ui
+
+      - name: Checkout mythical-design (sibling — canonical tokens.css)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      - name: Set up bun
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: ${{ env.BUN_VERSION }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Must run from the package that OWNS @playwright/test. bun does not hoist
+      # this bin to the workspace root, so from the root `bunx` silently fetches
+      # the LATEST playwright from the registry and installs browser builds for
+      # that, while the suite below runs the locked version out of
+      # packages/ui-core. The skew is invisible until upstream ships a new
+      # browser build — 1.62.0 did, and the run went red with the locked 1.61.1
+      # looking for a chromium build the newer install had not placed.
+      - name: Install Playwright browsers
+        working-directory: mythical-ui/packages/ui-core
+        run: bunx playwright install --with-deps chromium firefox webkit
+
+      - name: mythical-select contract suite (354)
+        working-directory: mythical-ui/packages/ui-core
+        run: bun run test:select
+
+  # Public-safety + previews drift control. Runs the same sibling-checkout
+  # trick as the other jobs since previews/scripts/{generate-preview,check-ds}.sh
+  # also resolve tokens.css (and, for the fonts, the canonical source .woff2
+  # files) from the sibling mythical-design checkout.
+  hygiene:
+    name: hygiene
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mythical-ui
+    steps:
+      - name: Checkout mythical-ui
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: mythical-ui
+
+      - name: Checkout mythical-design (sibling — canonical tokens.css + fonts)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: mythicalOS/mythical-design
+          path: mythical-design
+
+      # Denylist gate: internal demo/dev strings must never appear in this
+      # PUBLIC repo. Any hit here is a release blocker, not a style nit.
+      # Scan excludes .git (VCS internals), node_modules, and this workflow
+      # file itself.
+      #
+      # THE PRIVATE TERM LIST IS NOT WRITTEN HERE, IN ANY ENCODING. It arrives
+      # at runtime from the organisation secret DOCS_DENY_PATTERN, mirroring the
+      # canonical list in the private umbrella repository. This step used to
+      # inline the list with every term split by a single-character bracket
+      # class; that defeats grep but not a reader, so the gate against
+      # disclosure was itself the disclosure. Do not reintroduce it — not
+      # verbatim, not bracket-split, not obfuscated any other way. The
+      # --exclude-dir=.github below is defense in depth on top of sourcing, not
+      # a substitute for it. Same model as docs-bar.yml, which is byte-identical
+      # across the family.
+      - name: Genericize grep gate (banned internal-demo terms)
+        env:
+          DENY: ${{ secrets.DOCS_DENY_PATTERN }}
+          PROBE: ${{ secrets.DOCS_DENY_PROBE }}
+          EVENT: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          # Fork PRs cannot read organisation secrets. Skipping is the same call
+          # docs-bar.yml makes: maintainer review covers a fork's diff.
+          if [ "$EVENT" = pull_request ] && [ -n "$HEAD_REPO" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::notice::genericize gate skipped on fork PRs — secret unavailable; maintainer review covers this"
+            exit 0
+          fi
+
+          # FAIL CLOSED — and test DENY *on its own*, never the combined pattern
+          # built below. EXTRAS is a non-empty literal, so an unset secret would
+          # still leave a non-empty FULL: the job would go green having checked
+          # only the handful of local terms. That is the single most dangerous
+          # failure mode of sourcing the list; this is the guard against it.
+          if [ -z "${DENY:-}" ]; then
+            echo "::error::DOCS_DENY_PATTERN is unset or empty — failing closed"
+            exit 1
+          fi
+
+          # Repo-local extras, safe to spell out and deliberately NOT in the
+          # shared secret: the sibling PRODUCT names are public (or going
+          # public), and an in-image install path plus a loopback port range
+          # disclose nothing. They are banned here only because this repository
+          # must not carry internal demo strings — a different concern from the
+          # family-wide private-name list. NOTE the one product name that is
+          # absent on purpose: the retired product's repo is private, so its
+          # name lives in the secret half with the other private names.
+          EXTRAS='mythical-skuld|mythical-saga|mythical-brokkr|/opt/mythical|127\.0\.0\.1:7[0-9]{3}'
+          FULL="${DENY}|${EXTRAS}"
+
+          # Self-test — the probes come from a second organisation secret, one term
+          # per line, so no banned term is written in this file. Every probe must
+          # match: that proves the secret arrived, is a usable ERE, and still covers
+          # what it is declared to cover. It does NOT prove the list is complete.
+          [ -n "${PROBE:-}" ] || { echo "::error::DOCS_DENY_PROBE is unset or empty — failing closed"; exit 1; }
+          n=0
+          while IFS= read -r probe; do
+            [ -n "$probe" ] || continue
+            n=$((n+1))
+            printf '%s\n' "$probe" | grep -aiqE -e "$DENY" && rc=0 || rc=$?
+            [ "$rc" -eq 0 ] || { echo "::error::self-test failed (grep rc=$rc) — DOCS_DENY_PATTERN does not cover probe #$n, or is not a usable pattern; the gate is weaker than declared"; exit 1; }
+          done <<< "$PROBE"
+          [ "$n" -gt 0 ] || { echo "::error::DOCS_DENY_PROBE held no probes — failing closed"; exit 1; }
+          echo "self-test OK: DOCS_DENY_PATTERN covers $n probe(s)"
+
+          # Self-test B — the COMBINED pattern: proves the alternation is still
+          # a usable ERE once joined, and that the repo-local half fires too.
+          printf '%s\n' '/opt/mythical' | grep -aiqE -e "$FULL" && rc=0 || rc=$?
+          [ "$rc" -eq 0 ] || { echo "::error::self-test failed (grep rc=$rc) — combined pattern did not match its repo-local probe"; exit 1; }
+
+          # -a, never -I. One NUL byte makes a file invisible to a bare grep,
+          # and -I (what this step used before) skips such a file outright — a
+          # silent pass on the one file most worth reading. -e guards a pattern
+          # that begins with a dash from being parsed as an option.
+          #
+          # grep's exit code is THREE-valued: 0 = matched, 1 = no match, >=2 =
+          # the scan itself failed. A bare `if grep ...; then` folds >=2 into
+          # the no-match branch and reports a clean tree it never finished
+          # reading — a green build with no scan behind it. Capture the code and
+          # treat anything above 1 as a hard failure, as docs-bar.yml does.
+          # `.` is this repo's checkout, NOT $GITHUB_WORKSPACE — the job sets
+          # defaults.run.working-directory: mythical-ui. That is deliberate and
+          # must stay: the workspace root also holds a SIBLING mythical-design
+          # checkout (needed for tokens.css), and this gate must not scan and
+          # report on another repository's tree. There are no other files at the
+          # root — actions/checkout creates only those two directories.
+          #
+          # PASS 1 — the combined pattern, with .github excluded so the
+          # repo-local EXTRAS spelled out in this very file cannot match it.
+          hits="$(grep -rlaiE -e "$FULL" . \
+              --exclude-dir=.git --exclude-dir=.github --exclude-dir=node_modules)" && rc=0 || rc=$?
+          [ "$rc" -le 1 ] || { echo "::error::tree scan failed (grep rc=$rc) — the tree was NOT fully scanned"; exit 1; }
+          if [ -n "$hits" ]; then
+            # A path is printed, never the matched line. Workflow commands are
+            # suppressed around it with a per-use random token: a file whose NAME
+            # contains a newline followed by "::" would otherwise inject a command
+            # into the log. Log integrity only -- the build is already failing.
+            tok="stop-$RANDOM$RANDOM"
+            echo "::stop-commands::$tok"
+            printf '%s\n' "$hits"
+            echo "::${tok}::"
+            echo "::error::banned internal-demo term(s) found — see file(s) listed above"
+            exit 1
+          fi
+
+          # PASS 2 — the SECRET half over the WHOLE tree, .github INCLUDED.
+          # The exclusion above exists only for the inline EXTRAS; the secret's
+          # terms are not written anywhere in this repository any more, so there
+          # is nothing for them to self-match and no reason to skip a directory.
+          # This matters more than it looks: --exclude-dir skips that directory
+          # NAME AT EVERY DEPTH, so pass 1 alone is blind to a nested path such
+          # as docs/.github/ as well as to the root one. After this pass the
+          # private terms have no blind spot left anywhere in the tree. Only the
+          # repo-local EXTRAS stay unchecked inside a .github directory, and
+          # they are written inline precisely because they disclose nothing.
+          ghits="$(grep -rlaiE -e "$DENY" . \
+              --exclude-dir=.git --exclude-dir=node_modules)" && rc=0 || rc=$?
+          [ "$rc" -le 1 ] || { echo "::error::whole-tree scan failed (grep rc=$rc) — NOT fully scanned"; exit 1; }
+          if [ -n "$ghits" ]; then
+            # A path is printed, never the matched line. Workflow commands are
+            # suppressed around it with a per-use random token: a file whose NAME
+            # contains a newline followed by "::" would otherwise inject a command
+            # into the log. Log integrity only -- the build is already failing.
+            tok="stop-$RANDOM$RANDOM"
+            echo "::stop-commands::$tok"
+            printf '%s\n' "$ghits"
+            echo "::${tok}::"
+            echo "::error::banned internal-demo term(s) found — see file(s) listed above"
+            exit 1
+          fi
+
+          # Accepted residual (availability only, never a bypass): with -a, a
+          # long base64 data-URI payload (previews/preview.html inlines fonts)
+          # or a binary asset can in principle match by chance. The secret half
+          # already carries that risk in docs-bar.yml, which strips payloads
+          # before re-testing. The EXTRAS add ~nothing: '/opt/mythical' is 13
+          # base64-alphabet characters (~1e-19 per offset) and every other extra
+          # contains '-', '.' or ':', which cannot occur inside a base64 payload
+          # at all. A chance hit fails the build and names the file.
+          echo "genericize gate: clean"
+
+      # Separate case-sensitive check for the internal decision-maker moniker
+      # (an all-caps role term). It can't join the pattern above: that gate
+      # greps case-insensitively (-i), so folding an all-caps word in would
+      # also flag the same word used lowercase in ordinary prose and fail the
+      # build on false positives. Its pattern is sourced from a SECOND
+      # organisation secret for exactly the reason the first one is — so the
+      # term is not written in this file.
+      - name: Genericize grep gate (internal role moniker, case-sensitive)
+        env:
+          DENY_CS: ${{ secrets.DOCS_DENY_PATTERN_CS }}
+          PROBE_CS: ${{ secrets.DOCS_DENY_PROBE_CS }}
+          EVENT: ${{ github.event_name }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          THIS_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+
+          if [ "$EVENT" = pull_request ] && [ -n "$HEAD_REPO" ] && [ "$HEAD_REPO" != "$THIS_REPO" ]; then
+            echo "::notice::role-moniker gate skipped on fork PRs — secret unavailable; maintainer review covers this"
+            exit 0
+          fi
+
+          if [ -z "${DENY_CS:-}" ]; then
+            echo "::error::DOCS_DENY_PATTERN_CS is unset or empty — failing closed"
+            exit 1
+          fi
+
+          # Self-test — probes from a second organisation secret, one per line; no -i
+          # on any grep in this step, case sensitivity is the entire point of it.
+          [ -n "${PROBE_CS:-}" ] || { echo "::error::DOCS_DENY_PROBE_CS is unset or empty — failing closed"; exit 1; }
+          n=0
+          while IFS= read -r probe; do
+            [ -n "$probe" ] || continue
+            n=$((n+1))
+            printf '%s\n' "$probe" | grep -aqE -e "$DENY_CS" && rc=0 || rc=$?
+            [ "$rc" -eq 0 ] || { echo "::error::self-test failed (grep rc=$rc) — DOCS_DENY_PATTERN_CS does not cover probe #$n, or is not a usable pattern; the gate is weaker than declared"; exit 1; }
+          done <<< "$PROBE_CS"
+          [ "$n" -gt 0 ] || { echo "::error::DOCS_DENY_PROBE_CS held no probes — failing closed"; exit 1; }
+          echo "self-test OK: DOCS_DENY_PATTERN_CS covers $n probe(s)"
+
+          # ONE pass over the WHOLE tree, .github INCLUDED. This step has no
+          # inline extras, and the term is no longer written here, so the
+          # .github exclusion it used to carry would buy nothing and cost a
+          # blind spot at every depth. grep rc >=2 means the scan failed, not
+          # that the tree is clean.
+          hits="$(grep -rlaE -e "$DENY_CS" . \
+              --exclude-dir=.git --exclude-dir=node_modules)" && rc=0 || rc=$?
+          [ "$rc" -le 1 ] || { echo "::error::tree scan failed (grep rc=$rc) — the tree was NOT fully scanned"; exit 1; }
+          if [ -n "$hits" ]; then
+            # A path is printed, never the matched line. Workflow commands are
+            # suppressed around it with a per-use random token: a file whose NAME
+            # contains a newline followed by "::" would otherwise inject a command
+            # into the log. Log integrity only -- the build is already failing.
+            tok="stop-$RANDOM$RANDOM"
+            echo "::stop-commands::$tok"
+            printf '%s\n' "$hits"
+            echo "::${tok}::"
+            echo "::error::internal role moniker found (case-sensitive) — see file(s) listed above"
+            exit 1
+          fi
+          echo "genericize gate (role moniker): clean"
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.x"
+
+      - name: Regenerate previews/preview.html (must stay green)
+        run: ./previews/scripts/generate-preview.sh
+
+      - name: Self-containment check — no external URLs in preview.html
+        run: |
+          set -euo pipefail
+          hits=$(grep -noE 'https?://[^"'"'"'<) ]*' previews/preview.html | grep -v 'w3\.org/2000/svg' || true)
+          if [ -n "$hits" ]; then
+            echo "::error::preview.html is not self-contained — external URL(s) found:"
+            echo "$hits"
+            exit 1
+          fi
+          echo "preview.html self-containment: clean (only the inert SVG xmlns namespace URI, if any)"
+
+      - name: Check ds/ cards (drift control)
+        run: ./previews/scripts/check-ds.sh

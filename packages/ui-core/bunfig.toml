@@ -1,0 +1,6 @@
+# Keep `bun test` and `bun run test:select` (Playwright) fully separate. Without
+# this, bun's default test-file glob (`*.spec.*` as well as `*.test.*`) would
+# pick up test/select/**/*.spec.js and fail on `import ... from '@playwright/test'`
+# (a module bun's own test runner never installs/resolves).
+[test]
+pathIgnorePatterns = ["test/select/**"]
