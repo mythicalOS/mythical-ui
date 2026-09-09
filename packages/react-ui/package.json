@@ -39,11 +39,12 @@
     "test": "bun test",
     "prepublishOnly": "bun run build && bun test && bun run typecheck"
   },
+  "//devDependencies": "typescript checked on 2026-09-09 against the npm registry: 7.0.2 (published 2026-07-08) is the current line, and it is the line the workspace root builds with — a package left on 5.x compiles this repo with a different compiler than the one the root declares. Microsoft publishes no support policy; fixes ship on the current line only. Re-check the lifecycle before changing this pin; never write a version from memory.",
   "devDependencies": {
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "typescript": "^5"
+    "typescript": "^7.0.2"
   }
 }

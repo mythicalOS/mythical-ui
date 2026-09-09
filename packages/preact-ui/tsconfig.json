@@ -1,7 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist",
+    // NO `outDir` HERE, DELIBERATELY. tsconfig.base.json sets `noEmit: true`, so
+    // this config never writes a file and an output directory decides nothing —
+    // but the compiler still INFERS a `rootDir` from it, and under TypeScript 7
+    // a source file outside that inferred root is an error (TS6059) even when
+    // there is no emit. That bites in this workspace: the styles-structure
+    // suites import their shared checkers from the repo-root `scripts/`
+    // directory, which is outside every package. Emit belongs to
+    // tsconfig.build.json, which sets its own explicit `rootDir` and includes
+    // only `src`.
     "jsx": "react-jsx",
     "jsxImportSource": "preact"
   },

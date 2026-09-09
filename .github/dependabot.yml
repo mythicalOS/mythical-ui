@@ -13,3 +13,35 @@ updates:
     groups:
       actions:
         patterns: ["*"]
+
+  # The JavaScript manifests. Without this block nothing watches them at all:
+  # the actions block above covers workflow pins and NOTHING else, so a
+  # published advisory on a declared dependency would sit here unannounced.
+  #
+  # THE ECOSYSTEM IS `bun`, NOT `npm`, AND THAT IS NOT A STYLE CHOICE. The
+  # committed lockfile is bun.lock and there is no package-lock.json anywhere in
+  # this repository. The npm ecosystem does not write bun.lock — it would open
+  # pull requests that edit a manifest and leave the lockfile behind them, and
+  # every one of those would fail this repo's own CI at
+  # `bun install --frozen-lockfile`. GitHub documents `bun` as its own
+  # ecosystem, for Bun 1.1.39 and newer; this repository's workflows pin a
+  # much later Bun than that.
+  #
+  # EVERY MANIFEST IS NAMED, root and packages alike. The root is a private
+  # workspace holder carrying the shared toolchain (bun-types, typescript);
+  # each package under packages/ declares its own dev and peer dependencies,
+  # and those are the ones that reach consumers. A root-only entry would risk
+  # leaving four manifests unwatched while looking like coverage. The glob is
+  # used rather than four literal paths so a package added later is covered the
+  # day it lands, not the day somebody remembers this file.
+  - package-ecosystem: bun
+    directories:
+      - "/"
+      - "/packages/*"
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      bun:
+        patterns: ["*"]
