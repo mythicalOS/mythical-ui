@@ -429,6 +429,31 @@ describe("createToastStack — the dismiss clock every binding shares", () => {
     expect(notifications).toBe(5);
   });
 
+  test("a destroyed stack is EMPTY — a replayed mount cannot come back to a timerless toast", () => {
+    // React StrictMode replays a mount on the same stack: setup → teardown → setup. A child that
+    // pushes from its own mount effect pushes BEFORE that teardown, so a teardown that kept the
+    // toasts would leave one on screen whose timer had just been cleared — immortal — with the
+    // child's second push beside it as a duplicate.
+    const { clock, advance, armed } = fakeClock();
+    const stack = createToastStack(clock);
+    stack.push(spec("ok", "pushed by a child's mount effect"));
+    stack.setHold("pointer", true);
+    stack.toggleExpanded();
+
+    stack.destroy();
+    expect(stack.toasts()).toEqual([]);
+    expect(stack.view().visible).toEqual([]);
+    expect(stack.isPaused()).toBe(false);
+    expect(stack.isExpanded()).toBe(false);
+    expect(armed()).toBe(0);
+
+    // …and the replayed mount's push behaves exactly like a first one: one toast, with a deadline.
+    stack.push(spec("ok", "pushed again by the replay"));
+    expect(stack.toasts()).toHaveLength(1);
+    advance(2600);
+    expect(stack.toasts()).toEqual([]);
+  });
+
   test("destroy disarms every timer and drops every subscriber", () => {
     const { clock, advance, armed } = fakeClock();
     const stack = createToastStack(clock);

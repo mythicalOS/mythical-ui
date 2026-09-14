@@ -143,7 +143,10 @@ export interface ToastStack {
   remainingMs(id: number): number | null | undefined;
   /** Called after every change worth repainting. Returns the unsubscribe. */
   subscribe(listener: () => void): () => void;
-  /** Disarm every deadline and drop every subscriber — the owner is going away. */
+  /**
+   * Tear the stack down: every deadline disarmed, every subscriber dropped, and the stack EMPTY.
+   * A destroyed stack holds nothing — see the implementation for why it must not keep the toasts.
+   */
   destroy(): void;
 }
 
@@ -298,6 +301,16 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
       for (const entry of entries.values()) disarm(entry);
       entries.clear();
       listeners = [];
+      // THE TOASTS GO TOO, and that is not tidiness — it is the only teardown that cannot leave a
+      // live toast with no deadline behind it. React's StrictMode replays a mount: setup, teardown,
+      // setup again, on the SAME memoized stack. A child that pushes from its own mount effect
+      // pushes before that teardown, so a stack that kept its toasts here would come back holding a
+      // toast whose timer had just been cleared — visible forever, with the child's second push
+      // sitting beside it as a duplicate. An empty stack after teardown is exactly what a fresh
+      // mount shows, so the replay is indistinguishable from a first mount, which is the point.
+      toasts = [];
+      holds.clear();
+      expanded = false;
     },
   };
 }
