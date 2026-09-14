@@ -65,8 +65,9 @@ operator closes it. A failure is the message most worth reading, so it is not ti
 the reader; `null` is deliberately not `0`, which would dismiss on the next tick.
 
 `createToastStack()` is that policy as state — the toast list, one deadline per toast, the
-hover/focus hold (`setPaused`, which freezes each remaining time and re-arms it with exactly that
-remainder), and the collapse (`toastStackView`: the newest `TOAST_MAX_VISIBLE` render, the rest are
+hover/focus hold (`setHold(reason, held)`, which freezes each remaining time and re-arms it with
+exactly that remainder — the pointer and the keyboard are separate reasons, and the stack resumes
+only when the last one is released), and the collapse (`toastStackView`: the newest `TOAST_MAX_VISIBLE` render, the rest are
 counted and reachable by expanding). It takes an injectable clock, so the behavior is testable
 without a DOM and without waiting real seconds. The bindings render `view()` and call back in; they
 own no timer of their own.

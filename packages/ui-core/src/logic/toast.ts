@@ -91,6 +91,14 @@ export function toastStackView<T>(toasts: readonly T[], expanded: boolean): Toas
   };
 }
 
+/**
+ * Why the deadlines are being held. The stack pauses while ANY reason is live and resumes only
+ * when the LAST one is released — a single boolean cannot express that: hovering the stack and
+ * then tabbing into it gives two independent holds, and the pointer leaving first would otherwise
+ * resume every timer while the keyboard is still inside, dismissing what the operator is reading.
+ */
+export type ToastHoldReason = "pointer" | "focus";
+
 /** A toast the stack is holding: the pushed spec plus the id the stack minted for it. */
 export interface LiveToast extends ToastSpec {
   id: number;
@@ -112,10 +120,13 @@ export interface ToastStack {
   /** Remove a toast and disarm its deadline. An id the stack does not hold changes nothing. */
   dismiss(id: number): void;
   /**
-   * Hold / release every deadline as one. Paused, each running toast keeps the time it had left
-   * and nothing expires; released, each is re-armed with exactly that remainder. Idempotent.
+   * Hold / release every deadline, one reason at a time. While held, each running toast keeps the
+   * time it had left and nothing expires; on release each is re-armed with exactly that remainder.
+   * Holds combine: the stack resumes only when every reason has been released. Idempotent — the
+   * same reason held twice is one hold, and releasing a reason that was never held does nothing.
    */
-  setPaused(paused: boolean): void;
+  setHold(reason: ToastHoldReason, held: boolean): void;
+  /** True while at least one hold is live. */
   isPaused(): boolean;
   /** Show every held-back toast, or collapse back to the newest few. */
   toggleExpanded(): void;
@@ -161,7 +172,7 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
 
   let toasts: LiveToast[] = [];
   let nextId = 1;
-  let paused = false;
+  const holds = new Set<ToastHoldReason>();
   let expanded = false;
   const entries = new Map<number, Entry>();
   let listeners: Array<() => void> = [];
@@ -209,7 +220,7 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
       if (ms !== null) {
         const entry: Entry = { remaining: ms, deadline: null, handle: null };
         entries.set(id, entry);
-        if (!paused) arm(id, entry);
+        if (holds.size === 0) arm(id, entry);
       }
       notify();
       return id;
@@ -219,11 +230,14 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
       if (remove(id)) notify();
     },
 
-    setPaused(next) {
-      if (next === paused) return;
-      paused = next;
+    setHold(reason, held) {
+      const wasPaused = holds.size > 0;
+      if (held) holds.add(reason);
+      else holds.delete(reason);
+      const isPaused = holds.size > 0;
+      if (isPaused === wasPaused) return; // another reason still holds, or none ever did
       for (const [id, entry] of entries) {
-        if (paused) {
+        if (isPaused) {
           entry.remaining = Math.max(0, (entry.deadline ?? now()) - now());
           disarm(entry);
         } else {
@@ -233,7 +247,7 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
       notify();
     },
 
-    isPaused: () => paused,
+    isPaused: () => holds.size > 0,
 
     toggleExpanded() {
       expanded = !expanded && toasts.length > TOAST_MAX_VISIBLE;

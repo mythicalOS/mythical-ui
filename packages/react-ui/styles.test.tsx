@@ -93,7 +93,7 @@ function allRenders(): string[] {
           view={toastStackView(stacked, expanded)}
           onDismiss={noop}
           onToggleExpanded={noop}
-          onPause={noop}
+          onHold={noop}
         />,
       ),
     );

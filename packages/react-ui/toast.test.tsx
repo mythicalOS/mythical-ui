@@ -50,7 +50,7 @@ function propsFor(count: number, expanded: boolean, handlers: Partial<StackProps
     view: toastStackView(toasts(count), expanded),
     onDismiss: handlers.onDismiss ?? noop,
     onToggleExpanded: handlers.onToggleExpanded ?? noop,
-    onPause: handlers.onPause ?? noop,
+    onHold: handlers.onHold ?? noop,
   };
 }
 
@@ -131,16 +131,24 @@ describe("every affordance the stack draws reaches a real caller", () => {
     expect(dismissed).toEqual([1, 2, 3, 4, 5]);
   });
 
-  test("pointer in/out and focus in/out hold and release the deadlines", () => {
-    const holds: boolean[] = [];
-    const nodes = tree(1, false, { onPause: (paused: boolean) => holds.push(paused) });
+  test("pointer and focus are reported as SEPARATE holds, each with its own reason", () => {
+    // The two must not collapse into one boolean: the stack resumes only when the LAST reason is
+    // released, so a pointer that leaves while the keyboard is still inside must report exactly
+    // `pointer:false` — never a bare "not paused" that would dismiss what is being read.
+    const holds: Array<[string, boolean]> = [];
+    const nodes = tree(1, false, { onHold: (reason: string, held: boolean) => holds.push([reason, held]) });
     const stackEl = nodes.find((n) => n.type === "div" && n.props.className === "toast-stack");
     expect(stackEl).toBeDefined();
     stackEl.props.onMouseEnter();
     stackEl.props.onFocusCapture();
-    stackEl.props.onBlurCapture();
     stackEl.props.onMouseLeave();
-    expect(holds).toEqual([true, true, false, false]);
+    stackEl.props.onBlurCapture();
+    expect(holds).toEqual([
+      ["pointer", true],
+      ["focus", true],
+      ["pointer", false],
+      ["focus", false],
+    ]);
   });
 
   test("focus is watched in the CAPTURE phase — focus/blur do not bubble to the stack", () => {

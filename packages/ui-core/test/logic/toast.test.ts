@@ -208,28 +208,28 @@ describe("createToastStack — the dismiss clock every binding shares", () => {
     expect(stack.toasts()).toEqual([]);
   });
 
-  test("paused: the remaining time FREEZES — time passing over the old deadline dismisses nothing", () => {
+  test("held: the remaining time FREEZES — time passing over the old deadline dismisses nothing", () => {
     const { clock, advance } = fakeClock();
     const stack = createToastStack(clock);
     stack.push(spec("ok"));
     advance(600);
     expect(stack.remainingMs(1)).toBe(2000);
 
-    stack.setPaused(true);
+    stack.setHold("pointer", true);
     expect(stack.isPaused()).toBe(true);
     advance(10_000);
     expect(stack.toasts()).toHaveLength(1);
     expect(stack.remainingMs(1)).toBe(2000);
   });
 
-  test("resume re-arms with exactly what was left, not with the full duration", () => {
+  test("release re-arms with exactly what was left, not with the full duration", () => {
     const { clock, advance } = fakeClock();
     const stack = createToastStack(clock);
     stack.push(spec("ok"));
     advance(600);
-    stack.setPaused(true);
+    stack.setHold("pointer", true);
     advance(10_000);
-    stack.setPaused(false);
+    stack.setHold("pointer", false);
     expect(stack.isPaused()).toBe(false);
 
     advance(1999);
@@ -238,40 +238,88 @@ describe("createToastStack — the dismiss clock every binding shares", () => {
     expect(stack.toasts()).toEqual([]);
   });
 
-  test("pause is idempotent — a second pause must not restart or forget the remainder", () => {
+  test("a hold is idempotent — holding the same reason twice must not restart or forget the remainder", () => {
     const { clock, advance } = fakeClock();
     const stack = createToastStack(clock);
     stack.push(spec("ok"));
     advance(600);
-    stack.setPaused(true);
+    stack.setHold("pointer", true);
     advance(500);
-    stack.setPaused(true);
+    stack.setHold("pointer", true);
     expect(stack.remainingMs(1)).toBe(2000);
-    stack.setPaused(false);
+    stack.setHold("pointer", false);
     advance(2000);
     expect(stack.toasts()).toEqual([]);
   });
 
-  test("resume while already running is a no-op — it never re-arms a second timer", () => {
+  test("HOLDS COMBINE: the pointer leaving while the keyboard is still inside does NOT resume", () => {
+    const { clock, advance } = fakeClock();
+    const stack = createToastStack(clock);
+    stack.push(spec("ok"));
+    advance(600);
+
+    stack.setHold("pointer", true); // the pointer rests on the stack
+    stack.setHold("focus", true); // then the operator tabs into the "+n more" button
+    stack.setHold("pointer", false); // and the pointer moves away, focus still inside
+    expect(stack.isPaused()).toBe(true);
+
+    advance(10_000);
+    expect(stack.toasts()).toHaveLength(1); // nothing expired while it was still being read
+    expect(stack.remainingMs(1)).toBe(2000);
+
+    stack.setHold("focus", false); // the LAST hold released — now it resumes, with the remainder
+    expect(stack.isPaused()).toBe(false);
+    advance(1999);
+    expect(stack.toasts()).toHaveLength(1);
+    advance(1);
+    expect(stack.toasts()).toEqual([]);
+  });
+
+  test("and the mirror: focus leaving while the pointer still rests on the stack does not resume", () => {
+    const { clock, advance } = fakeClock();
+    const stack = createToastStack(clock);
+    stack.push(spec("warn"));
+    stack.setHold("focus", true);
+    stack.setHold("pointer", true);
+    stack.setHold("focus", false);
+    expect(stack.isPaused()).toBe(true);
+    advance(60_000);
+    expect(stack.toasts()).toHaveLength(1);
+    stack.setHold("pointer", false);
+    advance(8000);
+    expect(stack.toasts()).toEqual([]);
+  });
+
+  test("releasing a reason that was never held changes nothing", () => {
+    const { clock, advance } = fakeClock();
+    const stack = createToastStack(clock);
+    stack.push(spec("ok"));
+    stack.setHold("focus", false);
+    expect(stack.isPaused()).toBe(false);
+    advance(2600);
+    expect(stack.toasts()).toEqual([]);
+  });
+
+  test("releasing while already running is a no-op — it never re-arms a second timer", () => {
     const { clock, advance, armed } = fakeClock();
     const stack = createToastStack(clock);
     stack.push(spec("ok"));
-    stack.setPaused(false);
+    stack.setHold("pointer", false);
     expect(armed()).toBe(1);
     advance(2600);
     expect(stack.toasts()).toEqual([]);
   });
 
-  test("a toast pushed WHILE paused does not start counting down until the pointer leaves", () => {
+  test("a toast pushed WHILE the stack is held does not start counting down until it is released", () => {
     const { clock, advance } = fakeClock();
     const stack = createToastStack(clock);
-    stack.setPaused(true);
+    stack.setHold("pointer", true);
     stack.push(spec("ok"));
     advance(10_000);
     expect(stack.toasts()).toHaveLength(1);
     expect(stack.remainingMs(1)).toBe(2600);
 
-    stack.setPaused(false);
+    stack.setHold("pointer", false);
     advance(2599);
     expect(stack.toasts()).toHaveLength(1);
     advance(1);
@@ -318,11 +366,15 @@ describe("createToastStack — the dismiss clock every binding shares", () => {
 
     const id = stack.push(spec("ok"));
     expect(notifications).toBe(1);
-    stack.setPaused(true);
+    stack.setHold("pointer", true);
     expect(notifications).toBe(2);
-    stack.setPaused(true); // no state change ⇒ no repaint
+    stack.setHold("pointer", true); // no state change ⇒ no repaint
     expect(notifications).toBe(2);
-    stack.setPaused(false);
+    stack.setHold("focus", true); // a SECOND reason on an already-held stack: no state change either
+    expect(notifications).toBe(2);
+    stack.setHold("pointer", false); // still held by focus ⇒ still no repaint
+    expect(notifications).toBe(2);
+    stack.setHold("focus", false);
     expect(notifications).toBe(3);
     stack.toggleExpanded();
     expect(notifications).toBe(4);

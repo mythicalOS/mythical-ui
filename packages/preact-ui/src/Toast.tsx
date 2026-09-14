@@ -24,6 +24,7 @@ import {
   createToastStack,
   TOAST_SEP,
   type LiveToast,
+  type ToastHoldReason,
   type ToastStackView,
 } from "@mythicalos/ui-core/logic";
 
@@ -57,7 +58,7 @@ export function ToastProvider(props: { children: ComponentChildren }) {
   );
   const dismiss = useCallback((id: number) => stack.dismiss(id), [stack]);
   const toggleExpanded = useCallback(() => stack.toggleExpanded(), [stack]);
-  const setPaused = useCallback((paused: boolean) => stack.setPaused(paused), [stack]);
+  const hold = useCallback((reason: ToastHoldReason, held: boolean) => stack.setHold(reason, held), [stack]);
 
   return (
     <ToastContext.Provider value={bus}>
@@ -66,7 +67,7 @@ export function ToastProvider(props: { children: ComponentChildren }) {
         view={stack.view()}
         onDismiss={dismiss}
         onToggleExpanded={toggleExpanded}
-        onPause={setPaused}
+        onHold={hold}
       />
     </ToastContext.Provider>
   );
@@ -77,8 +78,12 @@ export interface ToastStackBodyProps {
   view: ToastStackView<LiveToast>;
   onDismiss: (id: number) => void;
   onToggleExpanded: () => void;
-  /** Hold every deadline (pointer/focus in) or release it (out). */
-  onPause: (paused: boolean) => void;
+  /**
+   * Hold every deadline under `reason` (pointer/focus in) or release that reason (out). The two
+   * reasons are tracked separately by the stack: the pointer leaving while the keyboard is still
+   * inside must NOT resume, which one shared boolean could not express.
+   */
+  onHold: (reason: ToastHoldReason, held: boolean) => void;
 }
 
 /**
@@ -86,18 +91,19 @@ export interface ToastStackBodyProps {
  * without a DOM to push into. `ToastProvider` is this component plus the bus.
  *
  * The hold is on the stack, not on one toast: the pointer resting anywhere over the column, or the
- * keyboard reaching any control inside it, holds every deadline. Focus is watched in the CAPTURE
- * phase because focus/blur do not bubble.
+ * keyboard reaching any control inside it, holds every deadline. The two are reported as SEPARATE
+ * reasons, so a pointer that leaves while focus is still inside does not resume what is still
+ * being read. Focus is watched in the CAPTURE phase because focus/blur do not bubble.
  */
 export function ToastStackBody(props: ToastStackBodyProps) {
   return (
     <div
       class="toast-stack"
       aria-live="polite"
-      onMouseEnter={() => props.onPause(true)}
-      onMouseLeave={() => props.onPause(false)}
-      onFocusCapture={() => props.onPause(true)}
-      onBlurCapture={() => props.onPause(false)}
+      onMouseEnter={() => props.onHold("pointer", true)}
+      onMouseLeave={() => props.onHold("pointer", false)}
+      onFocusCapture={() => props.onHold("focus", true)}
+      onBlurCapture={() => props.onHold("focus", false)}
     >
       {props.view.moreLabel !== null ? (
         <button

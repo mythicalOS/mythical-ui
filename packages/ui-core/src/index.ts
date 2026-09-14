@@ -82,6 +82,7 @@ export {
   type LiveToast,
   type ToastBus,
   type ToastClock,
+  type ToastHoldReason,
   type ToastSpec,
   type ToastStack,
   type ToastStackView,
