@@ -290,6 +290,48 @@ describe("createToastStack — the dismiss clock every binding shares", () => {
     expect(stack.toasts()).toEqual([]);
   });
 
+  test("KEYBOARD DISMISS: closing the focused toast releases the focus hold, since no blur will", () => {
+    // Removing a focused element fires no blur event. Tab to a toast's close button (focus hold),
+    // press Enter (the button is removed): without this, the hold would never be released and every
+    // toast pushed afterwards would sit on screen for good.
+    const { clock, advance } = fakeClock();
+    const stack = createToastStack(clock);
+    const first = stack.push(spec("ok", "the one being closed"));
+    stack.push(spec("warn", "its neighbour"));
+    stack.setHold("focus", true);
+    advance(5000);
+    expect(stack.toasts()).toHaveLength(2); // held: nothing expired
+
+    stack.dismiss(first);
+    expect(stack.isPaused()).toBe(false);
+    advance(8000);
+    expect(stack.toasts()).toEqual([]); // the neighbour's own deadline resumed and ran out
+  });
+
+  test("…and a toast pushed after that keyboard dismiss counts down like any other", () => {
+    const { clock, advance } = fakeClock();
+    const stack = createToastStack(clock);
+    const only = stack.push(spec("ok"));
+    stack.setHold("focus", true);
+    stack.dismiss(only);
+
+    stack.push(spec("ok", "pushed after the dismiss"));
+    advance(2600);
+    expect(stack.toasts()).toEqual([]);
+  });
+
+  test("a dismiss does NOT release the pointer hold — the pointer is still where it was", () => {
+    const { clock, advance } = fakeClock();
+    const stack = createToastStack(clock);
+    const first = stack.push(spec("ok"));
+    stack.push(spec("ok", "second"));
+    stack.setHold("pointer", true);
+    stack.dismiss(first);
+    expect(stack.isPaused()).toBe(true);
+    advance(60_000);
+    expect(stack.toasts()).toHaveLength(1);
+  });
+
   test("releasing a reason that was never held changes nothing", () => {
     const { clock, advance } = fakeClock();
     const stack = createToastStack(clock);

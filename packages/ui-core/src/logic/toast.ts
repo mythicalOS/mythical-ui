@@ -117,7 +117,11 @@ export interface ToastClock {
 export interface ToastStack {
   /** Add a toast; returns its id. Arms its deadline unless the tone has none, or the stack is paused. */
   push(spec: ToastSpec): number;
-  /** Remove a toast and disarm its deadline. An id the stack does not hold changes nothing. */
+  /**
+   * Remove a toast and disarm its deadline. An id the stack does not hold changes nothing.
+   * Releases the `focus` hold: the removed toast carried the focused control, and a removed element
+   * fires no `blur`, so nothing else ever would.
+   */
   dismiss(id: number): void;
   /**
    * Hold / release every deadline, one reason at a time. While held, each running toast keeps the
@@ -181,6 +185,20 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
     for (const listener of [...listeners]) listener();
   };
 
+  /** Apply the hold set to every armed deadline, given what the set said a moment ago. */
+  const applyHolds = (wasPaused: boolean) => {
+    const isPaused = holds.size > 0;
+    if (isPaused === wasPaused) return; // another reason still holds, or none ever did
+    for (const [id, entry] of entries) {
+      if (isPaused) {
+        entry.remaining = Math.max(0, (entry.deadline ?? now()) - now());
+        disarm(entry);
+      } else {
+        arm(id, entry);
+      }
+    }
+  };
+
   const disarm = (entry: Entry) => {
     if (entry.handle !== null) {
       clearTimer(entry.handle);
@@ -227,23 +245,25 @@ export function createToastStack(clock: Partial<ToastClock> = {}): ToastStack {
     },
 
     dismiss(id) {
-      if (remove(id)) notify();
+      const wasPaused = holds.size > 0;
+      if (!remove(id)) return;
+      // THE FOCUS HOLD GOES WITH THE TOAST. Removing a focused element fires no `blur` — the
+      // browser simply moves focus to the document — so the close button the operator just pressed
+      // with the keyboard would leave a focus hold nothing could ever release, and every toast
+      // pushed afterwards would sit there for good. A dismissal is the one removal that can happen
+      // while the stack is held (a deadline cannot expire under a hold), so the element that held
+      // focus is exactly the one that has gone.
+      holds.delete("focus");
+      applyHolds(wasPaused);
+      notify();
     },
 
     setHold(reason, held) {
       const wasPaused = holds.size > 0;
       if (held) holds.add(reason);
       else holds.delete(reason);
-      const isPaused = holds.size > 0;
-      if (isPaused === wasPaused) return; // another reason still holds, or none ever did
-      for (const [id, entry] of entries) {
-        if (isPaused) {
-          entry.remaining = Math.max(0, (entry.deadline ?? now()) - now());
-          disarm(entry);
-        } else {
-          arm(id, entry);
-        }
-      }
+      if (holds.size > 0 === wasPaused) return; // nothing changed for the deadlines, nothing to repaint
+      applyHolds(wasPaused);
       notify();
     },
 
