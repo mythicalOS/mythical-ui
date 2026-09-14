@@ -39,10 +39,17 @@ import {
 // not on the barrel — `Input`'s hook-free body, the only way to render the revealed state
 // without a DOM (see input-reveal.test.tsx)
 import { InputBody } from "./src/Input.tsx";
+// likewise not on the barrel — the toast stack's hook-free body, the only way to render a
+// POPULATED stack (and its collapse control) without a DOM to push into (see toast.test.tsx)
+import { ToastStackBody } from "./src/Toast.tsx";
+import { toastStackView } from "@mythicalos/ui-core/logic";
 
 const css = readFileSync(join(import.meta.dir, "..", "ui-core", "styles.css"), "utf8");
 
 const noop = () => {};
+
+/** A stack deep enough to be collapsed — five toasts against a cap of three. */
+const stacked = [1, 2, 3, 4, 5].map((id) => ({ id, status: "error" as const, title: `t${id}` }));
 
 /** Every export, rendered across its prop/state variants. */
 function allRenders(): string[] {
@@ -104,6 +111,20 @@ function allRenders(): string[] {
       </ToastProvider>,
     ),
   );
+  // the populated stack, collapsed and expanded — the only renders that emit the collapse
+  // control, so this is what proves `.toast-more` resolves in the sheet
+  for (const expanded of [false, true]) {
+    out.push(
+      renderToString(
+        <ToastStackBody
+          view={toastStackView(stacked, expanded)}
+          onDismiss={noop}
+          onToggleExpanded={noop}
+          onPause={noop}
+        />,
+      ),
+    );
+  }
   out.push(
     renderToString(
       <ConfirmDialog

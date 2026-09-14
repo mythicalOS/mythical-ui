@@ -133,7 +133,10 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .check-row { display: flex; gap: var(--my-sp-2); align-items: center; cursor: pointer; }
 
 /* ── toasts (ds/components-toasts) — bottom-CENTER stack (design.md interaction rules) ── */
-.toast-stack { position: fixed; left: 50%; transform: translateX(-50%); bottom: var(--my-sp-5); z-index: 50; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 420px; }
+/* The stack is bounded and scrolls: expanding it shows EVERY held toast, and an error now stays
+   until it is closed, so the column can outgrow the viewport and push its oldest rows off the top
+   where nothing could reach them. */
+.toast-stack { position: fixed; left: 50%; transform: translateX(-50%); bottom: var(--my-sp-5); z-index: 50; display: flex; flex-direction: column-reverse; gap: 10px; max-width: 420px; max-height: 70vh; overflow-y: auto; }
 .toast { display: flex; gap: 10px; align-items: baseline; border-radius: 8px; padding: 11px 14px; font-size: var(--my-fs-mono); animation: my-toast-in 180ms ease-out; }
 @keyframes my-toast-in { from { opacity: 0; transform: translateY(12px); } }
 @media (prefers-reduced-motion: reduce) { .toast { animation: none; } }
@@ -153,7 +156,11 @@ a:focus-visible, .link:focus-visible, .is-focus {
 .toast--error .toast-icon, .toast--error .toast-action { color: var(--my-error); }
 .toast--info { background: var(--my-info-soft); }
 .toast--info .toast-icon, .toast--info .toast-action { color: var(--my-info); }
-.toast-more { font-size: var(--my-fs-micro); color: var(--my-muted); text-align: center; }
+/* The collapse count is a CONTROL, not a caption: it is the only way to reach the toasts the
+   stack is holding back, so it is a real button — keyboard-reachable, with a focus ring. */
+.toast-more { font-size: var(--my-fs-micro); color: var(--my-muted); text-align: center; align-self: center; background: none; border: 0; border-radius: 6px; padding: 2px 8px; font-family: inherit; cursor: pointer; }
+.toast-more:hover { color: var(--my-ink); }
+.toast-more:focus-visible { outline: 2px solid var(--my-accent); outline-offset: 2px; }
 
 /* ── dialogs (ds/components-dialogs) ─────────────────────────────────── */
 .scrim { position: fixed; inset: 0; background: var(--my-scrim); z-index: 60; display: flex; align-items: center; justify-content: center; padding: var(--my-sp-5); }

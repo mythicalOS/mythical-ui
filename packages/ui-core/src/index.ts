@@ -72,10 +72,21 @@ export {
 
 export {
   composeToastText,
+  createToastStack,
+  toastDismissMs,
+  toastStackView,
+  TOAST_COLLAPSE_LABEL,
+  TOAST_DISMISS_MS,
+  TOAST_MAX_VISIBLE,
   TOAST_SEP,
-  type ToastStatus,
-  type ToastSpec,
+  type LiveToast,
   type ToastBus,
+  type ToastClock,
+  type ToastSpec,
+  type ToastStack,
+  type ToastStackView,
+  type ToastStatus,
+  type ToastTimerHandle,
 } from "./logic/toast.js";
 
 export { gaugeTone, gaugeGeom, type GaugeGeom } from "./logic/gauge.js";

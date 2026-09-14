@@ -1,77 +1,121 @@
 // @mythicalos/react-ui — toasts (ds/components-toasts): tone-colored (ok = surface/ink/border;
 // warn/error/info = soft fill + status ink/border), icon + bold lead carry the state (never color
-// alone). Auto-dismiss every tone on one cadence; each stacked toast runs its own timer. Max 3
-// visible — older collapse into "+n more".
+// alone). Max 3 visible — the rest collapse behind a "+n more" BUTTON that expands the stack.
 //
-// React twin of packages/preact-ui/src/Toast.tsx. `composeToastText`/`TOAST_SEP` are imported
-// (never re-implemented) from `@mythicalos/ui-core`; the tone→icon/dismiss-cadence lookup tables
-// stay local, same as the Preact sibling (literal presentational maps, not branchy derivation).
+// Dismissal is policy, and the policy lives in `@mythicalos/ui-core`: ok 2600 · info 4000 ·
+// warn 8000 · error null, where null means the toast carries no deadline and stays until the
+// operator closes it. Timed toasts HOLD while the stack is hovered or holds focus, and resume
+// when it is left — reading a toast must not be a race against it.
+//
+// React twin of packages/preact-ui/src/Toast.tsx. `composeToastText`/`TOAST_SEP`, the dismiss
+// policy and the stack state (ids, per-toast deadlines, the hold, the collapse) are imported
+// (never re-implemented) from `@mythicalos/ui-core`; only the tone→icon table stays local, same as
+// the Preact sibling (a literal presentational map, not behavior).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { ToastContext, type ToastSpec, type ToastStatus } from "./toast-context.js";
-import { composeToastText, TOAST_SEP } from "@mythicalos/ui-core/logic";
+import {
+  composeToastText,
+  createToastStack,
+  TOAST_SEP,
+  type LiveToast,
+  type ToastStackView,
+} from "@mythicalos/ui-core/logic";
 
 export { composeToastText, TOAST_SEP };
 
 const ICON: Record<ToastStatus, string> = { ok: "✓", info: "ℹ", warn: "▲", error: "⬤" };
-const DISMISS_MS: Record<ToastStatus, number | null> = { ok: 2600, info: 2600, warn: 2600, error: 2600 };
-
-interface LiveToast extends ToastSpec {
-  id: number;
-}
 
 export function ToastProvider(props: { children: ReactNode }) {
-  const [toasts, setToasts] = useState<LiveToast[]>([]);
-  const nextId = useRef(1);
-  const timers = useRef(new Map<number, ReturnType<typeof setTimeout>>());
+  const [, repaint] = useState(0);
+  const stack = useMemo(() => createToastStack(), []);
 
-  const dismiss = useCallback((id: number) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-    const timer = timers.current.get(id);
-    if (timer) {
-      clearTimeout(timer);
-      timers.current.delete(id);
-    }
-  }, []);
-
-  const push = useCallback(
-    (spec: ToastSpec) => {
-      const id = nextId.current++;
-      setToasts((prev) => [...prev, { ...spec, id }]);
-      const ms = DISMISS_MS[spec.status];
-      if (ms !== null) {
-        timers.current.set(
-          id,
-          setTimeout(() => dismiss(id), ms),
-        );
-      }
-    },
-    [dismiss],
-  );
-
+  // Subscribing in the effect rather than at creation is what keeps StrictMode's double-mount
+  // (mount → unmount → remount) from leaving the provider deaf to its own stack. The immediate
+  // repaint covers anything pushed between creation and this effect.
   useEffect(() => {
-    const map = timers.current;
+    const unsubscribe = stack.subscribe(() => repaint((n) => n + 1));
+    repaint((n) => n + 1);
     return () => {
-      for (const t of map.values()) clearTimeout(t);
-      map.clear();
+      unsubscribe();
+      stack.destroy();
     };
-  }, []);
+  }, [stack]);
 
-  const bus = useMemo(() => ({ push }), [push]);
-  const visible = toasts.slice(-3);
-  const hiddenCount = toasts.length - visible.length;
+  const bus = useMemo(
+    () => ({
+      push: (spec: ToastSpec) => {
+        stack.push(spec);
+      },
+    }),
+    [stack],
+  );
+  const dismiss = useCallback((id: number) => stack.dismiss(id), [stack]);
+  const toggleExpanded = useCallback(() => stack.toggleExpanded(), [stack]);
+  const setPaused = useCallback((paused: boolean) => stack.setPaused(paused), [stack]);
 
   return (
     <ToastContext.Provider value={bus}>
       {props.children}
-      <div className="toast-stack" aria-live="polite">
-        {hiddenCount > 0 ? <div className="toast-more">+{hiddenCount} more</div> : null}
-        {visible.map((t) => (
-          <Toast key={t.id} status={t.status} title={t.title} body={t.body} action={t.action} onClose={() => dismiss(t.id)} />
-        ))}
-      </div>
+      <ToastStackBody
+        view={stack.view()}
+        onDismiss={dismiss}
+        onToggleExpanded={toggleExpanded}
+        onPause={setPaused}
+      />
     </ToastContext.Provider>
+  );
+}
+
+export interface ToastStackBodyProps {
+  /** What to render — `ToastStack.view()`, i.e. the collapse applied to the live stack. */
+  view: ToastStackView<LiveToast>;
+  onDismiss: (id: number) => void;
+  onToggleExpanded: () => void;
+  /** Hold every deadline (pointer/focus in) or release it (out). */
+  onPause: (paused: boolean) => void;
+}
+
+/**
+ * The stack's markup — hook-free and state-free, so any stack state can be rendered (and asserted)
+ * without a DOM to push into. `ToastProvider` is this component plus the bus.
+ *
+ * The hold is on the stack, not on one toast: the pointer resting anywhere over the column, or the
+ * keyboard reaching any control inside it, holds every deadline. Focus is watched in the CAPTURE
+ * phase because focus/blur do not bubble.
+ */
+export function ToastStackBody(props: ToastStackBodyProps) {
+  return (
+    <div
+      className="toast-stack"
+      aria-live="polite"
+      onMouseEnter={() => props.onPause(true)}
+      onMouseLeave={() => props.onPause(false)}
+      onFocusCapture={() => props.onPause(true)}
+      onBlurCapture={() => props.onPause(false)}
+    >
+      {props.view.moreLabel !== null ? (
+        <button
+          type="button"
+          className="toast-more"
+          aria-expanded={props.view.expanded}
+          onClick={props.onToggleExpanded}
+        >
+          {props.view.moreLabel}
+        </button>
+      ) : null}
+      {props.view.visible.map((t) => (
+        <Toast
+          key={t.id}
+          status={t.status}
+          title={t.title}
+          body={t.body}
+          action={t.action}
+          onClose={() => props.onDismiss(t.id)}
+        />
+      ))}
+    </div>
   );
 }
 

@@ -40,6 +40,10 @@ import "@mythicalos/ui-core/styles.css"; // this package ships NO CSS of its own
 - `ConfirmDialog` (+ `typedNameMatches`), `Scrim` — modal danger confirms (Esc cancels, safe action
   focused first, optional typed-name-match gate for irreversible deletes).
 - `Toast`, `ToastProvider`, `composeToastText`, `ToastContext`, `useToast` — the toast bus.
+  Auto-dismiss is graded by tone and comes from `@mythicalos/ui-core`: ok 2600 ms, info 4000 ms,
+  warn 8000 ms, and an **error stays until it is closed**. Timed toasts hold while the stack is
+  hovered or holds focus, and resume when it is left; past three, the rest collapse behind a
+  `+n more` button that expands the stack.
 - `usePoll`, `useInterval`, `shouldResetEpoch` — the request/response poll hooks.
 - `Chip`, `Card`, `Avatar`, `StatusLine`, `SearchInput`, `Banner`, `Gauge` — the 7 atoms graduated
   from design-export's proposed additions.

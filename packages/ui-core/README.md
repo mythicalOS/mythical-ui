@@ -4,7 +4,7 @@ The **framework-agnostic core** of the mythicalOS component library — pure log
 runtime. It holds the branchy, DOM-free logic that both the Preact and React bindings import, so
 the two frameworks derive identical classes/behavior from one source: button class derivation, the
 poll-scheduling math + fire-time epoch guard, the confirm-dialog typed-name gate, the toast
-text-composition helper, and the circular-gauge geometry.
+text composition, dismiss policy and stack state, and the circular-gauge geometry.
 
 This package MUST NOT import `preact` or `react` — see `test/agnostic.test.ts`.
 
@@ -55,6 +55,24 @@ property.
 
 ```ts
 import "@mythicalos/ui-core/styles.css";
+```
+
+## Toasts — the dismiss policy
+
+`TOAST_DISMISS_MS` is the auto-dismiss cadence every binding shares: `ok` 2600 ms, `info` 4000 ms,
+`warn` 8000 ms, and `error` `null` — **`null` means no deadline at all**: an error stays until the
+operator closes it. A failure is the message most worth reading, so it is not timed out from under
+the reader; `null` is deliberately not `0`, which would dismiss on the next tick.
+
+`createToastStack()` is that policy as state — the toast list, one deadline per toast, the
+hover/focus hold (`setPaused`, which freezes each remaining time and re-arms it with exactly that
+remainder), and the collapse (`toastStackView`: the newest `TOAST_MAX_VISIBLE` render, the rest are
+counted and reachable by expanding). It takes an injectable clock, so the behavior is testable
+without a DOM and without waiting real seconds. The bindings render `view()` and call back in; they
+own no timer of their own.
+
+```ts
+import { createToastStack, TOAST_DISMISS_MS } from "@mythicalos/ui-core/logic";
 ```
 
 ## `<mythical-select>`
