@@ -200,4 +200,22 @@ describe("the dismiss policy is imported, never re-declared here (source scan)",
     expect(source).toContain("stack.view()");
     expect(source).not.toContain(".slice(-");
   });
+
+  // The handler tests above prove that what ToastStackBody DRAWS reaches the callbacks it is given.
+  // They cannot prove that the PROVIDER gives it the real ones — that would need a mounted provider
+  // with a consumer pushing into its context, and this package has no DOM to mount into (see the
+  // depth note at the top). So the connection is proven the only way left: each of the three props
+  // the provider passes is read back from the source and must be the callback that calls the stack.
+  // A no-op handed to any of them — the "+n more" button that fires nothing, the close that closes
+  // nothing — fails here.
+  test("the provider connects the drawn affordances to the REAL stack, not to no-ops", () => {
+    expect(source).toMatch(/const dismiss = useCallback\(\(id: number\) => stack\.dismiss\(id\)/);
+    expect(source).toMatch(/const toggleExpanded = useCallback\(\(\) => stack\.toggleExpanded\(\)/);
+    expect(source).toMatch(/const hold = useCallback\(\(reason: ToastHoldReason, held: boolean\) => stack\.setHold\(reason, held\)/);
+    expect(source).toContain("onDismiss={dismiss}");
+    expect(source).toContain("onToggleExpanded={toggleExpanded}");
+    expect(source).toContain("onHold={hold}");
+    // and the bus the children push through is the stack's own push, not a swallowed one
+    expect(source).toMatch(/push: \(spec: ToastSpec\) => \{\s*stack\.push\(spec\);/);
+  });
 });
