@@ -30,7 +30,7 @@
     "NOTICE"
   ],
   "peerDependencies": {
-    "preact": "^10.22.0",
+    "preact": "^11.0.0",
     "@mythicalos/tokens": "^0.5.11"
   },
   "peerDependenciesMeta": {
@@ -49,8 +49,8 @@
   },
   "//devDependencies": "typescript checked on 2026-09-09 against the npm registry: 7.0.2 (published 2026-07-08) is the current line, and it is the line the workspace root builds with — a package left on 5.x compiles this repo with a different compiler than the one the root declares. Microsoft's TypeScript SUPPORT.md defines no support window or end-of-life for a standalone release and services only the latest release (patches evaluated monthly for the current stable, minors roughly every three months), so fixes ship on the current line only — re-checked 2026-09-10 against the vendor's SUPPORT.md and release-process pages. Re-check the lifecycle before changing this pin; never write a version from memory.",
   "devDependencies": {
-    "preact": "^10.22.0",
-    "preact-render-to-string": "^6.5.13",
+    "preact": "^11.0.0",
+    "preact-render-to-string": "^6.8.0",
     "typescript": "^7.0.2"
   }
 }
