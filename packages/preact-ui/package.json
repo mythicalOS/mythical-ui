@@ -23,7 +23,7 @@
   "files": ["dist", "README.md", "NOTICE"],
   "//peerDependencies": "Released as a PATCH while raising the OPTIONAL @mythicalos/tokens peer floor from ^0.5.17 to ^0.5.19. The floor is honest: the .my-term__row--memory label resolves var(--my-term-memory), minted in tokens 0.5.19; on an older tokens that declaration is invalid and the label falls back to the row's inherited dim body -- cosmetic, never a crash, and exactly the appearance shipping before this fix. A minor was argued on the grounds that tightening a peer range is a compatibility boundary, and was NOT taken: the downstream consumer pins this package through an `overrides` caret on a 0.x version, which pins the MINOR, so a minor would force a coordinated override edit in the same change. That is friction, NOT impossibility -- the override could be widened -- so this is a deliberate policy choice and not a claim that minor was unshippable. Policy: the published version tracks the COMPONENT surface, and a peer-floor move rides the patch that needs it. Caveat, stated because `optional` is easy to over-read: it suppresses auto-install and missing-peer warnings, but does not guarantee every resolver tolerates an older installed tokens -- npm --strict-peer-deps can still reject. Full rationale: the umbrella plan, Task 3.",
   "peerDependencies": {
-    "preact": "^10.22.0",
+    "preact": "^11.0.1",
     "@mythicalos/tokens": "^0.5.19"
   },
   "peerDependenciesMeta": {
@@ -40,8 +40,8 @@
   },
   "//devDependencies": "typescript checked on 2026-09-09 against the npm registry: 7.0.2 (published 2026-07-08) is the current line, and it is the line the workspace root builds with — a package left on 5.x compiles this repo with a different compiler than the one the root declares. Microsoft's TypeScript SUPPORT.md defines no support window or end-of-life for a standalone release and services only the latest release (patches evaluated monthly for the current stable, minors roughly every three months), so fixes ship on the current line only — re-checked 2026-09-10 against the vendor's SUPPORT.md and release-process pages. Re-check the lifecycle before changing this pin; never write a version from memory.",
   "devDependencies": {
-    "preact": "^10.22.0",
-    "preact-render-to-string": "^6.5.13",
+    "preact": "^11.0.1",
+    "preact-render-to-string": "^6.8.0",
     "typescript": "^7.0.2"
   }
 }
